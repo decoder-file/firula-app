@@ -8,11 +8,13 @@ import { Avatar } from "@/components/Avatar";
 import { FacialIdModal } from "@/components/FacialIdModal";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/contexts/AppContext";
+import { useScreenLog } from "@/hooks/useScreenLog";
 import { getEventById, getOrganizerSlug } from "@/data/mockData";
 import { colors } from "@/theme/colors";
 import { formatCurrency, formatDateLong } from "@/utils/format";
 
 export default function EventDetailScreen() {
+  useScreenLog();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addToCart } = useApp();

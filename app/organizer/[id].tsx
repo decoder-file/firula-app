@@ -4,10 +4,12 @@ import { Text, View } from "react-native";
 
 import { Avatar } from "@/components/Avatar";
 import { Screen } from "@/components/Screen";
+import { useScreenLog } from "@/hooks/useScreenLog";
 import { events, getEventByOrganizerSlug } from "@/data/mockData";
 import { colors } from "@/theme/colors";
 
 export default function OrganizerScreen() {
+  useScreenLog();
   const { id } = useLocalSearchParams<{ id: string }>();
   const event = id ? getEventByOrganizerSlug(id) : undefined;
   const organizer = event?.organizer ?? events[0].organizer;

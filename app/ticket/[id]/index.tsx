@@ -6,11 +6,13 @@ import { ScrollView, Text, View } from "react-native";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/contexts/AppContext";
+import { useScreenLog } from "@/hooks/useScreenLog";
 import { getEventById } from "@/data/mockData";
 import { colors } from "@/theme/colors";
 import { formatCurrency, formatDateWithYear } from "@/utils/format";
 
 export default function TicketDetailScreen() {
+  useScreenLog();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { tickets } = useApp();

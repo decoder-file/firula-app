@@ -9,6 +9,7 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EventCard } from "@/components/EventCard";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/contexts/AppContext";
+import { useScreenLog } from "@/hooks/useScreenLog";
 import { categories, type EventCategory, events } from "@/data/mockData";
 import { colors } from "@/theme/colors";
 
@@ -25,6 +26,7 @@ const promoStrips = [
 ];
 
 export default function HomeScreen() {
+  useScreenLog();
   const router = useRouter();
   const { profile } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("todos");

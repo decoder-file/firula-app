@@ -6,11 +6,13 @@ import { useRouter } from "expo-router";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/contexts/AppContext";
+import { useScreenLog } from "@/hooks/useScreenLog";
 import { getEventById } from "@/data/mockData";
 import { formatDateWithYear } from "@/utils/format";
 import { Image, Text as RNText } from "react-native";
 
 export default function TicketsScreen() {
+  useScreenLog();
   const router = useRouter();
   const { tickets } = useApp();
   const [filter, setFilter] = useState<"active" | "used" | "all">("active");

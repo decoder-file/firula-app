@@ -6,6 +6,7 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Avatar } from "@/components/Avatar";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/contexts/AppContext";
+import { useScreenLog } from "@/hooks/useScreenLog";
 
 const achievements = [
   { label: "Primeiro evento", unlocked: true, icon: "🏅" },
@@ -17,6 +18,7 @@ const achievements = [
 ];
 
 export default function ProfileScreen() {
+  useScreenLog();
   const router = useRouter();
   const { profile } = useApp();
 

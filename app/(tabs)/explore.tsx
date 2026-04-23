@@ -5,10 +5,12 @@ import { Search } from "lucide-react-native";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EventCard } from "@/components/EventCard";
 import { Screen } from "@/components/Screen";
+import { useScreenLog } from "@/hooks/useScreenLog";
 import { categories, type EventCategory, events } from "@/data/mockData";
 import { colors } from "@/theme/colors";
 
 export default function ExploreScreen() {
+  useScreenLog();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("todos");
 
