@@ -66,13 +66,13 @@ export default function HomeScreen() {
         </View>
 
         <View className="px-4">
-          {!searchQuery ? (
+          {/* {!searchQuery ? (
             <View className="mt-4 rounded-2xl border border-primary/10 bg-[#f4fcf7] px-3 py-2">
               <Text className="text-center font-medium text-[11px] text-primary">{promoStrips[activePromo]}</Text>
             </View>
-          ) : null}
+          ) : null} */}
 
-          {!searchQuery && selectedCategory === "todos" ? (
+          {/* {!searchQuery && selectedCategory === "todos" ? (
             <LinearGradient colors={bannerAds[activeBanner].colors} className="mt-4 h-44 rounded-[24px] p-5">
               <View className="mt-auto">
                 <Text className="font-medium text-[10px] uppercase tracking-[1px] text-white/70">Destaque</Text>
@@ -80,7 +80,7 @@ export default function HomeScreen() {
                 <Text className="mt-1 text-sm text-white/80">{bannerAds[activeBanner].subtitle}</Text>
               </View>
             </LinearGradient>
-          ) : null}
+          ) : null} */}
 
           {!searchQuery && selectedCategory === "todos" ? (
             <View className="mt-6">
