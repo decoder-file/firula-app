@@ -3,6 +3,7 @@ import { ScrollView, Text, TextInput, View } from "react-native";
 import { Bell, Search } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EventCard } from "@/components/EventCard";
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const { profile } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("todos");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasScrolled, setHasScrolled] = useState(false);
   const [activeBanner] = useState(0);
   const [activePromo] = useState(0);
 
@@ -44,28 +46,55 @@ export default function HomeScreen() {
 
   return (
     <Screen edges={["top", "left", "right"]}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
-        <View className="bg-card px-4 pb-4 pt-3">
-          <View className="flex-row items-center justify-between">
-            <Text className="font-semibold text-lg text-foreground">Olá, {profile.name.split(" ")[0]}</Text>
-            <AnimatedPressable className="relative p-2" onPress={() => router.push("/notifications") }>
-              <Bell color={colors.foreground} size={20} strokeWidth={1.5} />
-              <View className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-            </AnimatedPressable>
-          </View>
-          <View className="mt-3 flex-row items-center gap-2 rounded-2xl bg-secondary px-3 py-3">
-            <Search color={colors.mutedForeground} size={18} strokeWidth={1.5} />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Buscar eventos, locais..."
-              placeholderTextColor={colors.mutedForeground}
-              className="flex-1 font-sans text-sm text-foreground"
-            />
-          </View>
-        </View>
+      <StatusBar style="dark" backgroundColor="#ffffff" />
 
+      <View
+        className="bg-white px-4 pb-4 pt-3"
+        style={
+          hasScrolled
+            ? {
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 4,
+              }
+            : undefined
+        }
+      >
+        <View className="flex-row items-center justify-between">
+          <Text className="font-semibold text-lg text-foreground">Olá, {profile.name.split(" ")[0]}</Text>
+          <AnimatedPressable className="relative p-2" onPress={() => router.push("/notifications") }>
+            <Bell color={colors.foreground} size={20} strokeWidth={1.5} />
+            <View className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
+          </AnimatedPressable>
+        </View>
+        <View className="mt-3 flex-row items-center gap-2 rounded-2xl bg-secondary px-3 py-3">
+          <Search color={colors.mutedForeground} size={18} strokeWidth={1.5} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Buscar eventos, locais..."
+            placeholderTextColor={colors.mutedForeground}
+            className="flex-1 font-sans text-sm text-foreground"
+          />
+        </View>
+      </View>
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 28 }}
+        showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          const nextScrolled = event.nativeEvent.contentOffset.y > 6;
+          setHasScrolled((current) => (current === nextScrolled ? current : nextScrolled));
+        }}
+        scrollEventThrottle={16}
+      >
         <View className="px-4">
+          <View className="mt-2" />
           {/* {!searchQuery ? (
             <View className="mt-4 rounded-2xl border border-primary/10 bg-[#f4fcf7] px-3 py-2">
               <Text className="text-center font-medium text-[11px] text-primary">{promoStrips[activePromo]}</Text>
