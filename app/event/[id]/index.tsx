@@ -1,10 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
-import { ArrowLeft, CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Clock3, Heart, MapPin, Share2 } from "lucide-react-native";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { Animated, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { CalendarDays, CheckCircle2, ChevronDown, ChevronUp, Clock3, MapPin, Minus, Plus } from "lucide-react-native";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Avatar } from "@/components/Avatar";
+import { EventDetailHeader } from "@/components/EventDetailHeader";
+import { EventDetailHeaderCompact } from "@/components/EventDetailHeaderCompact";
 import { FacialIdModal } from "@/components/FacialIdModal";
 import { Screen } from "@/components/Screen";
 import { useApp } from "@/contexts/AppContext";
@@ -18,16 +21,59 @@ export default function EventDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addToCart } = useApp();
+  const insets = useSafeAreaInsets();
   const event = useMemo(() => getEventById(id ?? ""), [id]);
 
-  const [selectedTicket, setSelectedTicket] = useState<string | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
+
+  const compactHeaderOpacity = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+
+  const [selectedTickets, setSelectedTickets] = useState<Record<string, number>>({});
   const [showSchedule, setShowSchedule] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [showFaq, setShowFaq] = useState(false);
-  const [liked, setLiked] = useState(false);
   const [showFacialModal, setShowFacialModal] = useState(false);
   const [facialRegistered, setFacialRegistered] = useState(false);
   const [facialDismissed, setFacialDismissed] = useState(false);
+
+  const handleAddTicket = (ticketId: string) => {
+    setSelectedTickets((prev) => ({
+      ...prev,
+      [ticketId]: (prev[ticketId] || 0) + 1,
+    }));
+  };
+
+  const handleRemoveTicket = (ticketId: string) => {
+    setSelectedTickets((prev) => {
+      const newTickets = { ...prev };
+      if (newTickets[ticketId] > 1) {
+        newTickets[ticketId]--;
+      } else {
+        delete newTickets[ticketId];
+      }
+      return newTickets;
+    });
+  };
+
+  const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
+
+  const handleScroll = useCallback(
+    (event: any) => {
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: false,
+      })(event);
+    },
+    [scrollY]
+  );
 
   if (!event) {
     return (
@@ -37,22 +83,32 @@ export default function EventDetailScreen() {
     );
   }
 
+  const totalPrice = event.ticketTypes.reduce((sum, ticket) => {
+    const quantity = selectedTickets[ticket.id] || 0;
+    return sum + ticket.price * quantity;
+  }, 0);
+
   const handleBuy = () => {
     if (event.requiresFacialId && !facialRegistered) {
       setShowFacialModal(true);
       return;
     }
 
-    const ticket = event.ticketTypes.find((item) => item.id === selectedTicket);
-    if (!ticket) return;
+    if (totalTickets === 0) return;
 
-    addToCart({
-      eventId: event.id,
-      ticketTypeId: ticket.id,
-      ticketTypeName: ticket.name,
-      quantity: 1,
-      price: ticket.price,
+    Object.entries(selectedTickets).forEach(([ticketId, quantity]) => {
+      const ticket = event.ticketTypes.find((item) => item.id === ticketId);
+      if (!ticket) return;
+
+      addToCart({
+        eventId: event.id,
+        ticketTypeId: ticket.id,
+        ticketTypeName: ticket.name,
+        quantity,
+        price: ticket.price,
+      });
     });
+
     router.push("/checkout");
   };
 
@@ -69,28 +125,27 @@ export default function EventDetailScreen() {
           setFacialRegistered(true);
           setShowFacialModal(false);
         }}
-        mandatory={selectedTicket !== null && !facialRegistered && !!event.requiresFacialId && !facialDismissed}
+        mandatory={totalTickets > 0 && !facialRegistered && !!event.requiresFacialId && !facialDismissed}
       />
 
       <View className="flex-1">
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-          <View className="relative">
-            <Image source={event.image} className="h-64 w-full" resizeMode="cover" />
-            <View className="absolute inset-0 bg-black/30" />
-            <View className="absolute left-0 right-0 top-0 flex-row items-center justify-between p-4 pt-14">
-              <AnimatedPressable className="rounded-full bg-white/85 p-2" onPress={() => router.back()}>
-                <ArrowLeft color={colors.foreground} size={20} strokeWidth={1.5} />
-              </AnimatedPressable>
-              <View className="flex-row gap-2">
-                <AnimatedPressable className="rounded-full bg-white/85 p-2">
-                  <Share2 color={colors.foreground} size={20} strokeWidth={1.5} />
-                </AnimatedPressable>
-                <AnimatedPressable className="rounded-full bg-white/85 p-2" onPress={() => setLiked((value) => !value)}>
-                  <Heart color={liked ? colors.primary : colors.foreground} fill={liked ? colors.primary : "transparent"} size={20} strokeWidth={1.5} />
-                </AnimatedPressable>
-              </View>
-            </View>
-          </View>
+        {/* Animated Compact Header */}
+        <Animated.View style={{ opacity: compactHeaderOpacity, paddingTop: insets.top }}>
+          <EventDetailHeaderCompact />
+        </Animated.View>
+
+        {/* Scrollable Content */}
+        <Animated.ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+        >
+          {/* Full Header with Image */}
+          <Animated.View style={{ opacity: headerOpacity }}>
+            <EventDetailHeader eventImage={event.image} />
+          </Animated.View>
 
           <View className="px-4 pt-4">
             <Text className="font-extrabold text-xl text-foreground">{event.title}</Text>
@@ -166,43 +221,57 @@ export default function EventDetailScreen() {
               <Text className="font-bold text-sm text-foreground">Escolha seu ingresso</Text>
               <View className="mt-3 gap-3">
                 {event.ticketTypes.map((ticket) => {
-                  const selected = selectedTicket === ticket.id;
+                  const quantity = selectedTickets[ticket.id] || 0;
                   const soldOut = ticket.available === 0;
 
                   return (
-                    <AnimatedPressable
+                    <View
                       key={ticket.id}
-                      disabled={soldOut}
-                      onPress={() => setSelectedTicket(ticket.id)}
-                      className={`rounded-2xl border-2 p-4 ${selected ? "border-primary bg-accent" : soldOut ? "border-border bg-muted opacity-50" : "border-border bg-card"}`}
+                      className={`rounded-2xl border-2 p-4 ${quantity > 0 ? "border-primary bg-accent" : soldOut ? "border-border bg-muted opacity-50" : "border-border bg-card"}`}
                     >
                       <View className="flex-row items-center justify-between">
-                        <Text className="font-bold text-sm text-foreground">{ticket.name}</Text>
+                        <View className="flex-1">
+                          <Text className="font-bold text-sm text-foreground">{ticket.name}</Text>
+                          <Text className="mt-1 text-xs text-muted-foreground">{ticket.description}</Text>
+                        </View>
                         <Text className="font-bold text-sm text-primary">{formatCurrency(ticket.price)}</Text>
                       </View>
-                      <Text className="mt-1 text-xs text-muted-foreground">{ticket.description}</Text>
-                      <View className="mt-2 flex-row items-center justify-between">
+                      <View className="mt-3 flex-row items-center justify-between">
                         <Text className="text-[10px] text-muted-foreground">
                           {soldOut ? "Esgotado" : `${ticket.available} disponíveis`}
                         </Text>
-                        {selected ? <CheckCircle2 color={colors.primary} size={16} strokeWidth={1.5} /> : null}
+                        {!soldOut && (
+                          <View className="flex-row items-center gap-2 rounded-full bg-white px-2 py-1">
+                            <AnimatedPressable
+                              disabled={quantity === 0}
+                              onPress={() => handleRemoveTicket(ticket.id)}
+                              className="rounded-full p-1"
+                            >
+                              <Minus color={quantity === 0 ? colors.mutedForeground : colors.primary} size={16} strokeWidth={2} />
+                            </AnimatedPressable>
+                            <Text className="w-6 text-center font-semibold text-sm text-foreground">{quantity}</Text>
+                            <AnimatedPressable onPress={() => handleAddTicket(ticket.id)} className="rounded-full p-1">
+                              <Plus color={colors.primary} size={16} strokeWidth={2} />
+                            </AnimatedPressable>
+                          </View>
+                        )}
                       </View>
-                    </AnimatedPressable>
+                    </View>
                   );
                 })}
               </View>
             </View>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
 
         <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-card px-4 pb-8 pt-4">
           <View className="flex-row items-center gap-4">
             <View>
-              <Text className="text-xs text-muted-foreground">A partir de</Text>
-              <Text className="font-extrabold text-lg text-foreground">{formatCurrency(event.price)}</Text>
+              <Text className="text-xs text-muted-foreground">Total ({totalTickets})</Text>
+              <Text className="font-extrabold text-lg text-foreground">{formatCurrency(totalPrice)}</Text>
             </View>
-            <AnimatedPressable className={`flex-1 rounded-2xl py-4 ${selectedTicket ? "bg-primary" : "bg-primary/40"}`} disabled={!selectedTicket} onPress={handleBuy}>
-              <Text className="text-center font-bold text-sm text-primary-foreground">Comprar ingresso</Text>
+            <AnimatedPressable className={`flex-1 rounded-2xl py-4 ${totalTickets > 0 ? "bg-primary" : "bg-primary/40"}`} disabled={totalTickets === 0} onPress={handleBuy}>
+              <Text className="text-center font-bold text-sm text-primary-foreground">Comprar ingresso{totalTickets > 1 ? "s" : ""}</Text>
             </AnimatedPressable>
           </View>
         </View>
