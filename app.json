@@ -4,21 +4,32 @@
     "slug": "firula-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-firula.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
+      "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/splash/ios/SplashScreen.imageset/LaunchImage@3x.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#ffffff"
+      },
+      "bundleIdentifier": "com.loureiro-12.firula-mobile"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+      "splash": {
+        "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
+        "resizeMode": "cover",
         "backgroundColor": "#ffffff"
+      },
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-foreground-firula.png",
+        "backgroundColor": "#1FBD58"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
