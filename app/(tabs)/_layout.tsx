@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Home, Search, Ticket, User } from "lucide-react-native";
+import { Vibration } from "react-native";
 
 import { colors } from "@/theme/colors";
 
@@ -13,13 +14,18 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          height: 72,
+          height: 80,
           paddingTop: 10,
-          paddingBottom: 12,
+          paddingBottom: 28,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontFamily: "PlusJakartaSans-Medium",
+        },
+      }}
+      screenListeners={{
+        tabPress: () => {
+          Vibration.vibrate(10);
         },
       }}
     >
