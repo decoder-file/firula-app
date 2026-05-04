@@ -5,6 +5,7 @@ import { ScrollView, Text, View } from "react-native";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
+import { WalletButton } from "@/components/WalletButton";
 import { useApp } from "@/contexts/AppContext";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import { getEventById } from "@/data/mockData";
@@ -33,17 +34,16 @@ export default function TicketDetailScreen() {
   return (
     <Screen edges={["top", "left", "right"]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
-        <View className="flex-row items-center justify-between border-b border-border bg-white px-4 py-3">
-          <AnimatedPressable onPress={() => router.back()}>
-            <ArrowLeft color={colors.foreground} size={22} strokeWidth={1.5} />
-          </AnimatedPressable>
-          <Text className="font-semibold text-sm text-foreground">Detalhes do ingresso</Text>
-          <View className="rounded-full bg-accent px-2.5 py-1">
-            <Text className="font-semibold text-[10px] text-accent-foreground">Ativo</Text>
-          </View>
+      <View className="flex-row items-center justify-between border-b border-border bg-white px-4 py-3">
+        <AnimatedPressable onPress={() => router.back()}>
+          <ArrowLeft color={colors.foreground} size={22} strokeWidth={1.5} />
+        </AnimatedPressable>
+        <Text className="font-semibold text-sm text-foreground">Detalhes do ingresso</Text>
+        <View className="rounded-full bg-accent px-2.5 py-1">
+          <Text className="font-semibold text-[10px] text-accent-foreground">Ativo</Text>
         </View>
-
+      </View>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
         <View className="px-4 pb-4 pt-6">
           <Text className="font-bold text-lg leading-7 text-foreground">{event.title}</Text>
           <View className="mt-3 self-start rounded-full border border-primary/30 px-3 py-1">
@@ -83,6 +83,8 @@ export default function TicketDetailScreen() {
             ) : null}
           </View>
         </View>
+
+        <WalletButton ticket={ticket} event={event} />
       </ScrollView>
     </Screen>
   );
