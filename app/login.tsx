@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -22,6 +21,13 @@ import { Screen } from "@/components/Screen";
 import { useLogin, useRegister } from "@/hooks/useAuth";
 
 type AuthMode = "login" | "register";
+type FormErrors = {
+  name?: string;
+  email?: string;
+  password?: string;
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const getErrorMessage = (error: unknown) => {
   if (isInvalidCredentialsError(error)) {
@@ -51,6 +57,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const nameInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
@@ -59,24 +66,74 @@ export default function LoginScreen() {
   const registerMutation = useRegister();
   const isPending = loginMutation.isPending || registerMutation.isPending;
 
+  const resetForm = () => {
+    setName("");
+    setEmail("");
+    setPassword("");
+    setErrors({});
+    setIsPasswordVisible(false);
+  };
+
   useEffect(() => {
     if (params.mode === "register") {
+      resetForm();
       setMode("register");
     }
   }, [params.mode]);
 
-  const handleSubmit = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Campos obrigatórios", "Preencha email e senha para continuar.");
+  const handleModeChange = (nextMode: AuthMode) => {
+    if (nextMode === mode) {
       return;
     }
 
+    resetForm();
+    setMode(nextMode);
+  };
+
+  const clearFieldError = (field: keyof FormErrors) => {
+    setErrors((current) => {
+      if (!current[field]) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [field]: undefined,
+      };
+    });
+  };
+
+  const validateForm = () => {
+    const nextErrors: FormErrors = {};
+
     if (mode === "register" && !name.trim()) {
-      Alert.alert("Nome obrigatório", "Informe seu nome para criar a conta.");
+      nextErrors.name = "Informe seu nome para criar a conta.";
+    }
+
+    if (!email.trim()) {
+      nextErrors.email = "Preencha seu email.";
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      nextErrors.email = "Digite um email válido.";
+    }
+
+    if (!password.trim()) {
+      nextErrors.password = "Preencha sua senha.";
+    } else if (mode === "register" && password.trim().length < 8) {
+      nextErrors.password = "A senha deve ter pelo menos 8 caracteres.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
       return;
     }
 
     try {
+      setErrors({});
+
       if (mode === "login") {
         await loginMutation.mutateAsync({ email: email.trim(), password: password.trim() });
       } else {
@@ -89,7 +146,25 @@ export default function LoginScreen() {
 
       router.back();
     } catch (error) {
-      Alert.alert("Erro", getErrorMessage(error));
+      if (isInvalidCredentialsError(error)) {
+        setErrors({
+          email: "Email ou senha incorretos.",
+          password: "Email ou senha incorretos.",
+        });
+        return;
+      }
+
+      if (isEmailAlreadyExistsError(error)) {
+        setErrors({ email: "Este email já está cadastrado." });
+        return;
+      }
+
+      if (isWeakPasswordError(error)) {
+        setErrors({ password: "A senha deve ter pelo menos 8 caracteres." });
+        return;
+      }
+
+      setErrors({ password: getErrorMessage(error) });
     }
   };
 
@@ -124,7 +199,7 @@ export default function LoginScreen() {
                   <AnimatedPressable
                     key={item}
                     className={`flex-1 rounded-[18px] px-4 py-3 ${active ? "bg-card" : "bg-transparent"}`}
-                    onPress={() => setMode(item)}
+                    onPress={() => handleModeChange(item)}
                   >
                     <Text className={`text-center font-medium text-sm ${active ? "text-foreground" : "text-muted-foreground"}`}>
                       {item === "login" ? "Entrar" : "Criar conta"}
@@ -142,9 +217,12 @@ export default function LoginScreen() {
                     autoCapitalize="words"
                     autoComplete="name"
                     autoCorrect={false}
-                    className="rounded-2xl border border-border bg-background px-4 py-4 text-sm text-foreground"
+                    className={`rounded-2xl border bg-background px-4 py-4 text-sm text-foreground ${errors.name ? "border-red-500" : "border-border"}`}
                     onSubmitEditing={() => emailInputRef.current?.focus()}
-                    onChangeText={setName}
+                    onChangeText={(value) => {
+                      setName(value);
+                      clearFieldError("name");
+                    }}
                     placeholder="João Silva"
                     placeholderTextColor="#727985"
                     ref={nameInputRef}
@@ -153,6 +231,7 @@ export default function LoginScreen() {
                     submitBehavior="submit"
                     value={name}
                   />
+                  {errors.name ? <Text className="mt-2 text-xs text-destructive">{errors.name}</Text> : null}
                 </View>
               ) : null}
 
@@ -162,10 +241,13 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoComplete="email"
                   autoCorrect={false}
-                  className="rounded-2xl border border-border bg-background px-4 py-4 text-sm text-foreground"
+                  className={`rounded-2xl border bg-background px-4 py-4 text-sm text-foreground ${errors.email ? "border-red-500" : "border-border"}`}
                   keyboardType="email-address"
                   onSubmitEditing={() => passwordInputRef.current?.focus()}
-                  onChangeText={setEmail}
+                  onChangeText={(value) => {
+                    setEmail(value);
+                    clearFieldError("email");
+                  }}
                   placeholder="cliente@exemplo.com"
                   placeholderTextColor="#727985"
                   ref={emailInputRef}
@@ -174,6 +256,7 @@ export default function LoginScreen() {
                   submitBehavior="submit"
                   value={email}
                 />
+                {errors.email ? <Text className="mt-2 text-xs text-destructive">{errors.email}</Text> : null}
               </View>
 
               <View>
@@ -183,9 +266,12 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     autoComplete={mode === "login" ? "current-password" : "new-password"}
                     autoCorrect={false}
-                    className="rounded-2xl border border-border bg-background px-4 py-4 pr-14 text-sm text-foreground"
+                    className={`rounded-2xl border bg-background px-4 py-4 pr-14 text-sm text-foreground ${errors.password ? "border-red-500" : "border-border"}`}
                     onSubmitEditing={handleSubmit}
-                    onChangeText={setPassword}
+                    onChangeText={(value) => {
+                      setPassword(value);
+                      clearFieldError("password");
+                    }}
                     placeholder="Minimo de 8 caracteres"
                     placeholderTextColor="#727985"
                     ref={passwordInputRef}
@@ -209,6 +295,7 @@ export default function LoginScreen() {
                     )}
                   </AnimatedPressable>
                 </View>
+                {errors.password ? <Text className="mt-2 text-xs text-destructive">{errors.password}</Text> : null}
               </View>
 
               <AnimatedPressable className="mt-2 items-center rounded-2xl bg-primary px-4 py-4" disabled={isPending} onPress={handleSubmit}>
