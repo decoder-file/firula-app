@@ -18,6 +18,7 @@ import {
 } from "@/api/errors";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
+import { FormButton } from "@/components/ui/FormButton";
 import { FormInput } from "@/components/ui/FormInput";
 import { useLogin, useRegister } from "@/hooks/useAuth";
 
@@ -284,11 +285,13 @@ export default function LoginScreen() {
                 value={password}
               />
 
-              <AnimatedPressable className="mt-2 items-center rounded-2xl bg-primary px-4 py-4" disabled={isPending} onPress={handleSubmit}>
-                <Text className="font-bold text-base text-primary-foreground">
-                  {isPending ? "Carregando..." : mode === "login" ? "Entrar" : "Criar conta"}
-                </Text>
-              </AnimatedPressable>
+              <FormButton
+                className="mt-2"
+                disabled={isPending}
+                isLoading={isPending}
+                label={mode === "login" ? "Entrar" : "Criar conta"}
+                onPress={handleSubmit}
+              />
             </View>
           </View>
         </ScrollView>
