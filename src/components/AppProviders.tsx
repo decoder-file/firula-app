@@ -11,14 +11,36 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { tokenStorage } from "@/api/tokenStorage";
 import { AppProvider } from "@/contexts/AppContext";
+import { useAuthStore } from "@/stores/authStore";
+import { isNetworkError, isServerError } from "@/api/errors";
 import { colors } from "@/theme/colors";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: (failureCount, error) => {
+        // Never retry on client errors (4xx) — only on network/server issues
+        if (isNetworkError(error) || isServerError(error)) {
+          return failureCount < 2;
+        }
+        return false;
+      },
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
 
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {
+  const clearUser = useAuthStore((state) => state.clearUser);
+
   const [loaded] = useFonts({
     "PlusJakartaSans-Regular": PlusJakartaSans_400Regular,
     "PlusJakartaSans-Medium": PlusJakartaSans_500Medium,
@@ -26,6 +48,17 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
     "PlusJakartaSans-ExtraBold": PlusJakartaSans_800ExtraBold,
   });
+
+  useEffect(() => {
+    tokenStorage
+      .init()
+      .then(() => {
+        if (!tokenStorage.getRefreshToken() && !tokenStorage.getAccessToken()) {
+          clearUser();
+        }
+      })
+      .catch(() => undefined);
+  }, [clearUser]);
 
   useEffect(() => {
     if (loaded) {
