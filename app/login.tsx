@@ -16,10 +16,11 @@ import {
   isInvalidCredentialsError,
   isWeakPasswordError,
 } from "@/api/errors";
-import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import { FormButton } from "@/components/ui/FormButton";
 import { FormInput } from "@/components/ui/FormInput";
+import { IconButton } from "@/components/ui/IconButton";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useLogin, useRegister } from "@/hooks/useAuth";
 
 type AuthMode = "login" | "register";
@@ -30,6 +31,10 @@ type FormErrors = {
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MODE_OPTIONS: Array<{ label: string; value: AuthMode }> = [
+  { label: "Entrar", value: "login" },
+  { label: "Criar conta", value: "register" },
+];
 
 const getErrorMessage = (error: unknown) => {
   if (isInvalidCredentialsError(error)) {
@@ -178,9 +183,12 @@ export default function LoginScreen() {
       >
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
           <View className="px-4 pb-8 pt-4">
-            <AnimatedPressable className="mb-6 h-11 w-11 items-center justify-center rounded-full bg-card" onPress={() => router.back()}>
-              <ChevronLeft color="#141821" size={20} strokeWidth={1.75} />
-            </AnimatedPressable>
+            <IconButton
+              accessibilityLabel="Voltar"
+              className="mb-6"
+              icon={<ChevronLeft color="#141821" size={20} strokeWidth={1.75} />}
+              onPress={() => router.back()}
+            />
 
             <Text className="font-bold text-[28px] text-foreground">
               {mode === "login" ? "Entre na sua conta" : "Crie sua conta"}
@@ -193,23 +201,7 @@ export default function LoginScreen() {
           </View>
 
           <View className="gap-4 px-4">
-            <View className="flex-row rounded-2xl bg-secondary p-1">
-              {(["login", "register"] as const).map((item) => {
-                const active = item === mode;
-
-                return (
-                  <AnimatedPressable
-                    key={item}
-                    className={`flex-1 rounded-[18px] px-4 py-3 ${active ? "bg-card" : "bg-transparent"}`}
-                    onPress={() => handleModeChange(item)}
-                  >
-                    <Text className={`text-center font-medium text-sm ${active ? "text-foreground" : "text-muted-foreground"}`}>
-                      {item === "login" ? "Entrar" : "Criar conta"}
-                    </Text>
-                  </AnimatedPressable>
-                );
-              })}
-            </View>
+            <SegmentedControl options={MODE_OPTIONS} onChange={handleModeChange} value={mode} />
 
             <View className="gap-3 rounded-[28px] bg-card p-5">
               {mode === "register" ? (
