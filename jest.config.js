@@ -35,6 +35,7 @@ module.exports = {
     {
       displayName: "native",
       preset: "jest-expo",
+      setupFiles: ["<rootDir>/jest.setup.native.ts"],
       testMatch: [
         "<rootDir>/src/components/__tests__/**/*.test.tsx",
         "<rootDir>/src/hooks/__tests__/**/*.test.ts",
