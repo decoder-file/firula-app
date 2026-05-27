@@ -6,14 +6,14 @@ import {
   isApiError,
   isInvalidCredentialsError,
   isInvalidRefreshTokenError,
-  isEmailAlreadyExistsError,
-  isWeakPasswordError,
 } from "@/api/errors";
 import { authService } from "@/services/auth.service";
 import type {
   LoginResponse,
   LoginResponseData,
   MeResponse,
+  RegisterCustomerResponse,
+  RequestLoginCodeResponse,
   RefreshTokenResponse,
   AdminOrganization,
   AdminProfile,
@@ -46,6 +46,29 @@ const LOGIN_RESPONSE_DATA: LoginResponseData = {
 const LOGIN_RESPONSE: LoginResponse = {
   success: true,
   data: LOGIN_RESPONSE_DATA,
+};
+
+const REQUEST_LOGIN_CODE_RESPONSE: RequestLoginCodeResponse = {
+  success: true,
+  data: {
+    message: "Código enviado para o email",
+    expiresIn: 900,
+  },
+};
+
+const REGISTER_CUSTOMER_RESPONSE: RegisterCustomerResponse = {
+  success: true,
+  data: {
+    id: "identity-uuid-123",
+    email: "cliente@email.com",
+    name: "João Silva",
+    profile: {
+      id: "customer-profile-uuid",
+      phone: "11999887766",
+      cpf: "12345678901",
+    },
+    createdAt: "2026-05-26T12:34:56.789Z",
+  },
 };
 
 const PROFILE = { id: "profile_uuid", cpf: "12345678900", phone: "11999999999" };
@@ -91,6 +114,45 @@ async function expectToThrow(promise: Promise<unknown>): Promise<unknown> {
     return err;
   }
 }
+
+// ---------------------------------------------------------------------------
+// requestLoginCode
+// ---------------------------------------------------------------------------
+
+describe("authService.requestLoginCode", () => {
+  it("returns message and expiration on success", async () => {
+    mock
+      .onPost("/public/auth/customer/request-code")
+      .reply(200, REQUEST_LOGIN_CODE_RESPONSE);
+
+    const result = await authService.requestLoginCode({
+      email: "cliente@exemplo.com",
+    });
+
+    expect(result.message).toBe("Código enviado para o email");
+    expect(result.expiresIn).toBe(900);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// verifyLoginCode
+// ---------------------------------------------------------------------------
+
+describe("authService.verifyLoginCode", () => {
+  it("returns login payload and stores access token on success", async () => {
+    mock
+      .onPost("/public/auth/customer/verify-code")
+      .reply(200, LOGIN_RESPONSE);
+
+    const result = await authService.verifyLoginCode({
+      email: "cliente@exemplo.com",
+      code: "12345",
+    });
+
+    expect(result.identityId).toBe(LOGIN_RESPONSE_DATA.identityId);
+    expect(tokenStorage.getAccessToken()).toBe(LOGIN_RESPONSE_DATA.accessToken);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // login
@@ -151,65 +213,44 @@ describe("authService.login", () => {
 // ---------------------------------------------------------------------------
 
 describe("authService.register", () => {
-  it("returns login response data and stores access token on 201", async () => {
-    const registerResponseData: LoginResponseData = {
-      ...LOGIN_RESPONSE_DATA,
-      identityId: "new-identity-uuid",
-    };
-    const registerResponse: LoginResponse = {
-      success: true,
-      data: registerResponseData,
-    };
-    mock.onPost("/auth/register").reply(201, registerResponse);
+  it("creates customer account and does not store access token", async () => {
+    mock.onPost("/public/auth/customer/register").reply(201, REGISTER_CUSTOMER_RESPONSE);
 
     const result = await authService.register({
       email: "novo@exemplo.com",
-      password: "senha123",
+      phone: "11999887766",
+      cpf: "12345678901",
+      password: "SenhaForte@123",
       name: "Maria Silva",
     });
 
-    expect(result.identityId).toBe("new-identity-uuid");
-    expect(tokenStorage.getAccessToken()).toBe(registerResponseData.accessToken);
-    expect(tokenStorage.getRefreshToken()).toBeNull();
+    expect(result.id).toBe("identity-uuid-123");
+    expect(result.profile.phone).toBe("11999887766");
+    expect(tokenStorage.getAccessToken()).toBeNull();
   });
 
-  it("throws ApiError with EMAIL_ALREADY_EXISTS code on 409", async () => {
-    mock.onPost("/auth/register").reply(409, {
+  it("throws ApiError with BADREQUESTEXCEPTION when email already exists", async () => {
+    mock.onPost("/public/auth/customer/register").reply(400, {
       success: false,
       error: {
-        code: "EMAIL_ALREADY_EXISTS",
-        message: "Email is already registered",
+        code: "BADREQUESTEXCEPTION",
+        message: "Este email já está cadastrado",
       },
     });
 
     const err = await expectToThrow(
       authService.register({
         email: "cliente@exemplo.com",
-        password: "senha123",
+        phone: "11999887766",
+        cpf: "12345678901",
+        password: "SenhaForte@123",
         name: "João Silva",
       }),
     );
 
     expect(isApiError(err)).toBe(true);
-    expect(isEmailAlreadyExistsError(err)).toBe(true);
-    expect((err as { statusCode: number }).statusCode).toBe(409);
-  });
-
-  it("throws ApiError with WEAK_PASSWORD code on 400", async () => {
-    mock.onPost("/auth/register").reply(400, {
-      success: false,
-      error: {
-        code: "WEAK_PASSWORD",
-        message: "Password must be at least 8 characters long",
-      },
-    });
-
-    const err = await expectToThrow(
-      authService.register({ email: "novo@exemplo.com", password: "123", name: "A" }),
-    );
-
-    expect(isApiError(err)).toBe(true);
-    expect(isWeakPasswordError(err)).toBe(true);
+    expect((err as { code?: string }).code).toBe("BADREQUESTEXCEPTION");
+    expect((err as Error).message).toBe("Este email já está cadastrado");
     expect((err as { statusCode: number }).statusCode).toBe(400);
   });
 });

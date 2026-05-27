@@ -8,6 +8,11 @@ export { authService } from "./auth.service";
 export type {
   LoginPayload,
   RegisterPayload,
+  RequestLoginCodePayload,
+  RequestLoginCodeResponseData,
+  VerifyLoginCodePayload,
+  RegisterCustomerResponseData,
+  RegisterCustomerResponse,
   LoginResponse,
   RefreshTokenResponse,
   LogoutResponse,

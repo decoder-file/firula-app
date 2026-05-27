@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authService, type AuthCustomer } from "@/services/auth.service";
-import type { LoginPayload, RegisterPayload } from "@/services/auth.service";
+import type {
+  AuthUserProfile,
+  LoginPayload,
+  RegisterPayload,
+  VerifyLoginCodePayload,
+} from "@/services/auth.service";
 import { selectIsAuthenticated, useAuthStore } from "@/stores/authStore";
 import { usersService } from "@/services/users.service";
 import { queryKeys } from "./queryKeys";
@@ -26,44 +31,65 @@ export const useMe = () =>
     queryFn: authService.getMe,
   });
 
-export const useLogin = () => {
+const useCompleteAuthSession = () => {
   const queryClient = useQueryClient();
   const setUser = useAuthStore((state) => state.setUser);
 
-  return useMutation({
-    mutationFn: (payload: LoginPayload) => authService.login(payload),
-    onSuccess: (data) => {
-      // Map LoginResponseData to AuthCustomer and AuthUserProfile
+  return {
+    completeSession: (
+      data: {
+        identityId: string;
+        scope: string;
+        adminProfiles: AuthCustomer["adminProfiles"];
+        customerProfile: AuthUserProfile | null | undefined;
+        email?: string;
+      },
+      fallbackEmail: string,
+    ) => {
       const customer: AuthCustomer = {
         identityId: data.identityId,
-        email: data.email,
+        email: data.email ?? fallbackEmail,
         scope: data.scope,
         adminProfiles: data.adminProfiles,
       };
-      setUser(customer, data.customerProfile);
+
+      setUser(customer, data.customerProfile ?? null);
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    },
+  };
+};
+
+export const useRequestLoginCode = () =>
+  useMutation({
+    mutationFn: authService.requestLoginCode,
+  });
+
+export const useLogin = () => {
+  const { completeSession } = useCompleteAuthSession();
+
+  return useMutation({
+    mutationFn: (payload: LoginPayload) => authService.login(payload),
+    onSuccess: (data, variables) => {
+      completeSession(data, variables.email);
+    },
+  });
+};
+
+export const useVerifyLoginCode = () => {
+  const { completeSession } = useCompleteAuthSession();
+
+  return useMutation({
+    mutationFn: (payload: VerifyLoginCodePayload) => authService.verifyLoginCode(payload),
+    onSuccess: (data, variables) => {
+      completeSession(data, variables.email);
     },
   });
 };
 
 export const useRegister = () => {
-  const queryClient = useQueryClient();
-  const setUser = useAuthStore((state) => state.setUser);
-
   return useMutation({
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
-    onSuccess: (data) => {
-      // Map LoginResponseData to AuthCustomer and AuthUserProfile
-      const customer: AuthCustomer = {
-        identityId: data.identityId,
-        email: data.email,
-        scope: data.scope,
-        adminProfiles: data.adminProfiles,
-      };
-      setUser(customer, data.customerProfile);
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-    },
   });
 };
 

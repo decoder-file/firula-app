@@ -35,6 +35,7 @@ export interface LoginResponseData {
   scope: string;
   adminProfiles: AdminProfile[];
   customerProfile: AuthUserProfile | null;
+  email?: string;
 }
 
 export interface LoginResponse {
@@ -73,6 +74,40 @@ export interface RegisterPayload {
   email: string;
   password: string;
   name: string;
+  phone: string;
+  cpf: string;
+}
+
+export interface RegisterCustomerResponseData {
+  id: string;
+  email: string;
+  name: string;
+  profile: AuthUserProfile;
+  createdAt: string;
+}
+
+export interface RegisterCustomerResponse {
+  success: boolean;
+  data: RegisterCustomerResponseData;
+}
+
+export interface RequestLoginCodePayload {
+  email: string;
+}
+
+export interface RequestLoginCodeResponseData {
+  message: string;
+  expiresIn: number;
+}
+
+export interface RequestLoginCodeResponse {
+  success: boolean;
+  data: RequestLoginCodeResponseData;
+}
+
+export interface VerifyLoginCodePayload {
+  email: string;
+  code: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -80,6 +115,35 @@ export interface RegisterPayload {
 // ---------------------------------------------------------------------------
 
 export const authService = {
+  /**
+   * POST /public/auth/customer/request-code
+   * Requests an authentication code to be sent to customer email.
+   */
+  requestLoginCode: async (
+    payload: RequestLoginCodePayload,
+  ): Promise<RequestLoginCodeResponseData> => {
+    const { data } = await apiClient.post<RequestLoginCodeResponse>(
+      "/public/auth/customer/request-code",
+      payload,
+    );
+    return data.data;
+  },
+
+  /**
+   * POST /public/auth/customer/verify-code
+   * Verifies one-time code and stores access token in tokenStorage on success.
+   */
+  verifyLoginCode: async (
+    payload: VerifyLoginCodePayload,
+  ): Promise<LoginResponseData> => {
+    const { data } = await apiClient.post<LoginResponse>(
+      "/public/auth/customer/verify-code",
+      payload,
+    );
+    tokenStorage.setAccessToken(data.data.accessToken);
+    return data.data;
+  },
+
   /**
    * POST /auth/login
    * Stores access token in tokenStorage on success.
@@ -96,17 +160,14 @@ export const authService = {
   },
 
   /**
-   * POST /auth/register
-   * Stores access token in tokenStorage on success.
-   * Returns the full response with identity data.
+   * POST /public/auth/customer/register
+   * Creates a customer account without opening a session.
    */
-  register: async (payload: RegisterPayload): Promise<LoginResponseData> => {
-    const { data } = await apiClient.post<LoginResponse>(
-      "/auth/register",
+  register: async (payload: RegisterPayload): Promise<RegisterCustomerResponseData> => {
+    const { data } = await apiClient.post<RegisterCustomerResponse>(
+      "/public/auth/customer/register",
       payload,
     );
-    tokenStorage.setAccessToken(data.data.accessToken);
-    // Note: new API does not provide a refresh token
     return data.data;
   },
 
