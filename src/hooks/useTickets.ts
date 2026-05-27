@@ -13,7 +13,16 @@ export const useMyTickets = () =>
 export const useTicket = (id: string) =>
   useQuery({
     queryKey: queryKeys.tickets.detail(id),
-    queryFn: () => ticketsService.getById(id),
+    queryFn: async () => {
+      const tickets = await ticketsService.getMyTickets();
+      const ticket = tickets.find((item) => item.id === id);
+
+      if (!ticket) {
+        throw new Error("Ingresso não encontrado");
+      }
+
+      return ticket;
+    },
     enabled: Boolean(id),
   });
 
