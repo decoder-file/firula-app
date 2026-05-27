@@ -14,7 +14,7 @@ import { tokenStorage } from "./tokenStorage";
  *   EXPO_PUBLIC_API_URL=http://localhost:3333
  */
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3333";
+  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3334";
 
 const TIMEOUT_MS = 15_000;
 

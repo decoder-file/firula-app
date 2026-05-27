@@ -29,6 +29,8 @@ interface AppContextType {
   couponCode: string;
   setCouponCode: (code: string) => void;
   appliedDiscount: number;
+  updateProfile: (updates: Partial<Pick<UserProfile, "name" | "avatar">>) => void;
+  deleteAccount: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -36,7 +38,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [tickets, setTickets] = useState<UserTicket[]>(initialTickets);
   const [transactions, setTransactions] = useState<WalletTransaction[]>(initialTransactions);
-  const [profile] = useState<UserProfile>(initialProfile);
+  const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState("");
 
@@ -89,6 +91,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     clearCart();
   };
 
+  const updateProfile = (updates: Partial<Pick<UserProfile, "name" | "avatar">>) => {
+    setProfile((current) => ({
+      ...current,
+      ...updates,
+    }));
+  };
+
+  const deleteAccount = () => {
+    setTickets([]);
+    setTransactions([]);
+    setCart([]);
+    setCouponCode("");
+    setProfile(initialProfile);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -103,6 +120,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         couponCode,
         setCouponCode,
         appliedDiscount,
+        updateProfile,
+        deleteAccount,
       }}
     >
       {children}

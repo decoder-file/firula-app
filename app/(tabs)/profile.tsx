@@ -26,8 +26,8 @@ export default function ProfileScreen() {
   const authUser = useAuthUser();
   const logoutMutation = useLogout();
 
-  // Display admin organization name and email from auth identity
-  const displayName = authUser?.adminProfiles?.[0]?.organization?.legalName ?? profile.name ?? "Usuário";
+  // Prefer local editable profile name, fallback to auth identity organization name
+  const displayName = profile.name || authUser?.adminProfiles?.[0]?.organization?.legalName || "Usuário";
   const displayEmail = authUser?.email ?? profile.email;
   const scope = authUser?.scope;
 
@@ -48,14 +48,15 @@ export default function ProfileScreen() {
         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
           <View className="bg-card px-4 pb-6 pt-4">
             <Text className="font-bold text-lg text-foreground">Perfil</Text>
-            <View className="mt-4 flex-row items-center gap-4">
+            <AnimatedPressable className="mt-4 flex-row items-center gap-4" onPress={() => router.push("/profile-edit")}>
               <Avatar uri={profile.avatar} name={displayName} size={64} />
               <View className="flex-1">
                 <Text className="font-bold text-base text-foreground">{displayName}</Text>
                 <Text className="mt-1 text-xs text-muted-foreground">{displayEmail}</Text>
                 {scope && <Text className="mt-0.5 text-[10px] text-muted-foreground capitalize">Acesso: {scope}</Text>}
               </View>
-            </View>
+              <ChevronRight color="#727985" size={18} strokeWidth={1.5} />
+            </AnimatedPressable>
             <View className="mt-4 flex-row gap-3">
               {[
                 { label: "Eventos", value: String(profile.eventsAttended) },

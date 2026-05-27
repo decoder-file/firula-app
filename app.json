@@ -10,22 +10,27 @@
     "splash": {
       "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#00C853"
     },
     "ios": {
       "supportsTablet": true,
       "splash": {
         "image": "./assets/splash/ios/SplashScreen.imageset/LaunchImage@3x.png",
         "resizeMode": "cover",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#00C853"
       },
-      "bundleIdentifier": "com.loureiro-12.firula-mobile"
+      "bundleIdentifier": "com.loureiro-12.firula-mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Precisamos da camera para voce tirar e atualizar sua foto de perfil.",
+        "NSPhotoLibraryUsageDescription": "Precisamos da sua galeria para voce escolher uma foto de perfil.",
+        "NSPhotoLibraryAddUsageDescription": "Precisamos acessar a galeria para salvar e usar sua foto de perfil."
+      }
     },
     "android": {
       "splash": {
         "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
         "resizeMode": "cover",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#00C853"
       },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground-firula.png",
@@ -40,7 +45,14 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Precisamos da camera para voce tirar e atualizar sua foto de perfil.",
+          "photosPermission": "Precisamos da sua galeria para voce escolher uma foto de perfil."
+        }
+      ]
     ],
     "scheme": "firula-mobile",
     "experiments": {

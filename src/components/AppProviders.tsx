@@ -8,8 +8,10 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+import FirulaSplashScreen from "@/components/FirulaSplashScreen";
 
 import { tokenStorage } from "@/api/tokenStorage";
 import { AppProvider } from "@/contexts/AppContext";
@@ -38,8 +40,11 @@ const queryClient = new QueryClient({
   },
 });
 
+const SPLASH_MIN_DURATION = 2500;
+
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   const clearUser = useAuthStore((state) => state.clearUser);
+  const [showSplash, setShowSplash] = useState(true);
 
   const [loaded] = useFonts({
     "PlusJakartaSans-Regular": PlusJakartaSans_400Regular,
@@ -48,6 +53,11 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
     "PlusJakartaSans-Bold": PlusJakartaSans_700Bold,
     "PlusJakartaSans-ExtraBold": PlusJakartaSans_800ExtraBold,
   });
+
+  useEffect(() => {
+    // Hide the native expo splash immediately so our custom one takes over
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     tokenStorage
@@ -61,13 +71,13 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   }, [clearUser]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync().catch(() => undefined);
-    }
+    if (!loaded) return;
+    const timer = setTimeout(() => setShowSplash(false), SPLASH_MIN_DURATION);
+    return () => clearTimeout(timer);
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
+  if (!loaded || showSplash) {
+    return <FirulaSplashScreen />;
   }
 
   return (

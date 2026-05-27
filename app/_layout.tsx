@@ -12,6 +12,7 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#f7f7f7" } }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="profile-edit" />
       </Stack>
     </AppProviders>
   );
