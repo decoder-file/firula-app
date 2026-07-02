@@ -52,7 +52,8 @@
           "cameraPermission": "Precisamos da camera para voce tirar e atualizar sua foto de perfil.",
           "photosPermission": "Precisamos da sua galeria para voce escolher uma foto de perfil."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "scheme": "firula-mobile",
     "experiments": {

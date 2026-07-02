@@ -658,18 +658,28 @@ export default function LoginScreen() {
               ) : null}
 
               {mode === "login" && loginStep === "password" ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setLoginStep("email");
-                    setPassword("");
-                    setStatusMessage("");
-                  }}
-                >
-                  <Text className="text-center text-xs font-medium text-muted-foreground">
-                    Tentar novamente com código por email
-                  </Text>
-                </Pressable>
+                <View className="gap-2">
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setLoginStep("email");
+                      setPassword("");
+                      setStatusMessage("");
+                    }}
+                  >
+                    <Text className="text-center text-xs font-medium text-muted-foreground">
+                      Tentar novamente com código por email
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push({ pathname: "/forgot-password", params: { email } })}
+                  >
+                    <Text className="text-center text-xs font-medium text-primary">
+                      Esqueci minha senha
+                    </Text>
+                  </Pressable>
+                </View>
               ) : null}
 
               <FormButton

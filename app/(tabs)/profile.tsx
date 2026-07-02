@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { Bell, ChevronRight, FileText, HelpCircle, LogOut, ScanFace, Settings, Shield, Star, Ticket, Trophy } from "lucide-react-native";
 import { ScrollView, Text, View } from "react-native";
 
@@ -31,16 +32,20 @@ export default function ProfileScreen() {
   const displayEmail = authUser?.email ?? profile.email;
   const scope = authUser?.scope;
 
-  const menuItems = [
+  type MenuItem =
+    | { icon: React.ElementType; label: string; subtitle: string; href: string; url?: never }
+    | { icon: React.ElementType; label: string; subtitle: string; url: string; href?: never };
+
+  const menuItems: MenuItem[] = [
     { icon: Ticket, label: "Meus ingressos", subtitle: "Ingressos comprados", href: "/(tabs)/tickets" },
     { icon: ScanFace, label: "Facial ID Firula", subtitle: "Reconhecimento facial", href: "/facial-id" },
     { icon: Star, label: "Favoritos", subtitle: "Eventos salvos", href: "/favorites" },
     { icon: Bell, label: "Notificações", subtitle: "Lembretes e alertas", href: "/notifications" },
-    { icon: Shield, label: "Privacidade", subtitle: "Dados e segurança", href: "/privacy" },
-    { icon: FileText, label: "Termos de uso", subtitle: "Políticas e termos", href: "/terms" },
+    { icon: Shield, label: "Privacidade", subtitle: "Dados e segurança", url: "https://firula.com.br/privacidade" },
+    { icon: FileText, label: "Termos de uso", subtitle: "Políticas e termos", url: "https://firula.com.br/termos" },
     { icon: Settings, label: "Configurações", subtitle: "Preferências do app", href: "/settings" },
-    { icon: HelpCircle, label: "Ajuda", subtitle: "Central de suporte", href: "/help" },
-  ] as const;
+    { icon: HelpCircle, label: "Ajuda", subtitle: "Central de suporte", url: "https://firula.com.br/central-ajuda" },
+  ];
 
   return (
     <AuthGate>
@@ -91,7 +96,17 @@ export default function ProfileScreen() {
 
           <View className="gap-2 px-4 pt-5">
             {menuItems.map((item) => (
-              <AnimatedPressable key={item.label} className="flex-row items-center gap-3 rounded-2xl bg-card p-4" onPress={() => router.push(item.href)}>
+              <AnimatedPressable
+                key={item.label}
+                className="flex-row items-center gap-3 rounded-2xl bg-card p-4"
+                onPress={() => {
+                  if (item.url) {
+                    WebBrowser.openBrowserAsync(item.url);
+                  } else if (item.href) {
+                    router.push(item.href);
+                  }
+                }}
+              >
                 <item.icon color="#141821" size={20} strokeWidth={1.5} />
                 <View className="flex-1">
                   <Text className="font-medium text-sm text-foreground">{item.label}</Text>

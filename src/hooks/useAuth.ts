@@ -93,6 +93,28 @@ export const useRegister = () => {
   });
 };
 
+export const useRequestPasswordResetCode = () =>
+  useMutation({
+    mutationFn: (email: string) => authService.requestPasswordResetCode(email),
+  });
+
+export const useVerifyPasswordResetCode = () =>
+  useMutation({
+    mutationFn: ({ email, code }: { email: string; code: string }) =>
+      authService.verifyPasswordResetCode(email, code),
+  });
+
+export const useConfirmPasswordReset = () => {
+  const { completeSession } = useCompleteAuthSession();
+  return useMutation({
+    mutationFn: ({ resetToken, password }: { resetToken: string; password: string; email: string }) =>
+      authService.confirmPasswordReset(resetToken, password),
+    onSuccess: (data, variables) => {
+      completeSession(data, variables.email);
+    },
+  });
+};
+
 export const useLogout = () => {
   const queryClient = useQueryClient();
   const clearUser = useAuthStore((state) => state.clearUser);

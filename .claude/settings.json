@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(grep -E \"\\\\.tsx$\")",
-      "Bash(git -C /Users/loureiro/project/firula/mobile status --short)"
+      "Bash(git -C /Users/loureiro/project/firula/mobile status --short)",
+      "Bash(npx expo *)"
     ]
   }
 }

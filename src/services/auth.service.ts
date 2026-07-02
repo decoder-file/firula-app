@@ -204,4 +204,42 @@ export const authService = {
     const { data } = await apiClient.get<MeResponse>("/auth/me");
     return data;
   },
+
+  /**
+   * POST /public/auth/customer/password-reset/request-code
+   * Sends a 6-digit reset code to the customer email.
+   */
+  requestPasswordResetCode: async (email: string): Promise<{ message: string; expiresIn: number }> => {
+    const { data } = await apiClient.post(
+      "/public/auth/customer/password-reset/request-code",
+      { email },
+    );
+    return data.data;
+  },
+
+  /**
+   * POST /public/auth/customer/password-reset/verify-code
+   * Validates the code and returns a short-lived resetToken.
+   */
+  verifyPasswordResetCode: async (email: string, code: string): Promise<{ resetToken: string; expiresIn: number }> => {
+    const { data } = await apiClient.post(
+      "/public/auth/customer/password-reset/verify-code",
+      { email, code },
+    );
+    return data.data;
+  },
+
+  /**
+   * POST /public/auth/customer/password-reset/confirm
+   * Sets the new password and opens a full session.
+   * Stores the returned accessToken in tokenStorage.
+   */
+  confirmPasswordReset: async (resetToken: string, password: string): Promise<LoginResponseData> => {
+    const { data } = await apiClient.post<LoginResponse>(
+      "/public/auth/customer/password-reset/confirm",
+      { resetToken, password },
+    );
+    tokenStorage.setAccessToken(data.data.accessToken);
+    return data.data;
+  },
 };
