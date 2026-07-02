@@ -1,13 +1,14 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, View } from "react-native";
+import { Image, View, type ImageSourcePropType } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Heart, Share2 } from "lucide-react-native";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { colors } from "@/theme/colors";
 
 interface EventDetailHeaderProps {
-  eventImage: any;
+  eventImage?: ImageSourcePropType | { uri: string } | null;
   onLikeChange?: (liked: boolean) => void;
 }
 
@@ -24,7 +25,11 @@ export function EventDetailHeader({ eventImage, onLikeChange }: EventDetailHeade
   return (
     <View className="bg-black">
       <View className="relative">
-        <Image source={eventImage} className="h-64 w-full" resizeMode="cover" />
+        {eventImage ? (
+          <Image source={eventImage} className="h-64 w-full" resizeMode="cover" />
+        ) : (
+          <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-64 w-full" />
+        )}
         <View className="absolute inset-0 bg-black/30" />
         <View className="absolute left-0 right-0 top-0 flex-row items-center justify-between p-4 pt-14">
           <AnimatedPressable className="rounded-full bg-white/85 p-2" onPress={() => router.back()}>

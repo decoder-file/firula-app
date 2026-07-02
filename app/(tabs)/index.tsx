@@ -1,29 +1,19 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native";
 import { Bell, Search } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EventCard } from "@/components/EventCard";
 import { Screen } from "@/components/Screen";
+import { Skeleton } from "@/components/Skeleton";
 import { useApp } from "@/contexts/AppContext";
 import { useScreenLog } from "@/hooks/useScreenLog";
-import { categories, type EventCategory, events } from "@/data/mockData";
+import { useFeaturedEvents, useTrendingEvents, useUpcomingEvents } from "@/hooks/useEvents";
+import { platformEventToCardItem } from "@/services/events.service";
+import { categories, type EventCategory } from "@/data/mockData";
 import { colors } from "@/theme/colors";
-
-const bannerAds = [
-  { id: 1, title: "Copa Verão 2026", subtitle: "Garanta seu ingresso com 20% OFF", colors: ["#42cd7e", "#1fbd63"] as const },
-  { id: 2, title: "Maratona SP", subtitle: "Inscrições abertas - vagas limitadas", colors: ["#16a34a", "#166534"] as const },
-  { id: 3, title: "Desafio Futevôlei", subtitle: "Copacabana espera por você", colors: ["#0f766e", "#115e59"] as const },
-];
-
-const promoStrips = [
-  "Cadastre-se e ganhe R$100 de crédito na sua primeira compra",
-  "Indique amigos e ganhe cashback de 15% em todos os eventos",
-  "Novidade: Facial ID Firula - segurança e agilidade no acesso",
-];
 
 export default function HomeScreen() {
   useScreenLog();
@@ -32,19 +22,32 @@ export default function HomeScreen() {
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [hasScrolled, setHasScrolled] = useState(false);
-  const [activeBanner] = useState(0);
-  const [activePromo] = useState(0);
 
-  const featuredEvents = events.filter((event) => event.isFeatured);
-  const hotEvents = events.filter((event) => event.isHot);
-  const filteredEvents = events.filter((event) => {
-    const categoryMatch = selectedCategory === "todos" || event.category === selectedCategory;
-    const searchMatch =
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.city.toLowerCase().includes(searchQuery.toLowerCase());
+  const isSearching = searchQuery.length > 0;
+  const isFiltering = selectedCategory !== "todos";
+  const showSections = !isSearching && !isFiltering;
 
-    return categoryMatch && searchMatch;
+  const { data: featuredData, isLoading: featuredLoading } = useFeaturedEvents();
+  const { data: trendingData, isLoading: trendingLoading } = useTrendingEvents();
+  const { data: upcomingData, isLoading: upcomingLoading } = useUpcomingEvents({
+    search: searchQuery || undefined,
+    sportSlug: isFiltering ? selectedCategory : undefined,
   });
+
+  const featuredEvents = useMemo(
+    () => (featuredData ?? []).map(platformEventToCardItem),
+    [featuredData],
+  );
+
+  const trendingEvents = useMemo(
+    () => (trendingData ?? []).map(platformEventToCardItem),
+    [trendingData],
+  );
+
+  const upcomingEvents = useMemo(
+    () => (upcomingData?.data ?? []).map(platformEventToCardItem),
+    [upcomingData],
+  );
 
   return (
     <Screen edges={["top", "left", "right"]}>
@@ -68,7 +71,7 @@ export default function HomeScreen() {
       >
         <View className="flex-row items-center justify-between">
           <Text className="font-semibold text-lg text-foreground">Olá, {profile.name.split(" ")[0]}</Text>
-          <AnimatedPressable className="relative p-2" onPress={() => router.push("/notifications") }>
+          <AnimatedPressable className="relative p-2" onPress={() => router.push("/notifications")}>
             <Bell color={colors.foreground} size={20} strokeWidth={1.5} />
             <View className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
           </AnimatedPressable>
@@ -97,34 +100,27 @@ export default function HomeScreen() {
       >
         <View className="px-4">
           <View className="mt-2" />
-          {/* {!searchQuery ? (
-            <View className="mt-4 rounded-2xl border border-primary/10 bg-[#f4fcf7] px-3 py-2">
-              <Text className="text-center font-medium text-[11px] text-primary">{promoStrips[activePromo]}</Text>
-            </View>
-          ) : null} */}
 
-          {/* {!searchQuery && selectedCategory === "todos" ? (
-            <LinearGradient colors={bannerAds[activeBanner].colors} className="mt-4 h-44 rounded-[24px] p-5">
-              <View className="mt-auto">
-                <Text className="font-medium text-[10px] uppercase tracking-[1px] text-white/70">Destaque</Text>
-                <Text className="mt-1 font-extrabold text-2xl text-white">{bannerAds[activeBanner].title}</Text>
-                <Text className="mt-1 text-sm text-white/80">{bannerAds[activeBanner].subtitle}</Text>
-              </View>
-            </LinearGradient>
-          ) : null} */}
-
-          {!searchQuery && selectedCategory === "todos" ? (
+          {/* ── Destaques ─────────────────────────────────────── */}
+          {showSections ? (
             <View className="mt-6">
               <SectionHeader title="Destaques" actionLabel="Ver todos" onPress={() => router.push("/(tabs)/explore")} />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 12 }}>
-                {featuredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} variant="featured" />
-                ))}
-              </ScrollView>
+              {featuredLoading ? (
+                <FeaturedSkeleton />
+              ) : featuredEvents.length > 0 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 12 }}>
+                  {featuredEvents.map((event) => (
+                    <EventCard key={event.id} event={event} variant="featured" />
+                  ))}
+                </ScrollView>
+              ) : (
+                <EmptySection message="Nenhum evento em destaque" />
+              )}
             </View>
           ) : null}
 
-          {!searchQuery && selectedCategory === "todos" ? (
+          {/* ── Categorias ────────────────────────────────────── */}
+          {showSections ? (
             <View className="mt-2">
               <Text className="font-bold text-base text-foreground">Categorias</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 12 }}>
@@ -132,7 +128,6 @@ export default function HomeScreen() {
                   .filter((category) => category.id !== "todos")
                   .map((category) => {
                     const active = selectedCategory === category.id;
-
                     return (
                       <AnimatedPressable
                         key={category.id}
@@ -147,7 +142,7 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          {selectedCategory !== "todos" ? (
+          {isFiltering ? (
             <View className="mt-4 flex-row items-center gap-2">
               <View className="rounded-full bg-primary px-3 py-1">
                 <Text className="font-medium text-xs text-primary-foreground">
@@ -160,39 +155,56 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          {!searchQuery && selectedCategory === "todos" ? (
+          {/* ── Em alta ───────────────────────────────────────── */}
+          {showSections ? (
             <View className="mt-6">
               <SectionHeader title="Em alta" actionLabel="Ver todos" onPress={() => router.push("/(tabs)/explore")} />
-              <View className="mt-3 gap-3">
-                {hotEvents.slice(0, 3).map((event) => (
-                  <EventCard key={event.id} event={event} variant="compact" />
-                ))}
-              </View>
+              {trendingLoading ? (
+                <TrendingSkeleton />
+              ) : trendingEvents.length > 0 ? (
+                <View className="mt-3 gap-3">
+                  {trendingEvents.slice(0, 3).map((event) => (
+                    <EventCard key={event.id} event={event} variant="compact" />
+                  ))}
+                </View>
+              ) : (
+                <EmptySection message="Nenhum evento em alta" />
+              )}
             </View>
           ) : null}
 
+          {/* ── Próximos eventos ──────────────────────────────── */}
           <View className="mt-6">
             <Text className="font-bold text-base text-foreground">
-              {searchQuery ? "Resultados" : selectedCategory !== "todos" ? categories.find((category) => category.id === selectedCategory)?.label : "Próximos eventos"}
+              {isSearching
+                ? "Resultados"
+                : isFiltering
+                  ? categories.find((category) => category.id === selectedCategory)?.label
+                  : "Próximos eventos"}
             </Text>
-            <View className="mt-3 flex-row flex-wrap gap-3">
-              {filteredEvents.map((event) => (
-                <View key={event.id} className="w-[48%]">
-                  <EventCard event={event} />
-                </View>
-              ))}
-            </View>
-            {!filteredEvents.length ? (
+            {upcomingLoading ? (
+              <UpcomingSkeleton />
+            ) : upcomingEvents.length > 0 ? (
+              <View className="mt-3 flex-row flex-wrap gap-3">
+                {upcomingEvents.map((event) => (
+                  <View key={event.id} className="w-[48%]">
+                    <EventCard event={event} />
+                  </View>
+                ))}
+              </View>
+            ) : (
               <View className="mt-10 items-center">
                 <Text className="text-sm text-muted-foreground">Nenhum evento encontrado</Text>
               </View>
-            ) : null}
+            )}
           </View>
         </View>
       </ScrollView>
     </Screen>
   );
 }
+
+// ─── Shared helpers ────────────────────────────────────────────────────────────
 
 const SectionHeader = ({ title, actionLabel, onPress }: { title: string; actionLabel?: string; onPress?: () => void }) => (
   <View className="flex-row items-center justify-between">
@@ -202,5 +214,96 @@ const SectionHeader = ({ title, actionLabel, onPress }: { title: string; actionL
         <Text className="font-medium text-xs text-primary">{actionLabel}</Text>
       </AnimatedPressable>
     ) : null}
+  </View>
+);
+
+const EmptySection = ({ message }: { message: string }) => (
+  <View className="mt-3 items-center py-4">
+    <Text className="text-sm text-muted-foreground">{message}</Text>
+  </View>
+);
+
+// ─── Skeletons ─────────────────────────────────────────────────────────────────
+
+/** Mirrors EventCard variant="featured" (300×~220 horizontal card) */
+const FeaturedCardSkeleton = () => (
+  <View className="mr-3 w-[300px] overflow-hidden rounded-3xl bg-card">
+    {/* image area */}
+    <Skeleton className="h-44 w-full" />
+    {/* meta row */}
+    <View className="flex-row items-center gap-2 p-3">
+      <Skeleton className="h-3 w-3 rounded-full" />
+      <Skeleton className="h-3 w-16 rounded-full" />
+      <Skeleton className="h-3 w-3 rounded-full" />
+      <Skeleton className="h-3 w-24 rounded-full" />
+    </View>
+  </View>
+);
+
+const FeaturedSkeleton = () => (
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 12 }}>
+    <FeaturedCardSkeleton />
+    <FeaturedCardSkeleton />
+  </ScrollView>
+);
+
+/** Mirrors EventCard variant="compact" (horizontal row) */
+const TrendingCardSkeleton = () => (
+  <View className="flex-row gap-3 rounded-2xl bg-card p-3">
+    {/* thumbnail */}
+    <Skeleton className="h-20 w-20 rounded-xl" />
+    <View className="flex-1 justify-between py-0.5">
+      {/* badge */}
+      <View>
+        <Skeleton className="h-5 w-20 rounded-full" />
+        {/* title lines */}
+        <Skeleton className="mt-2 h-3.5 w-full rounded-full" />
+        <Skeleton className="mt-1.5 h-3.5 w-3/4 rounded-full" />
+      </View>
+      {/* meta row */}
+      <View className="flex-row items-center gap-1.5">
+        <Skeleton className="h-3 w-3 rounded-full" />
+        <Skeleton className="h-3 w-14 rounded-full" />
+        <Skeleton className="h-3 w-3 rounded-full" />
+        <Skeleton className="h-3 w-20 rounded-full" />
+      </View>
+    </View>
+  </View>
+);
+
+const TrendingSkeleton = () => (
+  <View className="mt-3 gap-3">
+    <TrendingCardSkeleton />
+    <TrendingCardSkeleton />
+    <TrendingCardSkeleton />
+  </View>
+);
+
+/** Mirrors EventCard default (grid, 48% width) */
+const UpcomingCardSkeleton = () => (
+  <View className="w-[48%] overflow-hidden rounded-3xl bg-card">
+    {/* image area */}
+    <Skeleton className="h-40 w-full" />
+    <View className="p-3">
+      {/* title lines */}
+      <Skeleton className="h-3.5 w-full rounded-full" />
+      <Skeleton className="mt-1.5 h-3.5 w-3/4 rounded-full" />
+      {/* meta row */}
+      <View className="mt-3 flex-row items-center gap-1.5">
+        <Skeleton className="h-3 w-3 rounded-full" />
+        <Skeleton className="h-3 w-12 rounded-full" />
+        <Skeleton className="h-3 w-3 rounded-full" />
+        <Skeleton className="h-3 w-16 rounded-full" />
+      </View>
+    </View>
+  </View>
+);
+
+const UpcomingSkeleton = () => (
+  <View className="mt-3 flex-row flex-wrap gap-3">
+    <UpcomingCardSkeleton />
+    <UpcomingCardSkeleton />
+    <UpcomingCardSkeleton />
+    <UpcomingCardSkeleton />
   </View>
 );

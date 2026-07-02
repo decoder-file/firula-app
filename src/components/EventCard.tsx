@@ -1,14 +1,23 @@
 import { useRouter } from "expo-router";
 import { CalendarDays, MapPin } from "lucide-react-native";
-import { Image, Text, View } from "react-native";
+import { Image, Text, View, type ImageSourcePropType } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
-import type { EventData } from "@/data/mockData";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { formatDateShort } from "@/utils/format";
 
+export interface EventCardItem {
+  id: string;
+  slug?: string;
+  title: string;
+  date: string;
+  city: string;
+  eventType: string;
+  image?: ImageSourcePropType | null;
+}
+
 interface EventCardProps {
-  event: EventData;
+  event: EventCardItem;
   variant?: "default" | "featured" | "compact";
 }
 
@@ -19,10 +28,14 @@ export const EventCard = ({ event, variant = "default" }: EventCardProps) => {
     return (
       <AnimatedPressable
         className="mr-3 w-[300px] overflow-hidden rounded-3xl bg-card"
-        onPress={() => router.push(`/event/${event.id}`)}
+        onPress={() => router.push(`/event/${event.slug || event.id}`)}
       >
         <View className="relative h-44">
-          <Image source={event.image} className="h-full w-full" resizeMode="cover" />
+          {event.image ? (
+            <Image source={event.image} className="h-full w-full" resizeMode="cover" />
+          ) : (
+            <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-full w-full" />
+          )}
           <LinearGradient colors={["transparent", "rgba(20,24,33,0.72)"]} className="absolute inset-0" />
           <View className="absolute left-3 top-3 rounded-full border border-white/60 px-3 py-1">
             <Text className="font-medium text-[10px] uppercase tracking-[1px] text-white">{event.eventType}</Text>
@@ -50,9 +63,13 @@ export const EventCard = ({ event, variant = "default" }: EventCardProps) => {
     return (
       <AnimatedPressable
         className="flex-row gap-3 rounded-2xl bg-card p-3"
-        onPress={() => router.push(`/event/${event.id}`)}
+        onPress={() => router.push(`/event/${event.slug || event.id}`)}
       >
-        <Image source={event.image} className="h-20 w-20 rounded-xl" resizeMode="cover" />
+        {event.image ? (
+          <Image source={event.image} className="h-20 w-20 rounded-xl" resizeMode="cover" />
+        ) : (
+          <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-20 w-20 rounded-xl" />
+        )}
         <View className="flex-1 justify-between py-0.5">
           <View>
             <View className="self-start rounded-full border border-primary px-2 py-1">
@@ -77,9 +94,13 @@ export const EventCard = ({ event, variant = "default" }: EventCardProps) => {
   }
 
   return (
-    <AnimatedPressable className="flex-1 overflow-hidden rounded-3xl bg-card" onPress={() => router.push(`/event/${event.id}`)}>
+    <AnimatedPressable className="flex-1 overflow-hidden rounded-3xl bg-card" onPress={() => router.push(`/event/${event.slug || event.id}`)}>
       <View className="relative h-40">
-        <Image source={event.image} className="h-full w-full" resizeMode="cover" />
+        {event.image ? (
+          <Image source={event.image} className="h-full w-full" resizeMode="cover" />
+        ) : (
+          <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-full w-full" />
+        )}
         <View className="absolute left-3 top-3 rounded-full border border-white/60 px-3 py-1">
           <Text className="font-medium text-[10px] text-white">{event.eventType}</Text>
         </View>
