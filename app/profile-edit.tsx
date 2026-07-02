@@ -18,6 +18,8 @@ import { FormInput } from "@/components/ui/FormInput";
 import { IconButton } from "@/components/ui/IconButton";
 import { useApp } from "@/contexts/AppContext";
 import { useLogout } from "@/hooks/useAuth";
+import { profileService } from "@/services/profile.service";
+import { isApiError } from "@/api/errors";
 
 export default function ProfileEditScreen() {
   const router = useRouter();
@@ -28,10 +30,11 @@ export default function ProfileEditScreen() {
   const [avatar, setAvatar] = useState(profile.avatar);
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [isPickingImage, setIsPickingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const avatarPreview = useMemo(() => avatar.trim() || profile.avatar, [avatar, profile.avatar]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const nextErrors: { name?: string } = {};
 
     if (!name.trim()) {
@@ -44,14 +47,19 @@ export default function ProfileEditScreen() {
       return;
     }
 
-    updateProfile({
-      name: name.trim(),
-      avatar: avatar.trim() || profile.avatar,
-    });
-
-    Alert.alert("Perfil atualizado", "Suas alterações foram salvas com sucesso.", [
-      { text: "OK", onPress: () => router.back() },
-    ]);
+    setIsSaving(true);
+    try {
+      await profileService.updateProfile({ name: name.trim() });
+      updateProfile({ name: name.trim(), avatar: avatar.trim() || profile.avatar });
+      Alert.alert("Perfil atualizado", "Suas alterações foram salvas com sucesso.", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (error) {
+      const message = isApiError(error) ? error.message : "Não foi possível salvar. Tente novamente.";
+      Alert.alert("Erro ao salvar", message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const pickFromGallery = async () => {
@@ -212,7 +220,7 @@ export default function ProfileEditScreen() {
                 value={profile.email}
               />
 
-              <FormButton className="mt-2" label="Salvar alterações" onPress={handleSave} />
+              <FormButton className="mt-2" label="Salvar alterações" loadingLabel="Salvando..." isLoading={isSaving} onPress={handleSave} />
 
               <FormButton
                 className="mt-2 bg-red-50"

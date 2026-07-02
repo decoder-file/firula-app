@@ -1,27 +1,53 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, Text, TextInput, View } from "react-native";
 import { Search } from "lucide-react-native";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EventCard } from "@/components/EventCard";
 import { Screen } from "@/components/Screen";
+import { Skeleton } from "@/components/Skeleton";
 import { useScreenLog } from "@/hooks/useScreenLog";
-import { categories, type EventCategory, events } from "@/data/mockData";
+import { useUpcomingEvents } from "@/hooks/useEvents";
+import { platformEventToCardItem } from "@/services/events.service";
+import { categories, type EventCategory } from "@/data/mockData";
 import { colors } from "@/theme/colors";
+
+function EventSkeleton() {
+  return (
+    <View className="flex-row gap-3 rounded-2xl bg-card p-3">
+      <Skeleton className="h-20 w-20 rounded-xl" />
+      <View className="flex-1 gap-2 py-0.5">
+        <Skeleton className="h-5 w-20 rounded-full" />
+        <Skeleton className="h-3.5 w-full rounded-full" />
+        <Skeleton className="h-3.5 w-3/4 rounded-full" />
+        <View className="flex-row gap-1.5">
+          <Skeleton className="h-3 w-3 rounded-full" />
+          <Skeleton className="h-3 w-16 rounded-full" />
+          <Skeleton className="h-3 w-3 rounded-full" />
+          <Skeleton className="h-3 w-20 rounded-full" />
+        </View>
+      </View>
+    </View>
+  );
+}
 
 export default function ExploreScreen() {
   useScreenLog();
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("todos");
 
-  const filteredEvents = events.filter((event) => {
-    const categoryMatch = selectedCategory === "todos" || event.category === selectedCategory;
-    const queryMatch =
-      event.title.toLowerCase().includes(query.toLowerCase()) ||
-      event.location.toLowerCase().includes(query.toLowerCase()) ||
-      event.city.toLowerCase().includes(query.toLowerCase());
-    return categoryMatch && queryMatch;
+  const isFiltering = selectedCategory !== "todos";
+
+  const { data, isLoading } = useUpcomingEvents({
+    search: query || undefined,
+    sportSlug: isFiltering ? selectedCategory : undefined,
+    period: "upcoming",
   });
+
+  const events = useMemo(
+    () => (data?.data ?? []).map(platformEventToCardItem),
+    [data],
+  );
 
   return (
     <Screen edges={["top", "left", "right"]}>
@@ -43,7 +69,6 @@ export default function ExploreScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 12 }}>
           {categories.map((category) => {
             const active = selectedCategory === category.id;
-
             return (
               <AnimatedPressable
                 key={category.id}
@@ -57,9 +82,22 @@ export default function ExploreScreen() {
         </ScrollView>
 
         <View className="mt-3 gap-3">
-          {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} variant="compact" />
-          ))}
+          {isLoading ? (
+            <>
+              <EventSkeleton />
+              <EventSkeleton />
+              <EventSkeleton />
+              <EventSkeleton />
+            </>
+          ) : events.length === 0 ? (
+            <View className="mt-10 items-center">
+              <Text className="text-sm text-muted-foreground">Nenhum evento encontrado</Text>
+            </View>
+          ) : (
+            events.map((event) => (
+              <EventCard key={event.id} event={event} variant="compact" />
+            ))
+          )}
         </View>
       </ScrollView>
     </Screen>
