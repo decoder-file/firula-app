@@ -32,7 +32,7 @@ export const EventCard = ({ event, variant = "default" }: EventCardProps) => {
       >
         <View className="relative h-44">
           {event.image ? (
-            <Image source={event.image} className="h-full w-full" resizeMode="cover" />
+            <Image source={event.image} className="h-44 w-full" resizeMode="cover" />
           ) : (
             <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-full w-full" />
           )}
@@ -97,7 +97,7 @@ export const EventCard = ({ event, variant = "default" }: EventCardProps) => {
     <AnimatedPressable className="flex-1 overflow-hidden rounded-3xl bg-card" onPress={() => router.push(`/event/${event.slug || event.id}`)}>
       <View className="relative h-40">
         {event.image ? (
-          <Image source={event.image} className="h-full w-full" resizeMode="cover" />
+          <Image source={event.image} className="h-40 w-full" resizeMode="cover" />
         ) : (
           <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-full w-full" />
         )}
