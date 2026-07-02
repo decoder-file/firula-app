@@ -13,6 +13,15 @@ export const useFavorites = () => {
   });
 };
 
+export const useCheckFavorite = (eventId: string) => {
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery({
+    queryKey: queryKeys.favorites.check(eventId),
+    queryFn: () => favoritesService.check(eventId),
+    enabled: isAuthenticated && Boolean(eventId),
+  });
+};
+
 export const useToggleFavorite = () => {
   const queryClient = useQueryClient();
   return useMutation({

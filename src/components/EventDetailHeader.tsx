@@ -1,5 +1,4 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { Image, View, type ImageSourcePropType } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ArrowLeft, Heart, Share2 } from "lucide-react-native";
@@ -9,18 +8,13 @@ import { colors } from "@/theme/colors";
 
 interface EventDetailHeaderProps {
   eventImage?: ImageSourcePropType | { uri: string } | null;
-  onLikeChange?: (liked: boolean) => void;
+  isFavorited?: boolean;
+  isFavoritePending?: boolean;
+  onToggleFavorite?: () => void;
 }
 
-export function EventDetailHeader({ eventImage, onLikeChange }: EventDetailHeaderProps) {
+export function EventDetailHeader({ eventImage, isFavorited = false, isFavoritePending = false, onToggleFavorite }: EventDetailHeaderProps) {
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
-
-  const handleLikePress = () => {
-    const newLiked = !liked;
-    setLiked(newLiked);
-    onLikeChange?.(newLiked);
-  };
 
   return (
     <View className="bg-black">
@@ -39,8 +33,17 @@ export function EventDetailHeader({ eventImage, onLikeChange }: EventDetailHeade
             <AnimatedPressable className="rounded-full bg-white/85 p-2">
               <Share2 color={colors.foreground} size={20} strokeWidth={1.5} />
             </AnimatedPressable>
-            <AnimatedPressable className="rounded-full bg-white/85 p-2" onPress={handleLikePress}>
-              <Heart color={liked ? colors.primary : colors.foreground} fill={liked ? colors.primary : "transparent"} size={20} strokeWidth={1.5} />
+            <AnimatedPressable
+              className="rounded-full bg-white/85 p-2"
+              disabled={isFavoritePending}
+              onPress={onToggleFavorite}
+            >
+              <Heart
+                color={isFavorited ? colors.primary : colors.foreground}
+                fill={isFavorited ? colors.primary : "transparent"}
+                size={20}
+                strokeWidth={1.5}
+              />
             </AnimatedPressable>
           </View>
         </View>

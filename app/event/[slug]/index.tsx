@@ -1,20 +1,20 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Animated, ScrollView, Text, View } from "react-native";
+import { Animated, Linking, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CalendarDays, ChevronDown, ChevronUp, Clock3, MapPin, Minus, Plus } from "lucide-react-native";
 
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { EventDetailHeader } from "@/components/EventDetailHeader";
 import { EventDetailHeaderCompact } from "@/components/EventDetailHeaderCompact";
-import { FacialIdModal } from "@/components/FacialIdModal";
 import { Screen } from "@/components/Screen";
 import { Skeleton } from "@/components/Skeleton";
-import { useApp } from "@/contexts/AppContext";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import { useEventBySlug } from "@/hooks/useEvents";
+import { useIsAuthenticated } from "@/hooks/useAuth";
+import { useCheckFavorite, useToggleFavorite } from "@/hooks/useFavorites";
 import { colors } from "@/theme/colors";
-import { formatCurrency, formatDateLong } from "@/utils/format";
+import { formatCurrencyFromCents, formatDateLong } from "@/utils/format";
 import type { AdminEventTicketLot } from "@/services/events.service";
 
 const formatTime = (iso: string) =>
@@ -30,19 +30,27 @@ export default function EventDetailScreen() {
   useScreenLog();
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { addToCart } = useApp();
   const insets = useSafeAreaInsets();
 
+  const isAuthenticated = useIsAuthenticated();
   const { data: event, isLoading, isError } = useEventBySlug(slug ?? "");
+
+  const { data: favoriteStatus } = useCheckFavorite(event?.id ?? "");
+  const { mutate: toggleFavorite, isPending: isFavoritePending } = useToggleFavorite();
+
+  const isFavorited = favoriteStatus?.isFavorited ?? false;
+
+  const handleToggleFavorite = () => {
+    if (!isAuthenticated) { router.push("/login"); return; }
+    if (!event) return;
+    toggleFavorite({ eventId: event.id, isFavorited });
+  };
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const headerOpacity = scrollY.interpolate({ inputRange: [0, 100], outputRange: [1, 0], extrapolate: "clamp" });
   const compactHeaderOpacity = scrollY.interpolate({ inputRange: [0, 100], outputRange: [0, 1], extrapolate: "clamp" });
 
   const [selectedLots, setSelectedLots] = useState<Record<string, number>>({});
-  const [showFacialModal, setShowFacialModal] = useState(false);
-  const [facialRegistered, setFacialRegistered] = useState(false);
-  const [facialDismissed, setFacialDismissed] = useState(false);
 
   const handleAdd = (lotId: string) =>
     setSelectedLots((prev) => ({ ...prev, [lotId]: (prev[lotId] ?? 0) + 1 }));
@@ -67,12 +75,14 @@ export default function EventDetailScreen() {
 
   const handleBuy = () => {
     if (totalTickets === 0 || !event) return;
-    Object.entries(selectedLots).forEach(([lotId, quantity]) => {
-      const lot = event.ticketLots.find((l) => l.id === lotId);
-      if (!lot) return;
-      addToCart({ eventId: event.id, ticketTypeId: lot.id, ticketTypeName: lot.name, quantity, price: lot.price });
-    });
-    router.push("/checkout");
+    const eventRef = event.slug;
+    const ticketsParam = Object.entries(selectedLots)
+      .filter(([, qty]) => qty > 0)
+      .map(([lotId, qty]) => `${lotId}:${qty}`)
+      .join(",");
+    Linking.openURL(
+      `${process.env.EXPO_PUBLIC_WEBSITE_URL}/eventos/${eventRef}?tickets=${ticketsParam}&checkout=1`,
+    );
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────────
@@ -137,13 +147,6 @@ export default function EventDetailScreen() {
   return (
     <Screen edges={["left", "right"]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <FacialIdModal
-        open={showFacialModal}
-        onClose={() => { setFacialDismissed(true); setShowFacialModal(false); }}
-        onRegister={() => { setFacialRegistered(true); setShowFacialModal(false); }}
-        mandatory={totalTickets > 0 && !facialRegistered && !facialDismissed}
-      />
-
       <View className="flex-1">
         <Animated.View style={{ opacity: compactHeaderOpacity, paddingTop: insets.top }}>
           <EventDetailHeaderCompact />
@@ -157,7 +160,12 @@ export default function EventDetailScreen() {
           scrollEventThrottle={16}
         >
           <Animated.View style={{ opacity: headerOpacity }}>
-            <EventDetailHeader eventImage={eventImage} />
+            <EventDetailHeader
+              eventImage={eventImage}
+              isFavorited={isFavorited}
+              isFavoritePending={isFavoritePending}
+              onToggleFavorite={handleToggleFavorite}
+            />
           </Animated.View>
 
           <View className="px-4 pt-4">
@@ -231,7 +239,7 @@ export default function EventDetailScreen() {
                           ) : null}
                         </View>
                         <Text className="font-bold text-sm text-primary">
-                          {lot.price === 0 ? "Grátis" : formatCurrency(lot.price)}
+                          {lot.price === 0 ? "Grátis" : formatCurrencyFromCents(lot.price)}
                         </Text>
                       </View>
                       <View className="mt-3 flex-row items-center justify-between">
@@ -263,7 +271,7 @@ export default function EventDetailScreen() {
           <View className="flex-row items-center gap-4">
             <View>
               <Text className="text-xs text-muted-foreground">Total ({totalTickets})</Text>
-              <Text className="font-extrabold text-lg text-foreground">{formatCurrency(totalPrice)}</Text>
+              <Text className="font-extrabold text-lg text-foreground">{formatCurrencyFromCents(totalPrice)}</Text>
             </View>
             <AnimatedPressable
               className={`flex-1 rounded-2xl py-4 ${totalTickets > 0 ? "bg-primary" : "bg-primary/40"}`}
