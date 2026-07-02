@@ -23,6 +23,7 @@ import { Screen } from "@/components/Screen";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import { useTicket } from "@/hooks/useTickets";
 import { colors } from "@/theme/colors";
+import { formatCurrencyFromCents } from "@/utils/format";
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR", {
@@ -31,12 +32,6 @@ const formatDateTime = (value: string) =>
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
-
-const formatCurrencyFromCents = (value: number) =>
-  (value / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
   });
 
 const getStatusLabel = (status: string) => {

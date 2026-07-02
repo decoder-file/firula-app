@@ -20,6 +20,7 @@ import { TicketsHeader } from "@/components/TicketsHeader";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import { useMyTickets } from "@/hooks/useTickets";
 import type { CustomerTicket } from "@/services/tickets.service";
+import { formatCurrencyFromCents } from "@/utils/format";
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR", {
@@ -28,12 +29,6 @@ const formatDateTime = (value: string) =>
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
-
-const formatCurrencyFromCents = (value: number) =>
-  (value / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
   });
 
 const getStatusLabel = (status: string) => {
