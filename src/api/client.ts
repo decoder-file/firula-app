@@ -8,13 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { ApiError, NetworkError, TimeoutError } from "./errors";
 import { tokenStorage } from "./tokenStorage";
 
-/**
- * Base URL read from the Expo public environment variable.
- * Create a .env file in the project root:
- *   EXPO_PUBLIC_API_URL=http://localhost:3333
- */
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3334";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const TIMEOUT_MS = 15_000;
 
