@@ -30,12 +30,13 @@ export const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
 
 export const useTicketsRouteProps = (): TicketsScreenProps => {
   const router = useRouter();
-  const { data } = useMyTickets();
+  const { data, isPending } = useMyTickets();
 
   const tickets = useMemo(() => (data ?? []).map(mapCustomerTicket), [data]);
 
   return {
     tickets,
+    isLoading: isPending,
     renderQr: (value, size) =>
       React.createElement(QRCode, { value, size }),
     onExplore: () => router.push("/(tabs)/explore"),

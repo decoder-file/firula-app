@@ -16,6 +16,7 @@ export interface AppTicket {
 
 export interface TicketsScreenProps {
   tickets: AppTicket[];
+  isLoading?: boolean;
   renderQr?: (value: string, size: number) => React.ReactNode;
   onExplore?: () => void;
 }

@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { Ticket } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, Text, useTheme } from "@/design-system";
+import { Button, Skeleton, Text, useTheme } from "@/design-system";
 import { QrModal } from "@/features/tickets/components/QrModal";
 import { TicketBilhete } from "@/features/tickets/components/TicketBilhete";
 import { TABS, type TabKey } from "@/features/tickets/constants";
@@ -20,6 +20,7 @@ const cardShadow = {
 
 export function TicketsScreen({
   tickets,
+  isLoading = false,
   renderQr,
   onExplore,
 }: TicketsScreenProps) {
@@ -99,7 +100,9 @@ export function TicketsScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 28 }}
       >
-        {list.length > 0 ? (
+        {isLoading ? (
+          <TicketsContentSkeleton />
+        ) : list.length > 0 ? (
           <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 16 }}>
             {list.map((t) => (
               <TicketBilhete
@@ -145,6 +148,51 @@ export function TicketsScreen({
         onClose={() => setQrTicket(null)}
         renderQr={renderQr}
       />
+    </View>
+  );
+}
+
+function TicketsContentSkeleton() {
+  const { colors } = useTheme();
+
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 16 }}>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <View
+          key={i}
+          style={{
+            borderRadius: 22,
+            borderWidth: 1,
+            borderColor: colors.border,
+            overflow: "hidden",
+            backgroundColor: colors.surface,
+          }}
+        >
+          <View
+            style={{
+              padding: 16,
+              backgroundColor: "#0f172a",
+              gap: 10,
+            }}
+          >
+            <Skeleton width={62} height={18} radius={999} />
+            <Skeleton width="75%" height={28} radius={8} />
+            <Skeleton width="88%" height={20} radius={8} />
+          </View>
+          <View
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Skeleton width="42%" height={24} radius={8} />
+            <Skeleton width={120} height={56} radius={16} />
+          </View>
+        </View>
+      ))}
     </View>
   );
 }
