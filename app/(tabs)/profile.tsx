@@ -1,128 +1,481 @@
+/**
+ * Firula — Perfil redesenhado (mapeia para app/(tabs)/profile.tsx)
+ * Construído sobre o Design System. Cabeçalho + stats + conquistas + menu + sair.
+ */
+
+import React from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { Bell, ChevronRight, FileText, HelpCircle, LogOut, ScanFace, Settings, Shield, Star, Ticket, Trophy } from "lucide-react-native";
-import { ScrollView, Text, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import {
+  Bell,
+  ChevronRight,
+  CircleHelp,
+  Crown,
+  FileText,
+  LogOut,
+  ScanFace,
+  Settings,
+  Shield,
+  Star,
+  Ticket,
+  Trophy,
+  type LucideIcon,
+} from "lucide-react-native";
+import { Avatar, Text, useTheme } from "@/design-system";
+import { useAuthUser, useLogout, useMe } from "@/hooks/useAuth";
+import { useMyTickets } from "@/hooks/useTickets";
 
-import { AnimatedPressable } from "@/components/AnimatedPressable";
-import { AuthGate } from "@/components/AuthGate";
-import { Avatar } from "@/components/Avatar";
-import { Screen } from "@/components/Screen";
-import { useApp } from "@/contexts/AppContext";
-import { useAuthUser, useLogout } from "@/hooks/useAuth";
-import { useScreenLog } from "@/hooks/useScreenLog";
+interface Stat {
+  value: string;
+  label: string;
+}
+interface Achievement {
+  icon: string;
+  label: string;
+  unlocked: boolean;
+}
+interface MenuEntry {
+  icon: LucideIcon;
+  label: string;
+  subtitle: string;
+  key: string;
+}
 
-const achievements = [
-  { label: "Primeiro evento", unlocked: true, icon: "🏅" },
-  { label: "5 eventos", unlocked: true, icon: "🥉" },
-  { label: "10 eventos", unlocked: true, icon: "🥈" },
-  { label: "25 eventos", unlocked: false, icon: "🥇" },
-  { label: "50 eventos", unlocked: false, icon: "🏆" },
-  { label: "Facial ID", unlocked: true, icon: "🔒" },
+const MENU: MenuEntry[] = [
+  {
+    key: "tickets",
+    icon: Ticket,
+    label: "Meus ingressos",
+    subtitle: "Ingressos comprados",
+  },
+  {
+    key: "facial",
+    icon: ScanFace,
+    label: "Facial ID Firula",
+    subtitle: "Reconhecimento facial",
+  },
+  {
+    key: "favorites",
+    icon: Star,
+    label: "Favoritos",
+    subtitle: "Eventos salvos",
+  },
+  {
+    key: "notifications",
+    icon: Bell,
+    label: "Notificações",
+    subtitle: "Lembretes e alertas",
+  },
+  {
+    key: "privacy",
+    icon: Shield,
+    label: "Privacidade",
+    subtitle: "Dados e segurança",
+  },
+  {
+    key: "terms",
+    icon: FileText,
+    label: "Termos de uso",
+    subtitle: "Políticas e termos",
+  },
+  {
+    key: "settings",
+    icon: Settings,
+    label: "Configurações",
+    subtitle: "Preferências do app",
+  },
+  {
+    key: "help",
+    icon: CircleHelp,
+    label: "Ajuda",
+    subtitle: "Central de suporte",
+  },
 ];
 
-export default function ProfileScreen() {
-  useScreenLog();
-  const router = useRouter();
-  const { profile } = useApp();
-  const authUser = useAuthUser();
-  const logoutMutation = useLogout();
+const ACHIEVEMENTS: Achievement[] = [
+  { icon: "🏅", label: "Primeiro evento", unlocked: true },
+  { icon: "🥉", label: "5 eventos", unlocked: true },
+  { icon: "🥈", label: "10 eventos", unlocked: true },
+  { icon: "🔒", label: "Facial ID", unlocked: true },
+  { icon: "🥇", label: "25 eventos", unlocked: false },
+  { icon: "🏆", label: "50 eventos", unlocked: false },
+];
 
-  // Prefer local editable profile name, fallback to auth identity organization name
-  const displayName = profile.name || authUser?.adminProfiles?.[0]?.organization?.legalName || "Usuário";
-  const displayEmail = authUser?.email ?? profile.email;
-  const scope = authUser?.scope;
+const formatMemberSince = (createdAt?: string): string => {
+  if (!createdAt) {
+    return "-";
+  }
 
-  type MenuItem =
-    | { icon: React.ElementType; label: string; subtitle: string; href: string; url?: never }
-    | { icon: React.ElementType; label: string; subtitle: string; url: string; href?: never };
+  return new Date(createdAt).toLocaleDateString("pt-BR", {
+    month: "short",
+    year: "2-digit",
+  });
+};
 
-  const menuItems: MenuItem[] = [
-    { icon: Ticket, label: "Meus ingressos", subtitle: "Ingressos comprados", href: "/(tabs)/tickets" },
-    { icon: ScanFace, label: "Facial ID Firula", subtitle: "Reconhecimento facial", href: "/facial-id" },
-    { icon: Star, label: "Favoritos", subtitle: "Eventos salvos", href: "/favorites" },
-    { icon: Bell, label: "Notificações", subtitle: "Lembretes e alertas", href: "/notifications" },
-    { icon: Shield, label: "Privacidade", subtitle: "Dados e segurança", url: "https://firula.com.br/privacidade" },
-    { icon: FileText, label: "Termos de uso", subtitle: "Políticas e termos", url: "https://firula.com.br/termos" },
-    { icon: Settings, label: "Configurações", subtitle: "Preferências do app", href: "/settings" },
-    { icon: HelpCircle, label: "Ajuda", subtitle: "Central de suporte", url: "https://firula.com.br/central-ajuda" },
+const getLevelFromTickets = (totalTickets: number): string => {
+  if (totalTickets >= 25) return "Platina";
+  if (totalTickets >= 10) return "Gold";
+  if (totalTickets >= 5) return "Silver";
+  return "Bronze";
+};
+
+export interface ProfileScreenProps {
+  name: string;
+  email: string;
+  memberSince: string; // ex.: "ago 25"
+  eventsAttended: number;
+  level?: string; // ex.: "Gold"
+  onEditProfile?: () => void;
+  onNavigate?: (key: string) => void;
+  onLogout?: () => void;
+  loggingOut?: boolean;
+}
+
+export function ProfileScreen({
+  name,
+  email,
+  memberSince,
+  eventsAttended,
+  level = "Gold",
+  onEditProfile,
+  onNavigate,
+  onLogout,
+  loggingOut = false,
+}: ProfileScreenProps) {
+  const { colors, radius } = useTheme();
+
+  const stats: Stat[] = [
+    { value: String(eventsAttended), label: "Eventos" },
+    { value: memberSince, label: "Membro desde" },
+    { value: level, label: "Nível" },
   ];
 
   return (
-    <AuthGate>
-      <Screen edges={["top", "left", "right"]}>
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
-          <View className="bg-card px-4 pb-6 pt-4">
-            <Text className="font-bold text-lg text-foreground">Perfil</Text>
-            <AnimatedPressable className="mt-4 flex-row items-center gap-4" onPress={() => router.push("/profile-edit")}>
-              <Avatar uri={profile.avatar} name={displayName} size={64} />
-              <View className="flex-1">
-                <Text className="font-bold text-base text-foreground">{displayName}</Text>
-                <Text className="mt-1 text-xs text-muted-foreground">{displayEmail}</Text>
-                {scope && <Text className="mt-0.5 text-[10px] text-muted-foreground capitalize">Acesso: {scope}</Text>}
-              </View>
-              <ChevronRight color="#727985" size={18} strokeWidth={1.5} />
-            </AnimatedPressable>
-            <View className="mt-4 flex-row gap-3">
-              {[
-                { label: "Eventos", value: String(profile.eventsAttended) },
-                { label: "Membro desde", value: new Date(`${profile.memberSince}T00:00:00`).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) },
-                { label: "Nível", value: "Gold" },
-              ].map((item) => (
-                <View key={item.label} className="flex-1 rounded-2xl bg-secondary p-3">
-                  <Text className="text-center font-bold text-sm text-foreground">{item.value}</Text>
-                  <Text className="mt-1 text-center text-[10px] text-muted-foreground">{item.label}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-
-          <View className="px-4 pt-5">
-            <View className="mb-3 flex-row items-center gap-2">
-              <Trophy color="#1fbd63" size={16} strokeWidth={1.5} />
-              <Text className="font-bold text-sm text-foreground">Conquistas</Text>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 4 }}>
-              {achievements.map((achievement) => (
-                <View
-                  key={achievement.label}
-                  className={`w-[100px] items-center rounded-2xl p-3 ${achievement.unlocked ? "bg-card" : "bg-secondary opacity-40"}`}
-                >
-                  <Text className="text-2xl">{achievement.icon}</Text>
-                  <Text className="mt-1 text-center font-medium text-[10px] text-foreground">{achievement.label}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          <View className="gap-2 px-4 pt-5">
-            {menuItems.map((item) => (
-              <AnimatedPressable
-                key={item.label}
-                className="flex-row items-center gap-3 rounded-2xl bg-card p-4"
-                onPress={() => {
-                  if (item.url) {
-                    WebBrowser.openBrowserAsync(item.url);
-                  } else if (item.href) {
-                    router.push(item.href);
-                  }
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="auto" />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 28 }}
+      >
+        {/* Cabeçalho */}
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 20,
+          }}
+        >
+          <Text token="titleLg" style={{ fontSize: 24 }}>
+            Perfil
+          </Text>
+          <Pressable
+            onPress={onEditProfile}
+            accessibilityRole="button"
+            accessibilityLabel="Editar perfil"
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 14,
+              marginTop: 16,
+            }}
+          >
+            <Avatar name={name} size="xl" />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text token="title">{name}</Text>
+              <Text token="bodySm" color="muted" style={{ marginTop: 1 }}>
+                {email}
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  alignSelf: "flex-start",
+                  backgroundColor: colors.warningSoft,
+                  borderRadius: 999,
+                  paddingHorizontal: 9,
+                  paddingVertical: 2,
+                  marginTop: 6,
                 }}
               >
-                <item.icon color="#141821" size={20} strokeWidth={1.5} />
-                <View className="flex-1">
-                  <Text className="font-medium text-sm text-foreground">{item.label}</Text>
-                  <Text className="text-xs text-muted-foreground">{item.subtitle}</Text>
-                </View>
-                <ChevronRight color="#727985" size={18} strokeWidth={1.5} />
-              </AnimatedPressable>
-            ))}
+                <Crown size={12} color={colors.warning} strokeWidth={2} />
+                <Text
+                  token="caption"
+                  style={{
+                    color: colors.warning,
+                    textTransform: "none",
+                    letterSpacing: 0,
+                    fontSize: 10.5,
+                  }}
+                >
+                  Membro {level}
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.border} strokeWidth={1.75} />
+          </Pressable>
 
-            <AnimatedPressable className="mt-4 flex-row items-center justify-center gap-2 rounded-2xl bg-red-50 py-3.5" disabled={logoutMutation.isPending} onPress={() => logoutMutation.mutate()}>
-              <LogOut color="#ef4444" size={16} strokeWidth={1.5} />
-              <Text className="font-medium text-sm text-destructive">{logoutMutation.isPending ? "Saindo..." : "Sair da conta"}</Text>
-            </AnimatedPressable>
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 18 }}>
+            {stats.map((s) => (
+              <View
+                key={s.label}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.background,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 16,
+                  paddingVertical: 14,
+                  paddingHorizontal: 8,
+                  alignItems: "center",
+                }}
+              >
+                <Text token="subtitle" style={{ fontWeight: "800" }}>
+                  {s.value}
+                </Text>
+                <Text
+                  token="caption"
+                  color="muted"
+                  style={{
+                    marginTop: 3,
+                    textTransform: "none",
+                    letterSpacing: 0,
+                    fontWeight: "600",
+                  }}
+                >
+                  {s.label}
+                </Text>
+              </View>
+            ))}
           </View>
-        </ScrollView>
-      </Screen>
-    </AuthGate>
+        </View>
+
+        {/* Conquistas */}
+        <View style={{ paddingTop: 20 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 7,
+              paddingHorizontal: 20,
+              marginBottom: 12,
+            }}
+          >
+            <Trophy size={16} color={colors.primaryText} strokeWidth={1.75} />
+            <Text token="subtitle" style={{ fontWeight: "800" }}>
+              Conquistas
+            </Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+          >
+            {ACHIEVEMENTS.map((a) => (
+              <View
+                key={a.label}
+                style={{
+                  width: 96,
+                  borderRadius: 18,
+                  paddingVertical: 14,
+                  paddingHorizontal: 8,
+                  alignItems: "center",
+                  backgroundColor: a.unlocked
+                    ? colors.surface
+                    : colors.surfaceAlt,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  opacity: a.unlocked ? 1 : 0.5,
+                }}
+              >
+                <Text style={{ fontSize: 26 }}>{a.icon}</Text>
+                <Text
+                  token="caption"
+                  style={{
+                    marginTop: 6,
+                    textAlign: "center",
+                    textTransform: "none",
+                    letterSpacing: 0,
+                    color: colors.text,
+                    fontWeight: "600",
+                  }}
+                >
+                  {a.label}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Menu */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 18,
+              overflow: "hidden",
+            }}
+          >
+            {MENU.map((m, i) => (
+              <Pressable
+                key={m.key}
+                onPress={() => onNavigate?.(m.key)}
+                accessibilityRole="button"
+                accessibilityLabel={m.label}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 14,
+                  paddingHorizontal: 16,
+                  height: 58,
+                  borderTopWidth: i === 0 ? 0 : 1,
+                  borderTopColor: colors.border,
+                }}
+              >
+                <View
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 11,
+                    backgroundColor: colors.surfaceAlt,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <m.icon size={19} color={colors.text} strokeWidth={1.75} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text token="body" style={{ fontWeight: "600" }}>
+                    {m.label}
+                  </Text>
+                  <Text
+                    token="caption"
+                    color="muted"
+                    style={{
+                      textTransform: "none",
+                      letterSpacing: 0,
+                      fontSize: 11.5,
+                    }}
+                  >
+                    {m.subtitle}
+                  </Text>
+                </View>
+                <ChevronRight
+                  size={19}
+                  color={colors.border}
+                  strokeWidth={1.75}
+                />
+              </Pressable>
+            ))}
+          </View>
+
+          <Pressable
+            onPress={onLogout}
+            disabled={loggingOut}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
+            style={{
+              marginTop: 16,
+              height: 52,
+              borderRadius: 16,
+              backgroundColor: colors.errorSoft,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              opacity: loggingOut ? 0.6 : 1,
+            }}
+          >
+            <LogOut size={17} color={colors.error} strokeWidth={2} />
+            <Text token="label" style={{ color: colors.error }}>
+              {loggingOut ? "Saindo…" : "Sair da conta"}
+            </Text>
+          </Pressable>
+
+          <Text
+            token="caption"
+            style={{
+              textAlign: "center",
+              color: colors.textMuted,
+              marginTop: 16,
+              textTransform: "none",
+              letterSpacing: 0,
+              opacity: 0.7,
+            }}
+          >
+            Firula · versão 2.0.0
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+export default function ProfileRoute() {
+  const router = useRouter();
+  const { data: me } = useMe();
+  const authUser = useAuthUser();
+  const { data: tickets } = useMyTickets();
+  const logout = useLogout();
+
+  const totalTickets = tickets?.length ?? 0;
+  const attendedEvents = tickets?.filter((ticket) => ticket.status === "USED").length ?? 0;
+
+  const handleNavigate = (key: string) => {
+    switch (key) {
+      case "tickets":
+        router.push("/(tabs)/tickets");
+        break;
+      case "facial":
+        router.push("/facial-id");
+        break;
+      case "favorites":
+        router.push("/favorites");
+        break;
+      case "notifications":
+        router.push("/notifications");
+        break;
+      case "privacy":
+        router.push("/privacy");
+        break;
+      case "terms":
+        router.push("/terms");
+        break;
+      case "settings":
+        router.push("/settings");
+        break;
+      case "help":
+        router.push("/help");
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleLogout = () => {
+    logout.mutate(undefined, {
+      onSuccess: () => router.replace("/login"),
+      onError: () => {
+        Alert.alert("Erro", "Não foi possível sair agora. Tente novamente.");
+      },
+    });
+  };
+
+  return (
+    <ProfileScreen
+      name={me?.name || "Atleta"}
+      email={me?.email || authUser?.email || ""}
+      memberSince={formatMemberSince(me?.createdAt)}
+      eventsAttended={attendedEvents}
+      level={getLevelFromTickets(totalTickets)}
+      onEditProfile={() => router.push("/profile-edit")}
+      onNavigate={handleNavigate}
+      onLogout={handleLogout}
+      loggingOut={logout.isPending}
+    />
   );
 }

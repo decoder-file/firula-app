@@ -1,252 +1,665 @@
-import { useMemo, useState } from "react";
-import { Image, Modal, ScrollView, Text, View } from "react-native";
+/**
+ * Firula — Ingressos redesenhada (mapeia para app/(tabs)/tickets.tsx)
+ * Construída sobre o Design System. Segmentação + TicketCard (bilhete) + modal de QR.
+ *
+ * O QR real deve vir do react-native-qrcode-svg (já usado no app):
+ *   import QRCode from 'react-native-qrcode-svg';
+ *   <QRCode value={getTicketQrValue(ticket)} size={200} />
+ * Passe-o via a prop `renderQr` para não acoplar o DS à lib.
+ */
+
+import React, { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type ImageSourcePropType,
+} from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   CalendarDays,
-  CircleX,
-  ChevronRight,
   MapPin,
   QrCode,
+  ScanFace,
   Ticket,
-  TicketCheck,
-  UserRound,
+  X,
 } from "lucide-react-native";
-import { useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-
-import { AnimatedPressable } from "@/components/AnimatedPressable";
-import { AuthGate } from "@/components/AuthGate";
-import { Screen } from "@/components/Screen";
-import { TicketsHeader } from "@/components/TicketsHeader";
-import { useScreenLog } from "@/hooks/useScreenLog";
+import { Button, Text, useTheme } from "@/design-system";
 import { useMyTickets } from "@/hooks/useTickets";
 import type { CustomerTicket } from "@/services/tickets.service";
-import { formatCurrencyFromCents } from "@/utils/format";
 
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString("pt-BR", {
+export type TicketStatus = "active" | "used";
+
+export interface AppTicket {
+  id: string;
+  event: string;
+  tier: string;
+  dateLabel: string;
+  city: string;
+  code: string;
+  status: TicketStatus;
+  facial?: boolean;
+  image?: ImageSourcePropType;
+}
+
+type TabKey = "active" | "used" | "all";
+const TABS: { id: TabKey; label: string }[] = [
+  { id: "active", label: "Ativos" },
+  { id: "used", label: "Usados" },
+  { id: "all", label: "Todos" },
+];
+const STATUS_LABEL: Record<TicketStatus, string> = {
+  active: "Válido",
+  used: "Usado",
+};
+
+const toAppTicketStatus = (status: string): TicketStatus =>
+  status === "VALID" ? "active" : "used";
+
+const formatTicketDate = (isoDate: string) =>
+  new Date(isoDate).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 
-const getStatusLabel = (status: string) => {
-  if (status === "VALID") {
-    return "Válido";
-  }
+const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
+  id: ticket.id,
+  event: ticket.event.name,
+  tier: ticket.ticketLot.name,
+  dateLabel: formatTicketDate(ticket.event.startsAt),
+  city: `${ticket.event.location.city}/${ticket.event.location.state}`,
+  code: `FIRULA-${ticket.id.slice(0, 8).toUpperCase()}`,
+  status: toAppTicketStatus(ticket.status),
+  facial: false,
+  image: ticket.event.coverUrl ? { uri: ticket.event.coverUrl } : undefined,
+});
 
-  if (status === "USED") {
-    return "Usado";
-  }
+export interface TicketsScreenProps {
+  tickets: AppTicket[];
+  /** Recebe o valor do QR e devolve o nó a renderizar (ex.: <QRCode value={v} size={200} />). */
+  renderQr?: (value: string, size: number) => React.ReactNode;
+  onExplore?: () => void;
+}
 
-  if (status === "CANCELLED") {
-    return "Cancelado";
-  }
+export function TicketsScreen({
+  tickets,
+  renderQr,
+  onExplore,
+}: TicketsScreenProps) {
+  const { colors } = useTheme();
+  const [tab, setTab] = useState<TabKey>("active");
+  const [qrTicket, setQrTicket] = useState<AppTicket | null>(null);
 
-  if (status === "EXPIRED") {
-    return "Expirado";
-  }
+  const list = useMemo(
+    () => tickets.filter((t) => (tab === "all" ? true : t.status === tab)),
+    [tickets, tab],
+  );
 
-  return status;
-};
+  const emptyCopy: Record<TabKey, { title: string; body: string }> = {
+    active: {
+      title: "Nenhum ingresso ativo",
+      body: "Seus ingressos válidos aparecem aqui com QR Code para entrada.",
+    },
+    used: {
+      title: "Nenhum ingresso usado",
+      body: "Depois que você participar de um evento, ele aparece aqui.",
+    },
+    all: {
+      title: "Você ainda não tem ingressos",
+      body: "Explore eventos e garanta seu lugar — é rápido.",
+    },
+  };
 
-const filterTicket = (ticket: CustomerTicket, filter: "active" | "used" | "all") => {
-  if (filter === "all") {
-    return true;
-  }
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="auto" />
 
-  if (filter === "active") {
-    return ticket.status === "VALID";
-  }
-
-  return ticket.status === "USED";
-};
-
-const getTicketQrValue = (ticket: CustomerTicket) => `FIRULA-TICKET-${ticket.id}`;
-
-const TicketsSkeleton = () => (
-  <View className="gap-4">
-    {[1, 2, 3].map((item) => (
-      <View key={item} className="rounded-3xl bg-card p-4">
-        <View className="h-32 rounded-2xl bg-secondary" />
-        <View className="h-5 w-3/4 rounded-full bg-secondary" />
-        <View className="mt-2 h-4 w-1/2 rounded-full bg-secondary" />
-
-        <View className="mt-4 gap-2">
-          <View className="h-4 w-2/3 rounded-full bg-secondary" />
-          <View className="h-4 w-4/5 rounded-full bg-secondary" />
-          <View className="h-4 w-3/5 rounded-full bg-secondary" />
+      {/* Header + segmentação */}
+      <View
+        style={{
+          backgroundColor: colors.surface,
+          paddingHorizontal: 20,
+          paddingTop: 14,
+        }}
+      >
+        <Text token="titleLg" style={{ fontSize: 24 }}>
+          Meus ingressos
+        </Text>
+        <View style={[styles.segment, { backgroundColor: colors.surfaceAlt }]}>
+          {TABS.map((t) => {
+            const on = t.id === tab;
+            return (
+              <Pressable
+                key={t.id}
+                onPress={() => setTab(t.id)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={t.label}
+                style={[
+                  styles.segItem,
+                  on
+                    ? { backgroundColor: colors.surface, ...cardShadow }
+                    : null,
+                ]}
+              >
+                <Text
+                  token="label"
+                  style={{
+                    fontSize: 13,
+                    color: on ? colors.text : colors.textMuted,
+                    fontWeight: on ? "700" : "600",
+                  }}
+                >
+                  {t.label}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-
-        <View className="mt-4 h-10 rounded-2xl bg-secondary" />
-        <View className="mt-3 h-10 rounded-2xl bg-secondary" />
       </View>
-    ))}
-  </View>
-);
 
-export default function TicketsScreen() {
-  useScreenLog();
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 28 }}
+      >
+        {list.length > 0 ? (
+          <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 16 }}>
+            {list.map((t) => (
+              <TicketBilhete
+                key={t.id}
+                ticket={t}
+                onOpenQr={() => setQrTicket(t)}
+              />
+            ))}
+          </View>
+        ) : (
+          <View
+            style={{
+              alignItems: "center",
+              paddingHorizontal: 20,
+              paddingTop: 40,
+            }}
+          >
+            <View
+              style={[
+                styles.emptyIcon,
+                { backgroundColor: colors.primarySoft },
+              ]}
+            >
+              <Ticket size={30} color={colors.primaryText} strokeWidth={1.75} />
+            </View>
+            <Text token="title" style={{ marginBottom: 4 }}>
+              {emptyCopy[tab].title}
+            </Text>
+            <Text
+              token="bodySm"
+              color="muted"
+              style={{ textAlign: "center", maxWidth: 240, marginBottom: 16 }}
+            >
+              {emptyCopy[tab].body}
+            </Text>
+            <Button
+              label="Explorar eventos"
+              onPress={onExplore ?? (() => {})}
+            />
+          </View>
+        )}
+      </ScrollView>
+
+      <QrModal
+        ticket={qrTicket}
+        onClose={() => setQrTicket(null)}
+        renderQr={renderQr}
+      />
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────── Bilhete
+
+function TicketBilhete({
+  ticket,
+  onOpenQr,
+}: {
+  ticket: AppTicket;
+  onOpenQr: () => void;
+}) {
+  const { colors, radius } = useTheme();
+  const active = ticket.status === "active";
+  const headerBg = active ? colors.text : colors.textMuted;
+  const accent = active ? colors.primary : colors.border;
+
+  return (
+    <View
+      style={[
+        {
+          borderRadius: 22,
+          overflow: "hidden",
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+      ]}
+      accessibilityLabel={`Ingresso ${ticket.tier} para ${ticket.event}, ${ticket.dateLabel}, ${STATUS_LABEL[ticket.status]}`}
+    >
+      <View style={{ height: 3, backgroundColor: accent }} />
+      <View
+        style={{
+          backgroundColor: headerBg,
+          paddingHorizontal: 18,
+          paddingVertical: 16,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 10,
+          }}
+        >
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              token="caption"
+              style={{ color: active ? "#3ED97F" : "#E7EAEE" }}
+            >
+              {ticket.tier.toUpperCase()}
+            </Text>
+            <Text
+              token="subtitle"
+              style={{ color: "#fff", fontWeight: "800", marginTop: 3 }}
+            >
+              {ticket.event}
+            </Text>
+          </View>
+          <View
+            style={{
+              backgroundColor: active
+                ? "rgba(62,217,127,0.16)"
+                : "rgba(255,255,255,0.18)",
+              borderRadius: 999,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+            }}
+          >
+            <Text
+              token="caption"
+              style={{
+                color: active ? "#3ED97F" : "#fff",
+                textTransform: "none",
+                letterSpacing: 0,
+                fontSize: 10.5,
+              }}
+            >
+              {STATUS_LABEL[ticket.status]}
+            </Text>
+          </View>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 14,
+            marginTop: 10,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <CalendarDays
+              size={13}
+              color="rgba(255,255,255,0.7)"
+              strokeWidth={1.75}
+            />
+            <Text token="bodySm" style={{ color: "rgba(255,255,255,0.85)" }}>
+              {ticket.dateLabel}
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <MapPin
+              size={13}
+              color="rgba(255,255,255,0.7)"
+              strokeWidth={1.75}
+            />
+            <Text token="bodySm" style={{ color: "rgba(255,255,255,0.85)" }}>
+              {ticket.city}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Perfuração */}
+      <View style={{ height: 0, position: "relative" }}>
+        <View
+          style={[
+            styles.notch,
+            { left: -9, backgroundColor: colors.background },
+          ]}
+        />
+        <View
+          style={[
+            styles.notch,
+            { right: -9, backgroundColor: colors.background },
+          ]}
+        />
+      </View>
+
+      <View
+        style={{
+          borderTopWidth: 2,
+          borderStyle: "dashed",
+          borderTopColor: colors.border,
+          padding: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 14,
+        }}
+      >
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            style={{
+              fontFamily: "PlusJakartaSans-Medium",
+              fontSize: 12,
+              letterSpacing: 1.5,
+              color: colors.textMuted,
+            }}
+          >
+            {ticket.code}
+          </Text>
+          {ticket.facial ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                marginTop: 5,
+              }}
+            >
+              <ScanFace size={13} color={colors.primaryText} strokeWidth={2} />
+              <Text
+                token="caption"
+                color="primary"
+                style={{
+                  textTransform: "none",
+                  letterSpacing: 0,
+                  fontSize: 11,
+                }}
+              >
+                Facial ID ativo
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Button
+          label="QR"
+          icon={QrCode}
+          size="sm"
+          variant={active ? "primary" : "secondary"}
+          onPress={onOpenQr}
+        />
+      </View>
+    </View>
+  );
+}
+
+// ─────────────────────────────────────────────── Modal de QR
+
+function QrModal({
+  ticket,
+  onClose,
+  renderQr,
+}: {
+  ticket: AppTicket | null;
+  onClose: () => void;
+  renderQr?: (v: string, s: number) => React.ReactNode;
+}) {
+  const { colors, radius } = useTheme();
+  const insets = useSafeAreaInsets();
+  const visible = !!ticket;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]}
+        onPress={onClose}
+        accessibilityLabel="Fechar"
+      />
+      <View
+        style={{ flex: 1, justifyContent: "flex-end" }}
+        pointerEvents="box-none"
+      >
+        <View
+          accessibilityViewIsModal
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            paddingTop: 8,
+            paddingHorizontal: 20,
+            paddingBottom: insets.bottom + 24,
+          }}
+        >
+          <View
+            style={{
+              width: 40,
+              height: 5,
+              borderRadius: 999,
+              backgroundColor: colors.border,
+              alignSelf: "center",
+              marginVertical: 8,
+            }}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 4,
+            }}
+          >
+            <Text token="title" accessibilityRole="header">
+              Entrada do evento
+            </Text>
+            <Pressable
+              onPress={onClose}
+              accessibilityLabel="Fechar"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 999,
+                backgroundColor: colors.surfaceAlt,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <X size={18} color={colors.text} strokeWidth={2} />
+            </Pressable>
+          </View>
+          <Text token="bodySm" color="muted" style={{ marginBottom: 18 }}>
+            Apresente este QR Code na portaria
+          </Text>
+
+          {ticket ? (
+            <>
+              <View
+                style={{
+                  backgroundColor: colors.surfaceAlt,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: 20,
+                  padding: 22,
+                  alignItems: "center",
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 16,
+                    padding: 14,
+                  }}
+                >
+                  {renderQr ? (
+                    renderQr(`FIRULA-TICKET-${ticket.id}`, 200)
+                  ) : (
+                    <View
+                      style={{
+                        width: 200,
+                        height: 200,
+                        borderRadius: 8,
+                        backgroundColor: colors.text,
+                      }}
+                    />
+                  )}
+                </View>
+                <Text
+                  style={{
+                    fontFamily: "PlusJakartaSans-Medium",
+                    fontSize: 13,
+                    letterSpacing: 2,
+                    color: colors.text,
+                    marginTop: 16,
+                  }}
+                >
+                  {ticket.code}
+                </Text>
+              </View>
+              <View
+                style={{
+                  marginTop: 16,
+                  backgroundColor: colors.text,
+                  borderRadius: 14,
+                  padding: 16,
+                }}
+              >
+                <Text token="caption" style={{ color: "#3ED97F" }}>
+                  {ticket.tier.toUpperCase()}
+                </Text>
+                <Text
+                  token="subtitle"
+                  style={{ color: "#fff", fontWeight: "800", marginTop: 3 }}
+                >
+                  {ticket.event}
+                </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 6,
+                  }}
+                >
+                  <CalendarDays
+                    size={13}
+                    color="rgba(255,255,255,0.7)"
+                    strokeWidth={1.75}
+                  />
+                  <Text
+                    token="bodySm"
+                    style={{ color: "rgba(255,255,255,0.8)" }}
+                  >
+                    {ticket.dateLabel} · {ticket.city}
+                  </Text>
+                </View>
+              </View>
+              {ticket.facial ? (
+                <View
+                  style={{
+                    marginTop: 12,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: colors.primarySoft,
+                    borderWidth: 1,
+                    borderColor: "#A8EBC6",
+                    borderRadius: 12,
+                    padding: 12,
+                  }}
+                >
+                  <ScanFace
+                    size={18}
+                    color={colors.primaryText}
+                    strokeWidth={2}
+                  />
+                  <Text
+                    token="bodySm"
+                    color="primary"
+                    style={{ flex: 1, fontWeight: "600" }}
+                  >
+                    Facial ID ativo — a entrada também valida seu rosto
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          ) : null}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const cardShadow = {
+  shadowColor: "#141821",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+  elevation: 2,
+};
+
+const styles = StyleSheet.create({
+  segment: {
+    flexDirection: "row",
+    marginTop: 14,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 14,
+    padding: 4,
+  },
+  segItem: {
+    flex: 1,
+    height: 38,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notch: {
+    position: "absolute",
+    top: -9,
+    width: 18,
+    height: 18,
+    borderRadius: 999,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+});
+
+export default function TicketsRoute() {
   const router = useRouter();
-  const [filter, setFilter] = useState<"active" | "used" | "all">("active");
-  const [selectedTicket, setSelectedTicket] = useState<CustomerTicket | null>(null);
+  const { data } = useMyTickets();
 
-  const { data: tickets = [], isPending, isError, refetch } = useMyTickets();
-
-  const filteredTickets = useMemo(
-    () => tickets.filter((ticket) => filterTicket(ticket, filter)),
-    [filter, tickets],
+  const tickets = useMemo(
+    () => (data ?? []).map(mapCustomerTicket),
+    [data],
   );
 
   return (
-    <AuthGate
-      title="Faça login para ver seus ingressos"
-      description="Entre na sua conta para acessar seus ingressos ativos, usados e detalhes de cada evento."
-    >
-      <Screen edges={["top", "left", "right"]}>
-        <TicketsHeader filter={filter} onFilterChange={setFilter} />
-
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingBottom: 28 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="gap-4 px-4 pt-4">
-            {isPending ? (
-              <TicketsSkeleton />
-            ) : null}
-
-            {isError ? (
-              <View className="mt-14 items-center">
-                <Ticket color="#c8ccd4" size={48} strokeWidth={1.5} />
-                <Text className="mt-3 text-sm text-muted-foreground">Não foi possível carregar seus ingressos.</Text>
-                <AnimatedPressable className="mt-4 rounded-2xl bg-primary px-6 py-3" onPress={() => refetch()}>
-                  <Text className="font-bold text-sm text-primary-foreground">Tentar novamente</Text>
-                </AnimatedPressable>
-              </View>
-            ) : null}
-
-            {!isPending && !isError && !filteredTickets.length ? (
-              <View className="mt-14 items-center">
-                <Ticket color="#c8ccd4" size={48} strokeWidth={1.5} />
-                <Text className="mt-3 text-sm text-muted-foreground">Nenhum ingresso encontrado para este filtro.</Text>
-              </View>
-            ) : null}
-
-            {!isPending && !isError
-              ? filteredTickets.map((ticket) => (
-                  <View key={ticket.id} className="rounded-3xl bg-card p-4">
-                    {ticket.event.coverUrl ? (
-                      <Image
-                        source={{ uri: ticket.event.coverUrl }}
-                        className="mb-3 h-32 w-full rounded-2xl"
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View className="mb-3 h-32 w-full items-center justify-center rounded-2xl bg-secondary">
-                        <Ticket color="#727985" size={22} strokeWidth={1.5} />
-                      </View>
-                    )}
-
-                    <View className="flex-row items-start justify-between gap-3">
-                      <Text className="flex-1 font-bold text-base text-foreground">{ticket.event.name}</Text>
-                      <View className="rounded-full bg-accent px-3 py-1">
-                        <Text className="font-medium text-[11px] text-accent-foreground">{getStatusLabel(ticket.status)}</Text>
-                      </View>
-                    </View>
-
-                    <Text className="mt-1 text-xs text-muted-foreground">Organização: {ticket.event.organization.tradeName}</Text>
-
-                    <View className="mt-3 gap-2">
-                      <View className="flex-row items-center gap-2">
-                        <CalendarDays color="#727985" size={14} strokeWidth={1.5} />
-                        <Text className="text-xs text-muted-foreground">{formatDateTime(ticket.event.startsAt)}</Text>
-                      </View>
-
-                      <View className="flex-row items-center gap-2">
-                        <MapPin color="#727985" size={14} strokeWidth={1.5} />
-                        <Text className="text-xs text-muted-foreground">
-                          {ticket.event.location.address} - {ticket.event.location.city}/{ticket.event.location.state}
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center gap-2">
-                        <UserRound color="#727985" size={14} strokeWidth={1.5} />
-                        <Text className="text-xs text-muted-foreground">
-                          {ticket.attendee.name} ({ticket.attendee.email})
-                        </Text>
-                      </View>
-
-                      <View className="flex-row items-center gap-2">
-                        <TicketCheck color="#727985" size={14} strokeWidth={1.5} />
-                        <Text className="text-xs text-muted-foreground">
-                          {ticket.ticketLot.name} - {formatCurrencyFromCents(ticket.ticketLot.price)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View className="mt-3 rounded-2xl bg-secondary px-3 py-2.5">
-                      <Text className="text-xs text-muted-foreground">
-                        {ticket.canTransfer
-                          ? "Transferência disponível"
-                          : "Transferência bloqueada"}
-                      </Text>
-                    </View>
-
-                    <View className="mt-3 gap-1">
-                      <Text className="text-[11px] text-muted-foreground">Emitido em: {formatDateTime(ticket.createdAt)}</Text>
-                      {ticket.usedAt ? (
-                        <Text className="text-[11px] text-muted-foreground">Usado em: {formatDateTime(ticket.usedAt)}</Text>
-                      ) : null}
-                    </View>
-
-                    <AnimatedPressable
-                      className="mt-3 flex-row items-center justify-center gap-1 rounded-2xl border border-primary/30 py-3"
-                      onPress={() => setSelectedTicket(ticket)}
-                    >
-                      <QrCode color="#1fbd63" size={14} strokeWidth={1.5} />
-                      <Text className="font-medium text-xs text-primary">Acesso rápido ao QR Code</Text>
-                    </AnimatedPressable>
-
-                    <AnimatedPressable
-                      className="mt-3 flex-row items-center justify-center gap-1 rounded-2xl border border-border py-3"
-                      onPress={() => router.push(`/ticket/${ticket.id}`)}
-                    >
-                      <Text className="font-medium text-xs text-foreground">Ver detalhes do ingresso</Text>
-                      <ChevronRight color="#727985" size={14} strokeWidth={1.5} />
-                    </AnimatedPressable>
-                  </View>
-                ))
-              : null}
-          </View>
-        </ScrollView>
-
-        <Modal
-          animationType="slide"
-          transparent
-          visible={Boolean(selectedTicket)}
-          onRequestClose={() => setSelectedTicket(null)}
-        >
-          <View className="flex-1 justify-end bg-black/50">
-            <View className="rounded-t-[28px] bg-card p-5">
-              <View className="mb-4 flex-row items-center justify-between">
-                <Text className="font-bold text-base text-foreground">QR Code do ingresso</Text>
-                <AnimatedPressable onPress={() => setSelectedTicket(null)}>
-                  <CircleX color="#727985" size={20} strokeWidth={1.5} />
-                </AnimatedPressable>
-              </View>
-
-              {selectedTicket ? (
-                <View className="items-center gap-3 rounded-2xl bg-secondary/40 px-4 py-5">
-                  <QRCode value={getTicketQrValue(selectedTicket)} size={180} />
-                  <Text className="text-center text-xs text-muted-foreground">{selectedTicket.event.name}</Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
-        </Modal>
-      </Screen>
-    </AuthGate>
+    <TicketsScreen
+      tickets={tickets}
+      renderQr={(value, size) => <QRCode value={value} size={size} />}
+      onExplore={() => router.push("/(tabs)/explore")}
+    />
   );
 }
