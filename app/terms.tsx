@@ -1,5 +1,10 @@
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import { InAppWebViewScreen } from "@/components/InAppWebViewScreen";
 
 export default function TermsScreen() {
-  return <PlaceholderScreen title="Termos de uso" description="Rota criada para o conteúdo de termos, mantendo a navegação do app funcional de ponta a ponta." />;
+  return (
+    <InAppWebViewScreen
+      title="Termos de uso"
+      url="https://firula.com.br/termos-eventos"
+    />
+  );
 }

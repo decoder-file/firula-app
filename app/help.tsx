@@ -1,5 +1,10 @@
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import { InAppWebViewScreen } from "@/components/InAppWebViewScreen";
 
 export default function HelpScreen() {
-  return <PlaceholderScreen title="Ajuda" description="Estrutura pronta para central de suporte, FAQ e atalhos de contato no app mobile." />;
+  return (
+    <InAppWebViewScreen
+      title="Ajuda"
+      url="https://firula.com.br/central-ajuda"
+    />
+  );
 }

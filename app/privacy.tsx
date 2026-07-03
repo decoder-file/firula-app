@@ -1,5 +1,10 @@
-import { PlaceholderScreen } from "@/components/PlaceholderScreen";
+import { InAppWebViewScreen } from "@/components/InAppWebViewScreen";
 
 export default function PrivacyScreen() {
-  return <PlaceholderScreen title="Privacidade" description="Estrutura pronta para portar o conteúdo institucional do app web em formato nativo." />;
+  return (
+    <InAppWebViewScreen
+      title="Privacidade"
+      url="https://firula.com.br/privacidade"
+    />
+  );
 }
