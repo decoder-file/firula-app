@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, TextInput, View } from "react-native";
 import { Search, X } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text, useTheme } from "@/design-system";
 
@@ -12,13 +13,14 @@ export function ExploreHeader({
   onQuery: (value: string) => void;
 }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
         backgroundColor: colors.surface,
         paddingHorizontal: 20,
-        paddingTop: 14,
+        paddingTop: insets.top + 8,
         paddingBottom: 6,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
