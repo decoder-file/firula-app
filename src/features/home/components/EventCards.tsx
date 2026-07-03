@@ -152,16 +152,6 @@ export function TrendingRow({
           source={event.image}
           style={{ width: 84, height: 84, borderRadius: 14 }}
         />
-        <View
-          style={[
-            styles.rank,
-            { backgroundColor: colors.primary, borderColor: colors.surface },
-          ]}
-        >
-          <Text token="label" style={{ color: colors.onPrimary, fontSize: 12 }}>
-            {rank}
-          </Text>
-        </View>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <View
