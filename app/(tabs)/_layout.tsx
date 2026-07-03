@@ -51,17 +51,6 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="profile"
-        listeners={{
-          tabPress: (event) => {
-            if (!isAuthenticated) {
-              event.preventDefault();
-              router.push({
-                pathname: "/login-modal",
-                params: { redirectTo: "/(tabs)/profile" },
-              } as never);
-            }
-          },
-        }}
         options={{
           title: "Perfil",
           tabBarIcon: ({ color }) => <User color={color} size={22} strokeWidth={1.5} />,

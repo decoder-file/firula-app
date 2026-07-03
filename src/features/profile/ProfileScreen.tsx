@@ -1,13 +1,16 @@
 import React from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { LogOut, Trophy } from "lucide-react-native";
+import { LogOut, User } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text, useTheme } from "@/design-system";
-import { PROFILE_ACHIEVEMENTS, PROFILE_MENU } from "@/features/profile/constants";
+import { PROFILE_MENU } from "@/features/profile/constants";
 import { ProfileHeader } from "@/features/profile/components/ProfileHeader";
 import { ProfileMenu } from "@/features/profile/components/ProfileMenu";
 import type { ProfileScreenProps } from "@/features/profile/types";
+
+const PUBLIC_MENU_KEYS = new Set(["privacy", "terms", "settings", "help"]);
 
 export function ProfileScreen({
   name,
@@ -16,12 +19,18 @@ export function ProfileScreen({
   memberSince,
   eventsAttended,
   level = "Gold",
+  isAuthenticated = false,
+  onLogin,
   onEditProfile,
   onNavigate,
   onLogout,
   loggingOut = false,
 }: ProfileScreenProps) {
   const { colors } = useTheme();
+
+  const visibleMenu = isAuthenticated
+    ? PROFILE_MENU
+    : PROFILE_MENU.filter((item) => PUBLIC_MENU_KEYS.has(item.key));
 
   const stats = [
     { value: String(eventsAttended), label: "Eventos" },
@@ -36,13 +45,17 @@ export function ProfileScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 28 }}
       >
-        <ProfileHeader
-          name={name}
-          photoUrl={photoUrl}
-          email={email}
-          level={level}
-          onEditProfile={onEditProfile}
-        />
+        {isAuthenticated ? (
+          <ProfileHeader
+            name={name}
+            photoUrl={photoUrl}
+            email={email}
+            level={level}
+            onEditProfile={onEditProfile}
+          />
+        ) : (
+          <GuestHeader onLogin={onLogin} />
+        )}
 
         {/* <View style={{ paddingHorizontal: 20, marginTop: -4 }}>
           <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
@@ -137,30 +150,32 @@ export function ProfileScreen({
         </View> */}
 
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
-          <ProfileMenu menu={PROFILE_MENU} onNavigate={onNavigate} />
+          <ProfileMenu menu={visibleMenu} onNavigate={onNavigate} />
 
-          <Pressable
-            onPress={onLogout}
-            disabled={loggingOut}
-            accessibilityRole="button"
-            accessibilityLabel="Sair da conta"
-            style={{
-              marginTop: 16,
-              height: 52,
-              borderRadius: 16,
-              backgroundColor: colors.errorSoft,
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              opacity: loggingOut ? 0.6 : 1,
-            }}
-          >
-            <LogOut size={17} color={colors.error} strokeWidth={2} />
-            <Text token="label" style={{ color: colors.error }}>
-              {loggingOut ? "Saindo…" : "Sair da conta"}
-            </Text>
-          </Pressable>
+          {isAuthenticated ? (
+            <Pressable
+              onPress={onLogout}
+              disabled={loggingOut}
+              accessibilityRole="button"
+              accessibilityLabel="Sair da conta"
+              style={{
+                marginTop: 16,
+                height: 52,
+                borderRadius: 16,
+                backgroundColor: colors.errorSoft,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                opacity: loggingOut ? 0.6 : 1,
+              }}
+            >
+              <LogOut size={17} color={colors.error} strokeWidth={2} />
+              <Text token="label" style={{ color: colors.error }}>
+                {loggingOut ? "Saindo…" : "Sair da conta"}
+              </Text>
+            </Pressable>
+          ) : null}
 
           <Text
             token="caption"
@@ -177,6 +192,66 @@ export function ProfileScreen({
           </Text>
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function GuestHeader({ onLogin }: { onLogin?: () => void }) {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View
+      style={{
+        backgroundColor: colors.surface,
+        paddingHorizontal: 20,
+        paddingTop: insets.top + 8,
+        paddingBottom: 20,
+      }}
+    >
+      <Text token="titleLg" style={{ fontSize: 24 }}>
+        Perfil
+      </Text>
+      <Pressable
+        onPress={onLogin}
+        accessibilityRole="button"
+        accessibilityLabel="Entrar ou criar conta"
+        style={{
+          marginTop: 16,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 14,
+          backgroundColor: colors.surfaceAlt,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 18,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+        }}
+      >
+        <View
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <User size={22} color={colors.textMuted} strokeWidth={1.5} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text token="body" style={{ fontWeight: "700" }}>
+            Entre ou crie uma conta
+          </Text>
+          <Text token="bodySm" color="muted" style={{ marginTop: 2 }}>
+            Acesse seus ingressos e favoritos
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 }

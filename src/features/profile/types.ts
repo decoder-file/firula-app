@@ -7,6 +7,8 @@ export interface ProfileScreenProps {
   memberSince: string;
   eventsAttended: number;
   level?: string;
+  isAuthenticated?: boolean;
+  onLogin?: () => void;
   onEditProfile?: () => void;
   onNavigate?: (key: string) => void;
   onLogout?: () => void;

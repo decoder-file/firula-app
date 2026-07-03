@@ -93,6 +93,8 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
     memberSince: formatMemberSince(me?.createdAt),
     eventsAttended: attendedEvents,
     level: getLevelFromTickets(totalTickets),
+    isAuthenticated,
+    onLogin: () => router.push("/login-modal"),
     onEditProfile: () => router.push("/profile-edit"),
     onNavigate: handleNavigate,
     onLogout: handleLogout,
