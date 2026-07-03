@@ -1,3 +1,5 @@
+export const EXPLORE_DEFAULT_CATEGORY = "todos";
+
 export const EXPLORE_CATEGORIES = [
   { id: "todos", label: "Todos" },
   { id: "futebol", label: "Futebol" },

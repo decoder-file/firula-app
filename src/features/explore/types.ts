@@ -13,8 +13,22 @@ export interface ExploreEvent {
   image: ImageSourcePropType;
 }
 
+export interface ExploreCategory {
+  id: string;
+  label: string;
+}
+
 export interface ExploreScreenProps {
   events: ExploreEvent[];
+  categories?: ExploreCategory[];
+  query?: string;
+  selectedCategory?: string;
+  onQueryChange?: (value: string) => void;
+  onCategoryChange?: (value: string) => void;
+  isLoading?: boolean;
+  isFetchingMore?: boolean;
+  canLoadMore?: boolean;
+  onLoadMore?: () => void;
   onOpenEvent?: (id: string) => void;
 }
 

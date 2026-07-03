@@ -2,15 +2,23 @@ import React from "react";
 import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { ArrowDownUp, CalendarDays, Flame, MapPin, SearchX, Users } from "lucide-react-native";
 
-import { Button, Text, useTheme } from "@/design-system";
+import { Button, Skeleton, Text, useTheme } from "@/design-system";
 import type { ExploreEvent } from "@/features/explore/types";
 
 export function ExploreEventList({
   events,
+  isLoading = false,
+  isFetchingMore = false,
+  canLoadMore = false,
+  onLoadMore,
   onOpenEvent,
   onResetFilters,
 }: {
   events: ExploreEvent[];
+  isLoading?: boolean;
+  isFetchingMore?: boolean;
+  canLoadMore?: boolean;
+  onLoadMore?: () => void;
   onOpenEvent?: (id: string) => void;
   onResetFilters: () => void;
 }) {
@@ -45,7 +53,33 @@ export function ExploreEventList({
         </Pressable>
       </View>
 
-      {events.length > 0 ? (
+      {isLoading ? (
+        <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 12 }}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <View
+              key={index}
+              style={{
+                flexDirection: "row",
+                gap: 14,
+                alignItems: "center",
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: radius.xl,
+                padding: 12,
+              }}
+            >
+              <Skeleton width={88} height={88} radius={14} />
+              <View style={{ flex: 1 }}>
+                <Skeleton width={70} height={18} radius={999} />
+                <Skeleton width="80%" height={18} radius={7} style={{ marginTop: 8 }} />
+                <Skeleton width="70%" height={16} radius={7} style={{ marginTop: 8 }} />
+                <Skeleton width="45%" height={16} radius={7} style={{ marginTop: 8 }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : events.length > 0 ? (
         <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 12 }}>
           {events.map((e) => (
             <Pressable
@@ -187,6 +221,15 @@ export function ExploreEventList({
               </View>
             </Pressable>
           ))}
+
+          {canLoadMore ? (
+            <View style={{ marginTop: 8, alignItems: "center" }}>
+              <Button
+                label={isFetchingMore ? "Carregando..." : "Carregar mais"}
+                onPress={onLoadMore}
+              />
+            </View>
+          ) : null}
         </View>
       ) : (
         <View

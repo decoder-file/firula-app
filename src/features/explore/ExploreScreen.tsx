@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
@@ -8,21 +8,27 @@ import { ExploreEventList } from "@/features/explore/components/ExploreEventList
 import { ExploreHeader } from "@/features/explore/components/ExploreHeader";
 import type { ExploreScreenProps } from "@/features/explore/types";
 
-export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
+export function ExploreScreen({
+  events,
+  categories = EXPLORE_CATEGORIES,
+  query: controlledQuery,
+  selectedCategory: controlledCategory,
+  onQueryChange,
+  onCategoryChange,
+  isLoading = false,
+  isFetchingMore = false,
+  canLoadMore = false,
+  onLoadMore,
+  onOpenEvent,
+}: ExploreScreenProps) {
   const { colors } = useTheme();
-  const [query, setQuery] = useState("");
-  const [cat, setCat] = useState("todos");
+  const [internalQuery, setInternalQuery] = useState("");
+  const [internalCategory, setInternalCategory] = useState("todos");
 
-  const q = query.trim().toLowerCase();
-  const results = useMemo(() => {
-    let list = events;
-    if (cat !== "todos") list = list.filter((e) => e.category === cat);
-    if (q)
-      list = list.filter((e) =>
-        `${e.title} ${e.type} ${e.city}`.toLowerCase().includes(q),
-      );
-    return list;
-  }, [events, cat, q]);
+  const query = controlledQuery ?? internalQuery;
+  const cat = controlledCategory ?? internalCategory;
+  const setQuery = onQueryChange ?? setInternalQuery;
+  const setCat = onCategoryChange ?? setInternalCategory;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -40,7 +46,7 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
             gap: 8,
           }}
         >
-          {EXPLORE_CATEGORIES.map((c) => {
+          {categories.map((c) => {
             const on = c.id === cat;
             return (
               <Pressable
@@ -75,7 +81,11 @@ export function ExploreScreen({ events, onOpenEvent }: ExploreScreenProps) {
       </View>
 
       <ExploreEventList
-        events={results}
+        events={events}
+        isLoading={isLoading}
+        isFetchingMore={isFetchingMore}
+        canLoadMore={canLoadMore}
+        onLoadMore={onLoadMore}
         onOpenEvent={onOpenEvent}
         onResetFilters={() => {
           setQuery("");
