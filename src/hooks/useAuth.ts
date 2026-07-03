@@ -39,6 +39,8 @@ const useCompleteAuthSession = () => {
     completeSession: (
       data: {
         identityId: string;
+        name: string;
+        photoUrl: string | null;
         scope: string;
         adminProfiles: AuthCustomer["adminProfiles"];
         customerProfile: AuthUserProfile | null | undefined;
@@ -49,6 +51,8 @@ const useCompleteAuthSession = () => {
       const customer: AuthCustomer = {
         identityId: data.identityId,
         email: data.email ?? fallbackEmail,
+        name: data.name,
+        photoUrl: data.photoUrl,
         scope: data.scope,
         adminProfiles: data.adminProfiles,
       };

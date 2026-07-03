@@ -30,6 +30,8 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   const authUser = useAuthUser();
   const { data: tickets } = useMyTickets();
   const logout = useLogout();
+  const displayName = authUser?.name || me?.name || "Atleta";
+  const displayPhotoUrl = authUser?.photoUrl || me?.profile?.photoUrl || null;
 
   const totalTickets = tickets?.length ?? 0;
   const attendedEvents =
@@ -85,7 +87,8 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   };
 
   return {
-    name: me?.name || "Atleta",
+    name: displayName,
+    photoUrl: displayPhotoUrl,
     email: me?.email || authUser?.email || "",
     memberSince: formatMemberSince(me?.createdAt),
     eventsAttended: attendedEvents,

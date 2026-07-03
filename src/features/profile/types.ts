@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react-native";
 
 export interface ProfileScreenProps {
   name: string;
+  photoUrl?: string | null;
   email: string;
   memberSince: string;
   eventsAttended: number;

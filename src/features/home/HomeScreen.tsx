@@ -15,6 +15,7 @@ import type { HomeScreenProps } from "@/features/home/types";
 
 export function HomeScreen({
   userName,
+  userAvatar,
   city,
   events,
   categories = HOME_DEFAULT_CATEGORIES,
@@ -71,6 +72,7 @@ export function HomeScreen({
 
       <HomeHeader
         userName={userName}
+        userAvatar={userAvatar}
         city={city}
         query={query}
         onQuery={setQuery}

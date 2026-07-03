@@ -19,6 +19,8 @@ export interface AdminProfile {
 export interface AuthCustomer {
   identityId: string;
   email: string;
+  name: string;
+  photoUrl: string | null;
   scope: string;
   adminProfiles: AdminProfile[];
 }
@@ -27,11 +29,14 @@ export interface AuthUserProfile {
   id: string;
   cpf: string;
   phone: string;
+  photoUrl?: string | null;
 }
 
 export interface LoginResponseData {
   accessToken: string;
   identityId: string;
+  name: string;
+  photoUrl: string | null;
   scope: string;
   adminProfiles: AdminProfile[];
   customerProfile: AuthUserProfile | null;
@@ -42,6 +47,17 @@ export interface LoginResponse {
   success: boolean;
   data: LoginResponseData;
 }
+
+type MaybeWrappedLoginResponse = LoginResponseData | LoginResponse;
+
+const unwrapLoginResponse = (payload: MaybeWrappedLoginResponse): LoginResponseData => {
+  const wrapped = payload as LoginResponse;
+  if (wrapped?.data?.accessToken) {
+    return wrapped.data;
+  }
+
+  return payload as LoginResponseData;
+};
 
 export interface RefreshTokenResponse {
   accessToken: string;
@@ -136,12 +152,13 @@ export const authService = {
   verifyLoginCode: async (
     payload: VerifyLoginCodePayload,
   ): Promise<LoginResponseData> => {
-    const { data } = await apiClient.post<LoginResponse>(
+    const { data } = await apiClient.post<MaybeWrappedLoginResponse>(
       "/public/auth/customer/verify-code",
       payload,
     );
-    tokenStorage.setAccessToken(data.data.accessToken);
-    return data.data;
+    const parsed = unwrapLoginResponse(data);
+    tokenStorage.setAccessToken(parsed.accessToken);
+    return parsed;
   },
 
   /**
@@ -150,13 +167,14 @@ export const authService = {
    * Returns the full response with identity data.
    */
   login: async (payload: LoginPayload): Promise<LoginResponseData> => {
-    const { data } = await apiClient.post<LoginResponse>(
+    const { data } = await apiClient.post<MaybeWrappedLoginResponse>(
       "/auth/login",
       payload,
     );
-    tokenStorage.setAccessToken(data.data.accessToken);
+    const parsed = unwrapLoginResponse(data);
+    tokenStorage.setAccessToken(parsed.accessToken);
     // Note: new API does not provide a refresh token
-    return data.data;
+    return parsed;
   },
 
   /**
@@ -235,11 +253,12 @@ export const authService = {
    * Stores the returned accessToken in tokenStorage.
    */
   confirmPasswordReset: async (resetToken: string, password: string): Promise<LoginResponseData> => {
-    const { data } = await apiClient.post<LoginResponse>(
+    const { data } = await apiClient.post<MaybeWrappedLoginResponse>(
       "/public/auth/customer/password-reset/confirm",
       { resetToken, password },
     );
-    tokenStorage.setAccessToken(data.data.accessToken);
-    return data.data;
+    const parsed = unwrapLoginResponse(data);
+    tokenStorage.setAccessToken(parsed.accessToken);
+    return parsed;
   },
 };

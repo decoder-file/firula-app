@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
+import type { ImageSourcePropType } from "react-native";
 
-import { useIsAuthenticated, useMe } from "@/hooks/useAuth";
+import { useAuthUser, useIsAuthenticated, useMe } from "@/hooks/useAuth";
 import {
   useFeaturedEvents,
   useTrendingEvents,
@@ -123,6 +124,7 @@ export const useHomeRouteProps = (): HomeScreenProps => {
   const [searchPage, setSearchPage] = useState(1);
   const [searchResults, setSearchResults] = useState<HomeEvent[]>([]);
   const isAuthenticated = useIsAuthenticated();
+  const authUser = useAuthUser();
 
   const normalizedQuery = query.trim();
   const shouldSearch = normalizedQuery.length > 0;
@@ -152,7 +154,10 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     },
     shouldSearch,
   );
-  const firstName = getFirstName(me?.name) ?? "Atleta";
+  const displayName = authUser?.name || me?.name;
+  const firstName = getFirstName(displayName) ?? "Atleta";
+  const userAvatar: ImageSourcePropType | undefined =
+    authUser?.photoUrl ? { uri: authUser.photoUrl } : undefined;
 
   const events = useMemo(() => {
     const featured = featuredData ?? [];
@@ -244,6 +249,7 @@ export const useHomeRouteProps = (): HomeScreenProps => {
 
   return {
     userName: firstName,
+    userAvatar,
     city: "Brasil",
     events,
     categories,

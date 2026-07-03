@@ -24,6 +24,7 @@ export interface HomeCategory {
 
 export interface HomeScreenProps {
   userName: string;
+  userAvatar?: ImageSourcePropType;
   city: string;
   events: HomeEvent[];
   categories?: HomeCategory[];

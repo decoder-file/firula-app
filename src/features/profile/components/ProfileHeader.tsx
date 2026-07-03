@@ -7,11 +7,13 @@ import { Avatar, Text, useTheme } from "@/design-system";
 
 export function ProfileHeader({
   name,
+  photoUrl,
   email,
   level,
   onEditProfile,
 }: {
   name: string;
+  photoUrl?: string | null;
   email: string;
   level: string;
   onEditProfile?: () => void;
@@ -42,7 +44,7 @@ export function ProfileHeader({
           marginTop: 16,
         }}
       >
-        <Avatar name={name} size="xl" />
+        <Avatar name={name} size="xl" source={photoUrl ? { uri: photoUrl } : undefined} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text token="title">{name}</Text>
           <Text token="bodySm" color="muted" style={{ marginTop: 1 }}>

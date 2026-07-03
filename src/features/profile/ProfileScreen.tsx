@@ -11,6 +11,7 @@ import type { ProfileScreenProps } from "@/features/profile/types";
 
 export function ProfileScreen({
   name,
+  photoUrl,
   email,
   memberSince,
   eventsAttended,
@@ -37,6 +38,7 @@ export function ProfileScreen({
       >
         <ProfileHeader
           name={name}
+          photoUrl={photoUrl}
           email={email}
           level={level}
           onEditProfile={onEditProfile}

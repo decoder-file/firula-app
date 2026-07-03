@@ -2,11 +2,13 @@ import React from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Bell, ChevronDown, MapPin, Search, X } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { ImageSourcePropType } from "react-native";
 
 import { Avatar, Text, useTheme } from "@/design-system";
 
 export function HomeHeader({
   userName,
+  userAvatar,
   city,
   query,
   onQuery,
@@ -16,6 +18,7 @@ export function HomeHeader({
   onChangeCity,
 }: {
   userName: string;
+  userAvatar?: ImageSourcePropType;
   city: string;
   query: string;
   onQuery: (v: string) => void;
@@ -45,7 +48,7 @@ export function HomeHeader({
           accessibilityLabel="Abrir perfil"
           style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
         >
-          <Avatar name={userName} size="md" />
+          <Avatar name={userName} size="md" source={userAvatar} />
           <View style={{ flex: 1 }}>
             <Text token="bodySm" color="muted" style={{ fontWeight: "500" }}>
               Olá, {userName}
