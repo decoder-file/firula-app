@@ -127,9 +127,9 @@ export const useHomeRouteProps = (): HomeScreenProps => {
   const authUser = useAuthUser();
 
   const normalizedQuery = query.trim();
-  const shouldSearch = normalizedQuery.length > 0;
   const selectedSportSlug =
     selectedCategory !== "todos" ? selectedCategory : undefined;
+  const shouldSearch = normalizedQuery.length > 0 || selectedCategory !== "todos";
 
   const { data: me } = useMe();
   const { data: featuredData, isPending: isFeaturedPending } = useFeaturedEvents();

@@ -143,9 +143,9 @@ export function HomeScreen({
               </View>
             ) : null}
 
-            {isSearchMode ? (
+            {(isSearchMode || isFiltering) ? (
               <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
-                <SectionHeader title="Resultados" />
+                <SectionHeader title={isSearchMode ? "Resultados" : (activeCat?.label ?? "Eventos")} />
 
                 {isSearchLoading ? (
                   <View style={{ marginTop: 12, gap: 12 }}>
