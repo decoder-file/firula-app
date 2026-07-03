@@ -40,9 +40,9 @@ export function HomeHeader({
         <Avatar name={userName} size="md" />
         <View style={{ flex: 1 }}>
           <Text token="bodySm" color="muted" style={{ fontWeight: "500" }}>
-            Olá, {userName.split(" ")[0]} 👋
+            Olá, {userName.split(" ")[0]}
           </Text>
-          <Pressable
+          {/* <Pressable
             onPress={onChangeCity}
             style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
             accessibilityRole="button"
@@ -57,7 +57,7 @@ export function HomeHeader({
               color={colors.textMuted}
               strokeWidth={iconStrokeWidth}
             />
-          </Pressable>
+          </Pressable> */}
         </View>
         <Pressable
           onPress={onOpenNotifications}
