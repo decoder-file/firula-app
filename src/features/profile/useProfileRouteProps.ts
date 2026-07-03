@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 
-import { useAuthUser, useLogout, useMe } from "@/hooks/useAuth";
+import { useAuthUser, useIsAuthenticated, useLogout, useMe } from "@/hooks/useAuth";
 import { useMyTickets } from "@/hooks/useTickets";
 import type { ProfileScreenProps } from "@/features/profile/types";
 
@@ -25,6 +25,7 @@ const getLevelFromTickets = (totalTickets: number): string => {
 
 export const useProfileRouteProps = (): ProfileScreenProps => {
   const router = useRouter();
+  const isAuthenticated = useIsAuthenticated();
   const { data: me } = useMe();
   const authUser = useAuthUser();
   const { data: tickets } = useMyTickets();
@@ -34,19 +35,28 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   const attendedEvents =
     tickets?.filter((ticket) => ticket.status === "USED").length ?? 0;
 
+  const openProtectedRoute = (path: string) => {
+    if (!isAuthenticated) {
+      router.push("/login-modal");
+      return;
+    }
+
+    router.push(path as never);
+  };
+
   const handleNavigate = (key: string) => {
     switch (key) {
       case "tickets":
-        router.push("/(tabs)/tickets");
+        openProtectedRoute("/(tabs)/tickets");
         break;
       case "facial":
         router.push("/facial-id");
         break;
       case "favorites":
-        router.push("/favorites");
+        openProtectedRoute("/favorites");
         break;
       case "notifications":
-        router.push("/notifications");
+        openProtectedRoute("/notifications");
         break;
       case "privacy":
         router.push("/privacy");
