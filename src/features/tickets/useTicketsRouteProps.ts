@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import QRCode from "react-native-qrcode-svg";
 
 import { useMyTickets } from "@/hooks/useTickets";
@@ -30,13 +31,19 @@ export const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
 
 export const useTicketsRouteProps = (): TicketsScreenProps => {
   const router = useRouter();
-  const { data, isPending } = useMyTickets();
+  const { data, isPending, isFetching, refetch } = useMyTickets();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void refetch();
+    }, [refetch])
+  );
 
   const tickets = useMemo(() => (data ?? []).map(mapCustomerTicket), [data]);
 
   return {
     tickets,
-    isLoading: isPending,
+    isLoading: isPending || isFetching,
     renderQr: (value, size) =>
       React.createElement(QRCode, { value, size }),
     onExplore: () => router.push("/(tabs)/explore"),
