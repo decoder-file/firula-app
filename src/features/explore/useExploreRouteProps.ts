@@ -1,0 +1,65 @@
+import { useMemo } from "react";
+import { useRouter } from "expo-router";
+
+import { useUpcomingEvents } from "@/hooks/useEvents";
+import type { PlatformEvent } from "@/services/events.service";
+import type { ExploreEvent, ExploreRouteProps } from "@/features/explore/types";
+
+const FALLBACK_EVENT_IMAGE = require("../../../assets/events/event-running.jpg");
+
+const CATEGORY_TYPE_LABEL: Record<string, string> = {
+  futebol: "Futebol",
+  futevolei: "Futevôlei",
+  "beach-tennis": "Beach Tennis",
+  corrida: "Corrida",
+  surf: "Surf",
+  yoga: "Yoga",
+};
+
+export const inferCategoryFromName = (name: string): string => {
+  const n = name.toLowerCase();
+  if (n.includes("beach")) return "beach-tennis";
+  if (n.includes("futev") || n.includes("futv")) return "futevolei";
+  if (n.includes("futebol") || n.includes("soccer")) return "futebol";
+  if (n.includes("corrida") || n.includes("run") || n.includes("marat")) return "corrida";
+  if (n.includes("surf")) return "surf";
+  if (n.includes("yoga")) return "yoga";
+  return "todos";
+};
+
+const formatDateLabel = (isoDate: string) =>
+  new Date(isoDate).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
+
+export const mapEventToExploreItem = (event: PlatformEvent): ExploreEvent => {
+  const category = inferCategoryFromName(event.name);
+  return {
+    id: event.slug ?? event.id,
+    type: CATEGORY_TYPE_LABEL[category] ?? "Evento",
+    category,
+    title: event.name,
+    city: `${event.location.city}, ${event.location.state}`,
+    dateLabel: formatDateLabel(event.startsAt),
+    price: "A confirmar",
+    attendeesLabel: event.organization.tradeName,
+    hot: event.isTrending || event.isFeatured,
+    image: event.coverUrl ? { uri: event.coverUrl } : FALLBACK_EVENT_IMAGE,
+  };
+};
+
+export const useExploreRouteProps = (): ExploreRouteProps => {
+  const router = useRouter();
+  const { data } = useUpcomingEvents({ period: "upcoming", page: 1, pageSize: 50 });
+
+  const events = useMemo(
+    () => (data?.data ?? []).map(mapEventToExploreItem),
+    [data?.data],
+  );
+
+  return {
+    events,
+    onOpenEvent: (slugOrId) => router.push(`/event/${slugOrId}`),
+  };
+};
