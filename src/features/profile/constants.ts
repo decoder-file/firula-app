@@ -18,12 +18,12 @@ export const PROFILE_MENU: MenuEntry[] = [
     label: "Meus ingressos",
     subtitle: "Ingressos comprados",
   },
-  {
-    key: "facial",
-    icon: ScanFace,
-    label: "Facial ID Firula",
-    subtitle: "Reconhecimento facial",
-  },
+  // {
+  //   key: "facial",
+  //   icon: ScanFace,
+  //   label: "Facial ID Firula",
+  //   subtitle: "Reconhecimento facial",
+  // },
   {
     key: "favorites",
     icon: Star,

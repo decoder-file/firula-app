@@ -42,7 +42,7 @@ export function ProfileScreen({
           onEditProfile={onEditProfile}
         />
 
-        <View style={{ paddingHorizontal: 20, marginTop: -4 }}>
+        {/* <View style={{ paddingHorizontal: 20, marginTop: -4 }}>
           <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
             {stats.map((s) => (
               <View
@@ -76,9 +76,9 @@ export function ProfileScreen({
               </View>
             ))}
           </View>
-        </View>
+        </View> */}
 
-        <View style={{ paddingTop: 20 }}>
+        {/* <View style={{ paddingTop: 20 }}>
           <View
             style={{
               flexDirection: "row",
@@ -132,7 +132,7 @@ export function ProfileScreen({
               </View>
             ))}
           </ScrollView>
-        </View>
+        </View> */}
 
         <View style={{ paddingHorizontal: 20, paddingTop: 22 }}>
           <ProfileMenu menu={PROFILE_MENU} onNavigate={onNavigate} />

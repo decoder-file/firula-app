@@ -48,7 +48,7 @@ export function ProfileHeader({
           <Text token="bodySm" color="muted" style={{ marginTop: 1 }}>
             {email}
           </Text>
-          <View
+          {/* <View
             style={{
               flexDirection: "row",
               alignItems: "center",
@@ -73,7 +73,7 @@ export function ProfileHeader({
             >
               Membro {level}
             </Text>
-          </View>
+          </View> */}
         </View>
         <ChevronRight size={20} color={colors.border} strokeWidth={1.75} />
       </Pressable>
