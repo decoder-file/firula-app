@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { Linking, Share } from 'react-native';
+import { Alert, Linking, Platform, Share } from 'react-native';
 
 import { useIsAuthenticated } from '@/hooks/useAuth';
 import { useEventBySlug } from '@/hooks/useEvents';
@@ -122,6 +122,55 @@ const buildEventUrl = (eventSlug: string) => {
   return websiteUrl ? `${websiteUrl}/eventos/${eventSlug}` : null;
 };
 
+const openFirstSupportedUrl = async (urls: string[]): Promise<boolean> => {
+  for (const url of urls) {
+    if (!url) continue;
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return true;
+      }
+    } catch {
+      // try next URL fallback
+    }
+  }
+
+  return false;
+};
+
+const buildMapUrls = (event: AdminEventDetail): string[] => {
+  const locationLabel = `${event.location.address}, ${event.location.addressNumber}, ${event.location.city}, ${event.location.state}`;
+  const encodedQuery = encodeURIComponent(locationLabel);
+  const appleMapsUrl = `http://maps.apple.com/?q=${encodedQuery}`;
+  const googleMapsWebUrl = `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+  const geoUrl = `geo:0,0?q=${encodedQuery}`;
+
+  return Platform.select({
+    ios: [appleMapsUrl, googleMapsWebUrl],
+    android: [geoUrl, googleMapsWebUrl],
+    default: [googleMapsWebUrl],
+  }) as string[];
+};
+
+const buildCalendarUrls = (event: AdminEventDetail): string[] => {
+  const startDate = new Date(event.startsAt);
+  const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+  const toGoogleDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  const detailsValue = encodeURIComponent(event.description || 'Evento Firula');
+  const location = encodeURIComponent(
+    `${event.location.address}, ${event.location.addressNumber}, ${event.location.city}, ${event.location.state}`,
+  );
+  const text = encodeURIComponent(event.name);
+
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${detailsValue}&location=${location}&dates=${toGoogleDate(startDate)}/${toGoogleDate(endDate)}`;
+  const googleCalendarWebFallback = `https://www.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${detailsValue}&location=${location}&dates=${toGoogleDate(startDate)}/${toGoogleDate(endDate)}`;
+
+  return [googleCalendarUrl, googleCalendarWebFallback];
+};
+
 export const useEventDetailRouteProps = (): EventDetailScreenProps => {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -169,26 +218,19 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
     },
     onOpenMap: async () => {
       if (!event) return;
-      const query = encodeURIComponent(
-        `${event.location.address}, ${event.location.addressNumber}, ${event.location.city}, ${event.location.state}`,
-      );
-      await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`);
+
+      const opened = await openFirstSupportedUrl(buildMapUrls(event));
+      if (!opened) {
+        Alert.alert('Não foi possível abrir o mapa', 'Tente novamente em alguns instantes.');
+      }
     },
     onAddToCalendar: async () => {
       if (!event) return;
 
-      const startDate = new Date(event.startsAt);
-      const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
-      const toGoogleDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-      const detailsValue = encodeURIComponent(event.description || 'Evento Firula');
-      const location = encodeURIComponent(
-        `${event.location.address}, ${event.location.addressNumber}, ${event.location.city}, ${event.location.state}`,
-      );
-      const text = encodeURIComponent(event.name);
-
-      const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${detailsValue}&location=${location}&dates=${toGoogleDate(startDate)}/${toGoogleDate(endDate)}`;
-      await Linking.openURL(url);
+      const opened = await openFirstSupportedUrl(buildCalendarUrls(event));
+      if (!opened) {
+        Alert.alert('Não foi possível abrir o calendário', 'Tente novamente em alguns instantes.');
+      }
     },
   };
 };
