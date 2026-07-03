@@ -232,7 +232,7 @@ export const eventsService = {
     params?: GetUpcomingEventsParams,
   ): Promise<PlatformEventsPage> => {
     const clean: Record<string, string | number> = {};
-    if (params?.period) clean.period = params.period;
+    // if (params?.period) clean.period = params.period;
     if (params?.search) clean.search = params.search;
     if (params?.city) clean.city = params.city;
     if (params?.sportSlug) clean.sportSlug = params.sportSlug;
