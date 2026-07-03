@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ticket } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button, Text, useTheme } from "@/design-system";
 import { QrModal } from "@/features/tickets/components/QrModal";
@@ -23,6 +24,7 @@ export function TicketsScreen({
   onExplore,
 }: TicketsScreenProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<TabKey>("active");
   const [qrTicket, setQrTicket] = useState<AppTicket | null>(null);
 
@@ -54,7 +56,7 @@ export function TicketsScreen({
         style={{
           backgroundColor: colors.surface,
           paddingHorizontal: 20,
-          paddingTop: 14,
+          paddingTop: insets.top + 8,
         }}
       >
         <Text token="titleLg" style={{ fontSize: 24 }}>
