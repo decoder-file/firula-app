@@ -28,8 +28,6 @@ import { RoundButton } from '@/features/event-detail/components/RoundButton';
 import { TrustItem } from '@/features/event-detail/components/TrustItem';
 import type { EventDetailScreenProps } from '@/features/event-detail/types';
 
-const SCARCITY_THRESHOLD = 10;
-
 function formatBRL(cents: number) {
   return 'R$ ' + (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -138,7 +136,7 @@ export function EventDetailScreen({
         </View>
 
         <View style={{ paddingHorizontal: 20, paddingTop: 18 }}>
-          {event.social ? (
+          {/* {event.social ? (
             <View style={[styles.socialRow, { borderBottomColor: colors.border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
                 {event.social.avatars?.length ? (
@@ -165,7 +163,7 @@ export function EventDetailScreen({
                 </View>
               ) : null}
             </View>
-          ) : null}
+          ) : null} */}
 
           <View style={{ gap: 10, paddingVertical: 16 }}>
             <FactItem icon={<CalendarDays size={19} color={colors.primaryText} strokeWidth={1.75} />} title={event.dateLabel} subtitle={event.timeLabel}
@@ -188,10 +186,10 @@ export function EventDetailScreen({
                   Organizador{event.organizer.eventsCount != null ? ` · ${event.organizer.eventsCount} eventos realizados` : ''}
                 </Text>
               </View>
-              <PressScale onPress={onFollowOrganizer ?? (() => {})} accessibilityRole="button" accessibilityLabel="Seguir organizador"
+              {/* <PressScale onPress={onFollowOrganizer ?? (() => {})} accessibilityRole="button" accessibilityLabel="Seguir organizador"
                 style={[styles.followBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text token="label" style={{ fontSize: 12.5 }}>Seguir</Text>
-              </PressScale>
+              </PressScale> */}
             </View>
           ) : null}
 
@@ -202,12 +200,12 @@ export function EventDetailScreen({
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <Text token="subtitle" style={{ fontWeight: '800' }}>Escolha seu ingresso</Text>
-            {event.lotDeadlineText ? (
+            {/* {event.lotDeadlineText ? (
               <View style={[styles.deadline, { backgroundColor: colors.warningSoft }]}>
                 <Clock size={13} color={colors.warning} strokeWidth={2} />
                 <Text token="caption" style={{ color: colors.warning, textTransform: 'none', letterSpacing: 0, fontSize: 11.5 }}>{event.lotDeadlineText}</Text>
               </View>
-            ) : null}
+            ) : null} */}
           </View>
 
           <View style={{ gap: 12, marginTop: 12 }}>

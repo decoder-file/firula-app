@@ -61,7 +61,7 @@ export function LotCard({ lot, qty, onAdd, onRemove, colors, radius }: LotCardPr
         </View>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
-          <View style={{ flex: 1 }}>
+          {/* <View style={{ flex: 1 }}>
             <View style={{ height: 6, borderRadius: 999, backgroundColor: colors.border, overflow: 'hidden' }}>
               <View
                 style={{
@@ -84,7 +84,7 @@ export function LotCard({ lot, qty, onAdd, onRemove, colors, radius }: LotCardPr
             >
               {scarce ? `Últimas ${lot.available} unidades!` : `${lot.available} disponíveis`}
             </Text>
-          </View>
+          </View> */}
           {qty === 0 ? (
             <PressScale
               onPress={onAdd}
