@@ -25,6 +25,10 @@ export interface PlatformEvent {
   status: string;
   isFeatured: boolean;
   isTrending: boolean;
+  minTicketPrice?: number | null;
+  ticketPricingStatus?: string | null;
+  isFreeEvent?: boolean;
+  hasTicketLots?: boolean;
   coverUrl: string | null;
   organization: PlatformEventOrganization;
   location: PlatformEventLocation;

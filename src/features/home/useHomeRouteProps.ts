@@ -48,6 +48,32 @@ const formatDateBits = (isoDate: string) => {
   return { day, mon, dateLabel };
 };
 
+const formatCurrencyFromCents = (valueInCents: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(valueInCents / 100);
+
+const getStartingPriceLabel = (event: PlatformEvent): string => {
+  if (event.ticketPricingStatus === "FREE" || event.isFreeEvent) {
+    return "Gratuito";
+  }
+
+  if (event.hasTicketLots === false) {
+    return "A confirmar";
+  }
+
+  if (
+    typeof event.minTicketPrice === "number" &&
+    Number.isFinite(event.minTicketPrice) &&
+    event.minTicketPrice > 0
+  ) {
+    return formatCurrencyFromCents(event.minTicketPrice);
+  }
+
+  return "A confirmar";
+};
+
 export const mapEventToHomeItem = (
   event: PlatformEvent,
   isHot: boolean,
@@ -63,7 +89,7 @@ export const mapEventToHomeItem = (
     dateLabel,
     day,
     mon,
-    price: "A confirmar",
+    price: getStartingPriceLabel(event),
     attendeesLabel: event.organization.tradeName,
     hot: isHot,
     image: event.coverUrl ? { uri: event.coverUrl } : FALLBACK_EVENT_IMAGE,
