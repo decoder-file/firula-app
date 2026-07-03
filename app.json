@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Firula Mobile",
-    "slug": "firula-mobile",
-    "version": "1.0.0",
+    "name": "Firula",
+    "slug": "firula",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon-firula.png",
     "userInterfaceStyle": "light",
@@ -19,12 +19,13 @@
         "resizeMode": "cover",
         "backgroundColor": "#00C853"
       },
-      "bundleIdentifier": "com.loureiro-12.firula-mobile",
+      "bundleIdentifier": "com.firulaapp.firula-app",
       "infoPlist": {
         "NSCameraUsageDescription": "Precisamos da camera para voce tirar e atualizar sua foto de perfil.",
         "NSPhotoLibraryUsageDescription": "Precisamos da sua galeria para voce escolher uma foto de perfil.",
         "NSPhotoLibraryAddUsageDescription": "Precisamos acessar a galeria para salvar e usar sua foto de perfil."
-      }
+      },
+      "appleTeamId": "G58V8BP6VH"
     },
     "android": {
       "splash": {
@@ -37,7 +38,11 @@
         "backgroundColor": "#1FBD58"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.firulaapp.firulaapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -53,7 +58,15 @@
           "photosPermission": "Precisamos da sua galeria para voce escolher uma foto de perfil."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.664340745471-arlfoapbgtkn230b0jcljneurkni5185"
+        }
+      ],
+      "expo-apple-authentication",
+      "./plugins/withGoogleSignInPodfile"
     ],
     "scheme": "firula-mobile",
     "experiments": {

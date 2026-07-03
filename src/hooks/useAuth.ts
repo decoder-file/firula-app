@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authService, type AuthCustomer } from "@/services/auth.service";
+import { socialAuthService } from "@/services/socialAuth.service";
 import type {
   AuthUserProfile,
   LoginPayload,
@@ -115,6 +116,26 @@ export const useConfirmPasswordReset = () => {
       authService.confirmPasswordReset(resetToken, password),
     onSuccess: (data, variables) => {
       completeSession(data, variables.email);
+    },
+  });
+};
+
+export const useGoogleSignIn = () => {
+  const { completeSession } = useCompleteAuthSession();
+  return useMutation({
+    mutationFn: socialAuthService.googleSignIn,
+    onSuccess: ({ sessionData, email }) => {
+      completeSession(sessionData, email);
+    },
+  });
+};
+
+export const useAppleSignIn = () => {
+  const { completeSession } = useCompleteAuthSession();
+  return useMutation({
+    mutationFn: socialAuthService.appleSignIn,
+    onSuccess: ({ sessionData, email }) => {
+      completeSession(sessionData, email);
     },
   });
 };

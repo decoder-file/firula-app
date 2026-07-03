@@ -159,9 +159,18 @@ apiClient.interceptors.response.use(
           useAuthStore.getState().clearUser();
         }
       } else if (!refreshToken) {
-        // No refresh token available, clear state
-        tokenStorage.clear();
-        useAuthStore.getState().clearUser();
+        // Without a refresh token we can't recover automatically.
+        // Only destroy the session when we're certain the access token itself
+        // is invalid — either no token is stored, or /auth/me explicitly rejected
+        // it. A 401 from any other endpoint may be a scope/permission issue (e.g.
+        // an admin-scoped token hitting a customer-only endpoint) and must not
+        // log the user out spuriously.
+        const hasToken = !!tokenStorage.getAccessToken();
+        const isIdentityCheck = !!originalConfig.url?.includes("/auth/me");
+        if (!hasToken || isIdentityCheck) {
+          tokenStorage.clear();
+          useAuthStore.getState().clearUser();
+        }
       }
     }
 
