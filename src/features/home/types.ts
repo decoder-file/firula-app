@@ -19,6 +19,7 @@ export interface HomeScreenProps {
   userName: string;
   city: string;
   events: HomeEvent[];
+  isLoading?: boolean;
   notificationCount?: number;
   onOpenNotifications?: () => void;
   onChangeCity?: () => void;

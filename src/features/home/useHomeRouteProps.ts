@@ -73,9 +73,9 @@ export const mapEventToHomeItem = (
 export const useHomeRouteProps = (): HomeScreenProps => {
   const router = useRouter();
   const { data: me } = useMe();
-  const { data: featuredData } = useFeaturedEvents();
-  const { data: trendingData } = useTrendingEvents();
-  const { data: upcomingData } = useUpcomingEvents({
+  const { data: featuredData, isPending: isFeaturedPending } = useFeaturedEvents();
+  const { data: trendingData, isPending: isTrendingPending } = useTrendingEvents();
+  const { data: upcomingData, isPending: isUpcomingPending } = useUpcomingEvents({
     period: "upcoming",
     page: 1,
     pageSize: 50,
@@ -108,6 +108,7 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     userName: me?.name || "Atleta",
     city: "Brasil",
     events,
+    isLoading: isFeaturedPending || isTrendingPending || isUpcomingPending,
     notificationCount: unreadCount ?? 0,
     onOpenNotifications: () => router.push("/notifications"),
     onOpenEvent: (slugOrId) => router.push(`/event/${slugOrId}`),

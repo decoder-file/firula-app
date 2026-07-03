@@ -8,6 +8,10 @@ jest.mock("expo-status-bar", () => ({
   StatusBar: () => null,
 }));
 
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 jest.mock("@/design-system", () => {
   const { Pressable: RNPressable, Text: RNTextNode } = require("react-native");
 
@@ -89,14 +93,15 @@ describe("HomeScreen UI", () => {
     expect(onSeeAll).toHaveBeenCalledTimes(1);
   });
 
-  it("filtra pelo campo de busca e mostra estado vazio", () => {
-    const { getByLabelText, getByText } = render(
+  it("filtra pelo campo de busca e oculta secoes de destaque", () => {
+    const { getByLabelText, queryByText } = render(
       <HomeScreen userName="Andre" city="Brasil" events={EVENTS} />,
     );
 
     fireEvent.changeText(getByLabelText("Buscar"), "futebol inexistente");
 
-    expect(getByText("Nada por aqui")).toBeTruthy();
+    expect(queryByText("Destaques")).toBeNull();
+    expect(queryByText("Em alta")).toBeNull();
   });
 
   it("chama onOpenNotifications ao pressionar botao de notificacoes", () => {

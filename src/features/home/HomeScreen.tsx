@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
-import { Text, useTheme } from "@/design-system";
+import { Skeleton, Text, useTheme } from "@/design-system";
 import { CATEGORIES } from "@/features/home/constants";
 import { CategoryRail } from "@/features/home/components/CategoryRail";
 import {
@@ -17,6 +17,7 @@ export function HomeScreen({
   userName,
   city,
   events,
+  isLoading = false,
   notificationCount = 0,
   onOpenNotifications,
   onChangeCity,
@@ -64,65 +65,179 @@ export function HomeScreen({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 28 }}
       >
-        <CategoryRail active={cat} onSelect={setCat} />
-
-        {showSections ? (
+        {isLoading ? (
+          <HomeContentSkeleton />
+        ) : (
           <>
-            <SectionHeader title="Destaques" onSeeAll={onSeeAll} />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.hpad}
-            >
-              {featured.map((e) => (
-                <FeaturedCard
-                  key={e.id}
-                  event={e}
-                  onPress={() => onOpenEvent?.(e.id)}
-                />
-              ))}
-            </ScrollView>
+            <CategoryRail active={cat} onSelect={setCat} />
 
-            <SectionHeader title="Em alta" onSeeAll={onSeeAll} />
-            <View style={{ paddingHorizontal: 20, marginTop: 12, gap: 12 }}>
-              {trending.map((e, i) => (
-                <TrendingRow
-                  key={e.id}
-                  rank={i + 1}
-                  event={e}
-                  onPress={() => onOpenEvent?.(e.id)}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
+            {showSections ? (
+              <>
+                <SectionHeader title="Destaques" onSeeAll={onSeeAll} />
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.hpad}
+                >
+                  {featured.map((e) => (
+                    <FeaturedCard
+                      key={e.id}
+                      event={e}
+                      onPress={() => onOpenEvent?.(e.id)}
+                    />
+                  ))}
+                </ScrollView>
 
-        {isFiltering ? (
-          <View style={styles.activeFilter}>
-            {ActiveCatIcon ? (
-              <ActiveCatIcon
-                size={15}
-                color={colors.onPrimary}
-                strokeWidth={2}
-              />
+                <SectionHeader title="Em alta" onSeeAll={onSeeAll} />
+                <View style={{ paddingHorizontal: 20, marginTop: 12, gap: 12 }}>
+                  {trending.map((e, i) => (
+                    <TrendingRow
+                      key={e.id}
+                      rank={i + 1}
+                      event={e}
+                      onPress={() => onOpenEvent?.(e.id)}
+                    />
+                  ))}
+                </View>
+              </>
             ) : null}
-            <Text token="label" style={{ color: colors.onPrimary }}>
-              {activeCat?.label}
-            </Text>
-            <Pressable onPress={() => setCat("todos")} hitSlop={8}>
-              <Text token="bodySm" color="muted" style={{ fontWeight: "600" }}>
-                Limpar
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
+
+            {isFiltering ? (
+              <View style={styles.activeFilter}>
+                {ActiveCatIcon ? (
+                  <ActiveCatIcon
+                    size={15}
+                    color={colors.onPrimary}
+                    strokeWidth={2}
+                  />
+                ) : null}
+                <Text token="label" style={{ color: colors.onPrimary }}>
+                  {activeCat?.label}
+                </Text>
+                <Pressable onPress={() => setCat("todos")} hitSlop={8}>
+                  <Text token="bodySm" color="muted" style={{ fontWeight: "600" }}>
+                    Limpar
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </>
+        )}
       </ScrollView>
+    </View>
+  );
+}
+
+function HomeContentSkeleton() {
+  const { colors } = useTheme();
+
+  return (
+    <View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 8,
+          gap: 12,
+        }}
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <View key={i} style={{ width: 62, alignItems: "center", gap: 8 }}>
+            <Skeleton width={58} height={58} radius={18} />
+            <Skeleton width={50} height={10} radius={5} />
+          </View>
+        ))}
+      </ScrollView>
+
+      <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
+        <View style={styles.sectionHeaderSkeleton}>
+          <Skeleton width={140} height={32} radius={8} />
+          <Skeleton width={84} height={22} radius={8} />
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.hpad}
+      >
+        {Array.from({ length: 2 }).map((_, i) => (
+          <View
+            key={i}
+            style={{
+              width: 300,
+              height: 340,
+              borderRadius: 24,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: 14,
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <Skeleton width={54} height={54} radius={14} />
+              <Skeleton width={86} height={30} radius={999} />
+            </View>
+            <View>
+              <Skeleton width={78} height={22} radius={999} />
+              <Skeleton width={190} height={28} radius={8} style={{ marginTop: 10 }} />
+              <Skeleton width={150} height={18} radius={8} style={{ marginTop: 10 }} />
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 14 }}>
+                <Skeleton width={120} height={18} radius={8} />
+                <Skeleton width={95} height={44} radius={12} />
+              </View>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+
+      <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+        <View style={styles.sectionHeaderSkeleton}>
+          <Skeleton width={120} height={32} radius={8} />
+          <Skeleton width={84} height={22} radius={8} />
+        </View>
+
+        <View style={{ marginTop: 12, gap: 12 }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <View
+              key={i}
+              style={{
+                height: 110,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                padding: 12,
+                flexDirection: "row",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <Skeleton width={84} height={84} radius={14} />
+              <View style={{ flex: 1 }}>
+                <Skeleton width={70} height={18} radius={999} />
+                <Skeleton width="85%" height={18} radius={7} style={{ marginTop: 10 }} />
+                <Skeleton width="70%" height={16} radius={7} style={{ marginTop: 8 }} />
+                <Skeleton width="55%" height={16} radius={7} style={{ marginTop: 8 }} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   hpad: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, gap: 14 },
+  sectionHeaderSkeleton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   activeFilter: {
     flexDirection: "row",
     alignItems: "center",
