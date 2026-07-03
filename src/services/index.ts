@@ -22,3 +22,6 @@ export type {
 } from "./auth.service";
 
 export { usersService } from "./users.service";
+
+export { sportsService } from "./sports.service";
+export type { PublicSport } from "./sports.service";

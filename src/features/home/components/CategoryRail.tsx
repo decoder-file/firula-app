@@ -2,12 +2,14 @@ import React from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { Text, useTheme } from "@/design-system";
-import { CATEGORIES } from "@/features/home/constants";
+import type { HomeCategory } from "@/features/home/types";
 
 export function CategoryRail({
+  categories,
   active,
   onSelect,
 }: {
+  categories: HomeCategory[];
   active: string;
   onSelect: (id: string) => void;
 }) {
@@ -24,7 +26,7 @@ export function CategoryRail({
         gap: 10,
       }}
     >
-      {CATEGORIES.map((c) => {
+      {categories.map((c) => {
         const on = c.id === active;
         return (
           <Pressable

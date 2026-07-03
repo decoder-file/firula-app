@@ -47,4 +47,8 @@ export const queryKeys = {
     all: ["profile"] as const,
     customer: () => [...queryKeys.profile.all, "customer"] as const,
   },
+  sports: {
+    all: ["sports"] as const,
+    list: () => [...queryKeys.sports.all, "list"] as const,
+  },
 } as const;

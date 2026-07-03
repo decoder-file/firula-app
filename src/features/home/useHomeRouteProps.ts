@@ -8,8 +8,13 @@ import {
   useUpcomingEvents,
 } from "@/hooks/useEvents";
 import { useUnreadCount } from "@/hooks/useNotifications";
+import { useSports } from "@/hooks/useSports";
 import type { PlatformEvent } from "@/services/events.service";
 
+import {
+  getSportIconBySlug,
+  HOME_DEFAULT_CATEGORIES,
+} from "@/features/home/constants";
 import type { HomeEvent, HomeScreenProps } from "@/features/home/types";
 
 const FALLBACK_EVENT_IMAGE = require("../../../assets/events/event-running.jpg");
@@ -107,6 +112,7 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     pageSize: 50,
   });
   const { data: unreadCount } = useUnreadCount();
+  const { data: sportsData } = useSports();
 
   const events = useMemo(() => {
     const featured = featuredData ?? [];
@@ -130,10 +136,25 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     );
   }, [featuredData, trendingData, upcomingData?.data]);
 
+  const categories = useMemo(() => {
+    if (!sportsData?.length) {
+      return HOME_DEFAULT_CATEGORIES;
+    }
+
+    const dynamicCategories = sportsData.map((sport) => ({
+      id: sport.slug,
+      label: sport.name,
+      icon: getSportIconBySlug(sport.slug),
+    }));
+
+    return [HOME_DEFAULT_CATEGORIES[0], ...dynamicCategories];
+  }, [sportsData]);
+
   return {
     userName: me?.name || "Atleta",
     city: "Brasil",
     events,
+    categories,
     isLoading: isFeaturedPending || isTrendingPending || isUpcomingPending,
     notificationCount: unreadCount ?? 0,
     onOpenNotifications: () => router.push("/notifications"),

@@ -1,4 +1,5 @@
 import type { ImageSourcePropType } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
 
 export interface HomeEvent {
   id: string;
@@ -15,10 +16,17 @@ export interface HomeEvent {
   image: ImageSourcePropType;
 }
 
+export interface HomeCategory {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+}
+
 export interface HomeScreenProps {
   userName: string;
   city: string;
   events: HomeEvent[];
+  categories?: HomeCategory[];
   isLoading?: boolean;
   notificationCount?: number;
   onOpenNotifications?: () => void;

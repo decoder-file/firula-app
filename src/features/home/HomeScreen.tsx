@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
 import { Skeleton, Text, useTheme } from "@/design-system";
-import { CATEGORIES } from "@/features/home/constants";
+import { HOME_DEFAULT_CATEGORIES } from "@/features/home/constants";
 import { CategoryRail } from "@/features/home/components/CategoryRail";
 import {
   FeaturedCard,
@@ -17,6 +17,7 @@ export function HomeScreen({
   userName,
   city,
   events,
+  categories = HOME_DEFAULT_CATEGORIES,
   isLoading = false,
   notificationCount = 0,
   onOpenNotifications,
@@ -44,7 +45,7 @@ export function HomeScreen({
 
   const featured = useMemo(() => events.filter((e) => e.hot), [events]);
   const trending = featured.slice(0, 3);
-  const activeCat = CATEGORIES.find((c) => c.id === cat);
+  const activeCat = categories.find((c) => c.id === cat);
   const ActiveCatIcon = activeCat?.icon;
 
   return (
@@ -69,7 +70,7 @@ export function HomeScreen({
           <HomeContentSkeleton />
         ) : (
           <>
-            <CategoryRail active={cat} onSelect={setCat} />
+            <CategoryRail categories={categories} active={cat} onSelect={setCat} />
 
             {showSections ? (
               <>
