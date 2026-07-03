@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, View } from "react-native";
 import { ChevronRight, Crown } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Avatar, Text, useTheme } from "@/design-system";
 
@@ -16,13 +17,14 @@ export function ProfileHeader({
   onEditProfile?: () => void;
 }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
         backgroundColor: colors.surface,
         paddingHorizontal: 20,
-        paddingTop: 16,
+        paddingTop: insets.top + 8,
         paddingBottom: 20,
       }}
     >
