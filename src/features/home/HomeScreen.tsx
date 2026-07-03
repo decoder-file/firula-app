@@ -1,12 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { SearchX } from "lucide-react-native";
 
-import { Button, Text, useTheme } from "@/design-system";
+import { Text, useTheme } from "@/design-system";
 import { CATEGORIES } from "@/features/home/constants";
 import { CategoryRail } from "@/features/home/components/CategoryRail";
-import { GridCard, FeaturedCard, TrendingRow } from "@/features/home/components/EventCards";
+import {
+  FeaturedCard,
+  TrendingRow,
+} from "@/features/home/components/EventCards";
 import { HomeHeader } from "@/features/home/components/HomeHeader";
 import { SectionHeader } from "@/features/home/components/SectionHeader";
 import type { HomeScreenProps } from "@/features/home/types";
@@ -81,8 +83,8 @@ export function HomeScreen({
               ))}
             </ScrollView>
 
-            <SectionHeader title="Em alta 🔥" onSeeAll={onSeeAll} />
-            <View style={{ paddingHorizontal: 20, gap: 12 }}>
+            <SectionHeader title="Em alta" onSeeAll={onSeeAll} />
+            <View style={{ paddingHorizontal: 20, marginTop: 12, gap: 12 }}>
               {trending.map((e, i) => (
                 <TrendingRow
                   key={e.id}
@@ -114,57 +116,6 @@ export function HomeScreen({
             </Pressable>
           </View>
         ) : null}
-
-        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-          <Text token="titleLg">
-            {q
-              ? "Resultados"
-              : isFiltering
-                ? activeCat?.label
-                : "Próximos eventos"}
-          </Text>
-          {grid.length > 0 ? (
-            <View style={styles.grid}>
-              {grid.map((e) => (
-                <View key={e.id} style={{ width: "48%" }}>
-                  <GridCard event={e} onPress={() => onOpenEvent?.(e.id)} />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.empty}>
-              <View
-                style={[
-                  styles.emptyIcon,
-                  { backgroundColor: colors.surfaceAlt },
-                ]}
-              >
-                <SearchX
-                  size={30}
-                  color={colors.textMuted}
-                  strokeWidth={1.75}
-                />
-              </View>
-              <Text token="title" style={{ marginBottom: 4 }}>
-                Nada por aqui
-              </Text>
-              <Text
-                token="bodySm"
-                color="muted"
-                style={{ textAlign: "center", maxWidth: 220, marginBottom: 16 }}
-              >
-                Tente outra busca ou remova o filtro de categoria.
-              </Text>
-              <Button
-                label="Limpar tudo"
-                onPress={() => {
-                  setQuery("");
-                  setCat("todos");
-                }}
-              />
-            </View>
-          )}
-        </View>
       </ScrollView>
     </View>
   );
