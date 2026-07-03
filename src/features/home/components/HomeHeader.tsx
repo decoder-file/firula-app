@@ -12,6 +12,7 @@ export function HomeHeader({
   onQuery,
   notificationCount,
   onOpenNotifications,
+  onOpenProfile,
   onChangeCity,
 }: {
   userName: string;
@@ -20,6 +21,7 @@ export function HomeHeader({
   onQuery: (v: string) => void;
   notificationCount: number;
   onOpenNotifications?: () => void;
+  onOpenProfile?: () => void;
   onChangeCity?: () => void;
 }) {
   const { colors, iconStrokeWidth } = useTheme();
@@ -37,28 +39,35 @@ export function HomeHeader({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Avatar name={userName} size="md" />
-        <View style={{ flex: 1 }}>
-          <Text token="bodySm" color="muted" style={{ fontWeight: "500" }}>
-            Olá, {userName.split(" ")[0]}
-          </Text>
-          {/* <Pressable
-            onPress={onChangeCity}
-            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
-            accessibilityRole="button"
-            accessibilityLabel={`Cidade: ${city}. Toque para mudar.`}
-          >
-            <MapPin size={14} color={colors.primaryText} strokeWidth={2} />
-            <Text token="label" style={{ fontSize: 14 }}>
-              {city}
+        <Pressable
+          onPress={onOpenProfile}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir perfil"
+          style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 12 }}
+        >
+          <Avatar name={userName} size="md" />
+          <View style={{ flex: 1 }}>
+            <Text token="bodySm" color="muted" style={{ fontWeight: "500" }}>
+              Olá, {userName}
             </Text>
-            <ChevronDown
-              size={15}
-              color={colors.textMuted}
-              strokeWidth={iconStrokeWidth}
-            />
-          </Pressable> */}
-        </View>
+            {/* <Pressable
+              onPress={onChangeCity}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel={`Cidade: ${city}. Toque para mudar.`}
+            >
+              <MapPin size={14} color={colors.primaryText} strokeWidth={2} />
+              <Text token="label" style={{ fontSize: 14 }}>
+                {city}
+              </Text>
+              <ChevronDown
+                size={15}
+                color={colors.textMuted}
+                strokeWidth={iconStrokeWidth}
+              />
+            </Pressable> */}
+          </View>
+        </Pressable>
         <Pressable
           onPress={onOpenNotifications}
           accessibilityRole="button"

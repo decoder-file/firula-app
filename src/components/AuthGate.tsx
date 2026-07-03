@@ -41,16 +41,14 @@ export const AuthGate = ({
             <View className="mt-8 gap-3">
               <AnimatedPressable
                 className="items-center rounded-2xl bg-primary px-4 py-4"
-                onPress={() => router.push("/login" as never)}
+                onPress={() => router.push("/login-modal" as never)}
               >
                 <Text className="font-bold text-base text-primary-foreground">Entrar</Text>
               </AnimatedPressable>
 
               <AnimatedPressable
                 className="items-center rounded-2xl bg-secondary px-4 py-4"
-                onPress={() =>
-                  router.push({ pathname: "/login", params: { mode: "register" } } as never)
-                }
+                onPress={() => router.push("/register" as never)}
               >
                 <Text className="font-medium text-base text-foreground">Criar conta</Text>
               </AnimatedPressable>

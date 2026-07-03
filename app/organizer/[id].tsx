@@ -30,7 +30,7 @@ export default function OrganizerScreen() {
 
   const handleFollow = () => {
     if (!isAuthenticated) {
-      router.push("/login");
+      router.push("/login-modal");
       return;
     }
     followMutation.mutate(following, {
@@ -40,7 +40,7 @@ export default function OrganizerScreen() {
 
   const handleRate = (rating: number) => {
     if (!isAuthenticated) {
-      router.push("/login");
+      router.push("/login-modal");
       return;
     }
     rateMutation.mutate(

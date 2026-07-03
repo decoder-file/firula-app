@@ -54,8 +54,8 @@ const useCompleteAuthSession = () => {
       };
 
       setUser(customer, data.customerProfile ?? null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+      queryClient.invalidateQueries();
+      queryClient.refetchQueries({ type: "active" });
     },
   };
 };

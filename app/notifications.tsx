@@ -141,7 +141,7 @@ export default function NotificationsScreen() {
           <Text className="mt-2 text-center text-sm text-muted-foreground">
             Suas notificações de eventos e compras aparecerão aqui.
           </Text>
-          <FormButton className="mt-6 w-full" label="Entrar" onPress={() => router.push("/login")} />
+          <FormButton className="mt-6 w-full" label="Entrar" onPress={() => router.push("/login-modal")} />
         </View>
       </Screen>
     );

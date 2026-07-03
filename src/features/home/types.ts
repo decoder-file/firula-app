@@ -39,6 +39,7 @@ export interface HomeScreenProps {
   isLoading?: boolean;
   notificationCount?: number;
   onOpenNotifications?: () => void;
+  onOpenProfile?: () => void;
   onChangeCity?: () => void;
   onOpenEvent?: (id: string) => void;
   onSeeAll?: () => void;

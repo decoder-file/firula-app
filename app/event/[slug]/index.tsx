@@ -41,7 +41,7 @@ export default function EventDetailScreen() {
   const isFavorited = favoriteStatus?.isFavorited ?? false;
 
   const handleToggleFavorite = () => {
-    if (!isAuthenticated) { router.push("/login"); return; }
+    if (!isAuthenticated) { router.push("/login-modal"); return; }
     if (!event) return;
     toggleFavorite({ eventId: event.id, isFavorited });
   };

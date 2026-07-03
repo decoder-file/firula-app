@@ -15,6 +15,8 @@ export default function RootLayout() {
         <StatusBar style="dark" />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#f7f7f7" } }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="login-modal" options={{ presentation: "modal" }} />
+          <Stack.Screen name="register" />
           <Stack.Screen name="profile-edit" />
         </Stack>
       </AppProviders>

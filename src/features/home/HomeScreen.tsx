@@ -30,6 +30,7 @@ export function HomeScreen({
   isLoading = false,
   notificationCount = 0,
   onOpenNotifications,
+  onOpenProfile,
   onChangeCity,
   onOpenEvent,
   onSeeAll,
@@ -75,6 +76,7 @@ export function HomeScreen({
         onQuery={setQuery}
         notificationCount={notificationCount}
         onOpenNotifications={onOpenNotifications}
+        onOpenProfile={onOpenProfile}
         onChangeCity={onChangeCity}
       />
 

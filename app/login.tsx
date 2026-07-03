@@ -30,6 +30,12 @@ import {
 type AuthMode = "login" | "register";
 type LoginStep = "email" | "code" | "password";
 
+interface LoginScreenProps {
+  lockMode?: AuthMode;
+  onAuthenticated?: () => void;
+  onRequestRegister?: () => void;
+}
+
 type FormErrors = {
   name?: string;
   email?: string;
@@ -120,10 +126,15 @@ const formatCpf = (value: string) => {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 };
 
-export default function LoginScreen() {
+export function LoginScreen({
+  lockMode,
+  onAuthenticated,
+  onRequestRegister,
+}: LoginScreenProps = {}) {
   const router = useRouter();
   const params = useLocalSearchParams<{ mode?: string }>();
-  const [mode, setMode] = useState<AuthMode>(params.mode === "register" ? "register" : "login");
+  const initialMode: AuthMode = lockMode ?? (params.mode === "register" ? "register" : "login");
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [loginStep, setLoginStep] = useState<LoginStep>("email");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -168,13 +179,30 @@ export default function LoginScreen() {
   };
 
   useEffect(() => {
+    if (lockMode) {
+      return;
+    }
+
     if (params.mode === "register") {
       resetForm();
       setMode("register");
     }
-  }, [params.mode]);
+  }, [lockMode, params.mode]);
+
+  useEffect(() => {
+    if (!lockMode) {
+      return;
+    }
+
+    resetForm();
+    setMode(lockMode);
+  }, [lockMode]);
 
   const handleModeChange = (nextMode: AuthMode) => {
+    if (lockMode) {
+      return;
+    }
+
     if (nextMode === mode) {
       return;
     }
@@ -331,7 +359,11 @@ export default function LoginScreen() {
           email: normalizedEmail,
           code: code.trim(),
         });
-        router.back();
+        if (onAuthenticated) {
+          onAuthenticated();
+        } else {
+          router.back();
+        }
       } catch (error) {
         setErrors({ code: getErrorMessage(error) });
       }
@@ -346,7 +378,11 @@ export default function LoginScreen() {
     try {
       setErrors({});
       await loginMutation.mutateAsync({ email: normalizedEmail, password: password.trim() });
-      router.back();
+      if (onAuthenticated) {
+        onAuthenticated();
+      } else {
+        router.back();
+      }
     } catch (error) {
       if (isInvalidCredentialsError(error)) {
         setErrors({
@@ -436,7 +472,9 @@ export default function LoginScreen() {
           </View>
 
           <View className="gap-4 px-4">
-            <SegmentedControl options={MODE_OPTIONS} onChange={handleModeChange} value={mode} />
+            {!lockMode ? (
+              <SegmentedControl options={MODE_OPTIONS} onChange={handleModeChange} value={mode} />
+            ) : null}
 
             <View className="gap-3 rounded-[28px] bg-card p-5">
               {mode === "register" ? (
@@ -689,10 +727,25 @@ export default function LoginScreen() {
                 label={mode === "register" ? "Criar conta" : loginButtonLabel}
                 onPress={handleSubmit}
               />
+
+              {lockMode === "login" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onRequestRegister ?? (() => router.push("/register"))}
+                >
+                  <Text className="text-center text-xs font-medium text-primary">
+                    Não tem conta? Criar conta
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );
+}
+
+export default function LoginRoute() {
+  return <LoginScreen />;
 }

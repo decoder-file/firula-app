@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 
-import { useMe } from "@/hooks/useAuth";
+import { useIsAuthenticated, useMe } from "@/hooks/useAuth";
 import {
   useFeaturedEvents,
   useTrendingEvents,
@@ -22,6 +22,15 @@ import {
 import type { HomeEvent, HomeScreenProps } from "@/features/home/types";
 
 const FALLBACK_EVENT_IMAGE = require("../../../assets/events/event-running.jpg");
+
+const getFirstName = (name?: string | null): string | null => {
+  const normalized = name?.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized.split(/\s+/)[0] ?? null;
+};
 
 const CATEGORY_TYPE_LABEL: Record<string, string> = {
   futebol: "Futebol",
@@ -113,6 +122,7 @@ export const useHomeRouteProps = (): HomeScreenProps => {
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [searchPage, setSearchPage] = useState(1);
   const [searchResults, setSearchResults] = useState<HomeEvent[]>([]);
+  const isAuthenticated = useIsAuthenticated();
 
   const normalizedQuery = query.trim();
   const shouldSearch = normalizedQuery.length > 0;
@@ -142,6 +152,7 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     },
     shouldSearch,
   );
+  const firstName = getFirstName(me?.name) ?? "Atleta";
 
   const events = useMemo(() => {
     const featured = featuredData ?? [];
@@ -222,8 +233,17 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     setSearchPage((current) => current + 1);
   };
 
+  const openProtectedRoute = (authenticatedPath: string) => {
+    if (!isAuthenticated) {
+      router.push("/login-modal");
+      return;
+    }
+
+    router.push(authenticatedPath as never);
+  };
+
   return {
-    userName: me?.name || "Atleta",
+    userName: firstName,
     city: "Brasil",
     events,
     categories,
@@ -238,7 +258,8 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     onLoadMoreSearchResults: handleLoadMoreSearchResults,
     isLoading: isFeaturedPending || isTrendingPending || isUpcomingPending,
     notificationCount: unreadCount ?? 0,
-    onOpenNotifications: () => router.push("/notifications"),
+    onOpenNotifications: () => openProtectedRoute("/notifications"),
+    onOpenProfile: () => openProtectedRoute("/(tabs)/profile"),
     onOpenEvent: (slugOrId) => router.push(`/event/${slugOrId}`),
     onSeeAll: () => router.push("/(tabs)/explore"),
   };
