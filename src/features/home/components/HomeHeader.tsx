@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Bell, ChevronDown, MapPin, Search, X } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Avatar, Text, useTheme } from "@/design-system";
 
@@ -22,13 +23,14 @@ export function HomeHeader({
   onChangeCity?: () => void;
 }) {
   const { colors, iconStrokeWidth } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
       style={{
         backgroundColor: colors.surface,
         paddingHorizontal: 20,
-        paddingTop: 8,
+        paddingTop: insets.top + 8,
         paddingBottom: 14,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,
