@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 
 import { useMe } from "@/hooks/useAuth";
@@ -6,6 +6,7 @@ import {
   useFeaturedEvents,
   useTrendingEvents,
   useUpcomingEvents,
+  useUpcomingEventsWhen,
 } from "@/hooks/useEvents";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { useSports } from "@/hooks/useSports";
@@ -103,6 +104,16 @@ export const mapEventToHomeItem = (
 
 export const useHomeRouteProps = (): HomeScreenProps => {
   const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("todos");
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchResults, setSearchResults] = useState<HomeEvent[]>([]);
+
+  const normalizedQuery = query.trim();
+  const shouldSearch = normalizedQuery.length > 0;
+  const selectedSportSlug =
+    selectedCategory !== "todos" ? selectedCategory : undefined;
+
   const { data: me } = useMe();
   const { data: featuredData, isPending: isFeaturedPending } = useFeaturedEvents();
   const { data: trendingData, isPending: isTrendingPending } = useTrendingEvents();
@@ -113,6 +124,19 @@ export const useHomeRouteProps = (): HomeScreenProps => {
   });
   const { data: unreadCount } = useUnreadCount();
   const { data: sportsData } = useSports();
+  const {
+    data: searchPageData,
+    isPending: isSearchPending,
+    isFetching: isSearchFetching,
+  } = useUpcomingEventsWhen(
+    {
+      search: normalizedQuery,
+      sportSlug: selectedSportSlug,
+      page: searchPage,
+      pageSize: 20,
+    },
+    shouldSearch,
+  );
 
   const events = useMemo(() => {
     const featured = featuredData ?? [];
@@ -150,11 +174,63 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     return [HOME_DEFAULT_CATEGORIES[0], ...dynamicCategories];
   }, [sportsData]);
 
+  useEffect(() => {
+    setSearchPage(1);
+  }, [normalizedQuery, selectedCategory]);
+
+  useEffect(() => {
+    if (!shouldSearch) {
+      setSearchResults([]);
+      return;
+    }
+
+    const mapped = (searchPageData?.data ?? []).map((event) =>
+      mapEventToHomeItem(event, false),
+    );
+
+    if (searchPage === 1) {
+      setSearchResults(mapped);
+      return;
+    }
+
+    if (mapped.length === 0) {
+      return;
+    }
+
+    setSearchResults((previous) => {
+      const seen = new Set(previous.map((item) => item.id));
+      const appended = mapped.filter((item) => !seen.has(item.id));
+      return [...previous, ...appended];
+    });
+  }, [searchPageData?.data, searchPage, shouldSearch]);
+
+  const canLoadMoreSearchResults =
+    shouldSearch &&
+    (searchPageData?.pagination?.page ?? 0) <
+      (searchPageData?.pagination?.totalPages ?? 0);
+
+  const handleLoadMoreSearchResults = () => {
+    if (!canLoadMoreSearchResults || isSearchFetching) {
+      return;
+    }
+
+    setSearchPage((current) => current + 1);
+  };
+
   return {
     userName: me?.name || "Atleta",
     city: "Brasil",
     events,
     categories,
+    query,
+    selectedCategory,
+    onQueryChange: setQuery,
+    onCategoryChange: setSelectedCategory,
+    searchResults,
+    isSearchLoading: shouldSearch && isSearchPending,
+    isSearchFetchingMore: shouldSearch && searchPage > 1 && isSearchFetching,
+    canLoadMoreSearchResults,
+    onLoadMoreSearchResults: handleLoadMoreSearchResults,
     isLoading: isFeaturedPending || isTrendingPending || isUpcomingPending,
     notificationCount: unreadCount ?? 0,
     onOpenNotifications: () => router.push("/notifications"),

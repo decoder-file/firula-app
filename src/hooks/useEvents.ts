@@ -36,6 +36,16 @@ export const useUpcomingEvents = (params?: GetUpcomingEventsParams) =>
     queryFn: () => eventsService.getUpcoming(params),
   });
 
+export const useUpcomingEventsWhen = (
+  params: GetUpcomingEventsParams | undefined,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: queryKeys.events.upcoming(params),
+    queryFn: () => eventsService.getUpcoming(params),
+    enabled,
+  });
+
 export const useEventBySlug = (slug: string) =>
   useQuery({
     queryKey: queryKeys.events.detailBySlug(slug),

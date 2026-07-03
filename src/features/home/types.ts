@@ -27,6 +27,15 @@ export interface HomeScreenProps {
   city: string;
   events: HomeEvent[];
   categories?: HomeCategory[];
+  query?: string;
+  selectedCategory?: string;
+  onQueryChange?: (value: string) => void;
+  onCategoryChange?: (value: string) => void;
+  searchResults?: HomeEvent[];
+  isSearchLoading?: boolean;
+  isSearchFetchingMore?: boolean;
+  canLoadMoreSearchResults?: boolean;
+  onLoadMoreSearchResults?: () => void;
   isLoading?: boolean;
   notificationCount?: number;
   onOpenNotifications?: () => void;

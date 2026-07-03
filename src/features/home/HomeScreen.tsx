@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
-import { Skeleton, Text, useTheme } from "@/design-system";
+import { Button, Skeleton, Text, useTheme } from "@/design-system";
 import { HOME_DEFAULT_CATEGORIES } from "@/features/home/constants";
 import { CategoryRail } from "@/features/home/components/CategoryRail";
 import {
@@ -18,6 +18,15 @@ export function HomeScreen({
   city,
   events,
   categories = HOME_DEFAULT_CATEGORIES,
+  query: controlledQuery,
+  selectedCategory: controlledCategory,
+  onQueryChange,
+  onCategoryChange,
+  searchResults,
+  isSearchLoading = false,
+  isSearchFetchingMore = false,
+  canLoadMoreSearchResults = false,
+  onLoadMoreSearchResults,
   isLoading = false,
   notificationCount = 0,
   onOpenNotifications,
@@ -26,10 +35,16 @@ export function HomeScreen({
   onSeeAll,
 }: HomeScreenProps) {
   const { colors } = useTheme();
-  const [query, setQuery] = useState("");
-  const [cat, setCat] = useState("todos");
+  const [internalQuery, setInternalQuery] = useState("");
+  const [internalCategory, setInternalCategory] = useState("todos");
+
+  const query = controlledQuery ?? internalQuery;
+  const cat = controlledCategory ?? internalCategory;
+  const setQuery = onQueryChange ?? setInternalQuery;
+  const setCat = onCategoryChange ?? setInternalCategory;
 
   const q = query.trim().toLowerCase();
+  const isSearchMode = q.length > 0;
   const isFiltering = cat !== "todos";
   const showSections = q.length === 0 && !isFiltering;
 
@@ -47,6 +62,7 @@ export function HomeScreen({
   const trending = featured.slice(0, 3);
   const activeCat = categories.find((c) => c.id === cat);
   const ActiveCatIcon = activeCat?.icon;
+  const effectiveSearchResults = searchResults ?? grid;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -120,6 +136,77 @@ export function HomeScreen({
                     Limpar
                   </Text>
                 </Pressable>
+              </View>
+            ) : null}
+
+            {isSearchMode ? (
+              <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+                <SectionHeader title="Resultados" />
+
+                {isSearchLoading ? (
+                  <View style={{ marginTop: 12, gap: 12 }}>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          height: 110,
+                          borderRadius: 20,
+                          borderWidth: 1,
+                          borderColor: colors.border,
+                          backgroundColor: colors.surface,
+                          padding: 12,
+                          flexDirection: "row",
+                          gap: 12,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Skeleton width={84} height={84} radius={14} />
+                        <View style={{ flex: 1 }}>
+                          <Skeleton width={70} height={18} radius={999} />
+                          <Skeleton width="85%" height={18} radius={7} style={{ marginTop: 10 }} />
+                          <Skeleton width="70%" height={16} radius={7} style={{ marginTop: 8 }} />
+                          <Skeleton width="55%" height={16} radius={7} style={{ marginTop: 8 }} />
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                ) : effectiveSearchResults.length > 0 ? (
+                  <View style={{ marginTop: 12, gap: 12 }}>
+                    {effectiveSearchResults.map((e, i) => (
+                      <TrendingRow
+                        key={e.id}
+                        rank={i + 1}
+                        event={e}
+                        onPress={() => onOpenEvent?.(e.id)}
+                      />
+                    ))}
+
+                    {canLoadMoreSearchResults ? (
+                      <View style={{ marginTop: 8, alignItems: "center" }}>
+                        <Button
+                          label={isSearchFetchingMore ? "Carregando..." : "Carregar mais"}
+                          onPress={onLoadMoreSearchResults}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 16,
+                      backgroundColor: colors.surface,
+                      padding: 16,
+                      marginTop: 12,
+                    }}
+                  >
+                    <Text token="subtitle">Nenhum resultado encontrado</Text>
+                    <Text token="bodySm" color="muted" style={{ marginTop: 6 }}>
+                      Ajuste sua busca ou troque o esporte selecionado.
+                    </Text>
+                  </View>
+                )}
               </View>
             ) : null}
           </>
