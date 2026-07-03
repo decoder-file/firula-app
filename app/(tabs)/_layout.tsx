@@ -1,7 +1,6 @@
 import { Tabs } from "expo-router";
 import { useRouter } from "expo-router";
 import { Home, Search, Ticket, User } from "lucide-react-native";
-import { Vibration } from "react-native";
 
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import { colors } from "@/theme/colors";
@@ -28,11 +27,7 @@ export default function TabsLayout() {
           fontFamily: "PlusJakartaSans-Medium",
         },
       }}
-      screenListeners={{
-        tabPress: () => {
-          Vibration.vibrate(10);
-        },
-      }}
+
     >
       <Tabs.Screen name="index" options={{ title: "Início", tabBarIcon: ({ color }) => <Home color={color} size={22} strokeWidth={1.5} /> }} />
       <Tabs.Screen name="explore" options={{ title: "Explorar", tabBarIcon: ({ color }) => <Search color={color} size={22} strokeWidth={1.5} /> }} />
