@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 
 import { isApiError } from "@/api/errors";
-import { useLogout } from "@/hooks/useAuth";
+import { tokenStorage } from "@/api/tokenStorage";
 import { queryKeys } from "@/hooks/queryKeys";
 import { profileService } from "@/services/profile.service";
+import { useAuthStore } from "@/stores/authStore";
 import type { ProfileEditScreenProps } from "@/features/profile-edit/types";
 
 const onlyDigits = (value: string) => value.replace(/\D/g, "");
@@ -30,7 +31,7 @@ const formatPhone = (value: string) => {
 export const useProfileEditRouteProps = (): ProfileEditScreenProps => {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const logoutMutation = useLogout();
+  const clearUser = useAuthStore((state) => state.clearUser);
 
   const { data: profile, isPending: isLoading } = useQuery({
     queryKey: queryKeys.profile.customer(),
@@ -42,6 +43,7 @@ export const useProfileEditRouteProps = (): ProfileEditScreenProps => {
   const updatePublicSettingsMutation = useMutation({ mutationFn: profileService.updatePublicSettings });
   const requestAvatarUploadMutation = useMutation({ mutationFn: profileService.requestAvatarUpload });
   const confirmAvatarUploadMutation = useMutation({ mutationFn: profileService.confirmAvatarUpload });
+  const deleteAccountMutation = useMutation({ mutationFn: profileService.deleteAccount });
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -297,7 +299,7 @@ export const useProfileEditRouteProps = (): ProfileEditScreenProps => {
   const handleDeleteAccount = () => {
     Alert.alert(
       "Excluir conta",
-      "Tem certeza que deseja excluir sua conta? Essa ação encerra sua sessão no aplicativo.",
+      "Tem certeza que deseja excluir sua conta? Essa ação desativa sua conta e encerra sua sessão no aplicativo.",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -305,10 +307,17 @@ export const useProfileEditRouteProps = (): ProfileEditScreenProps => {
           style: "destructive",
           onPress: async () => {
             try {
-              await logoutMutation.mutateAsync();
+              const response = await deleteAccountMutation.mutateAsync();
+              tokenStorage.clear();
+              clearUser();
+              queryClient.clear();
+              Alert.alert("Conta desativada", response.message);
               router.replace("/login");
-            } catch {
-              Alert.alert("Erro", "Não foi possível excluir a conta agora. Tente novamente.");
+            } catch (error) {
+              const message = isApiError(error)
+                ? error.message
+                : "Não foi possível excluir a conta agora. Tente novamente.";
+              Alert.alert("Erro", message);
             }
           },
         },
@@ -344,6 +353,7 @@ export const useProfileEditRouteProps = (): ProfileEditScreenProps => {
     isSavingPersonal: updatePersonalMutation.isPending,
     isSavingAddress: updateAddressMutation.isPending,
     isSavingPublicSettings: updatePublicSettingsMutation.isPending,
+    isDeletingAccount: deleteAccountMutation.isPending,
     onBack: () => router.back(),
     onNameChange: (value: string) => {
       setName(value);

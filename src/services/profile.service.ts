@@ -84,6 +84,11 @@ export interface ConfirmAvatarPayload {
   fileKey: string;
 }
 
+export interface DeleteAccountResponse {
+  success: boolean;
+  message: string;
+}
+
 const unwrapEnvelope = <T>(responseData: unknown): T => {
   const wrapped = responseData as { data?: T };
   return wrapped?.data ?? (responseData as T);
@@ -128,5 +133,10 @@ export const profileService = {
   ): Promise<CustomerProfilePersonal> => {
     const { data } = await apiClient.put("/public/customer/profile/avatar", payload);
     return unwrapEnvelope<CustomerProfilePersonal>(data);
+  },
+
+  deleteAccount: async (): Promise<DeleteAccountResponse> => {
+    const { data } = await apiClient.delete<DeleteAccountResponse>("/public/customer/profile/account");
+    return data;
   },
 };

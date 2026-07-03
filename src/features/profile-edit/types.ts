@@ -31,6 +31,7 @@ export interface ProfileEditScreenProps {
   isSavingPersonal: boolean;
   isSavingAddress: boolean;
   isSavingPublicSettings: boolean;
+  isDeletingAccount: boolean;
   onBack: () => void;
   onNameChange: (value: string) => void;
   onAddressChange: (value: string) => void;

@@ -45,6 +45,7 @@ export function ProfileEditScreen({
   isSavingPersonal,
   isSavingAddress,
   isSavingPublicSettings,
+  isDeletingAccount,
   onBack,
   onNameChange,
   onAddressChange,
@@ -312,7 +313,10 @@ export function ProfileEditScreen({
               <View className="gap-3 rounded-[28px] bg-card p-5">
                 <FormButton
                   className="bg-red-50"
+                  disabled={isDeletingAccount}
+                  isLoading={isDeletingAccount}
                   label="Excluir conta"
+                  loadingLabel="Excluindo conta..."
                   onPress={onDeleteAccount}
                   textClassName="text-destructive"
                 />
