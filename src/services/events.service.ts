@@ -30,6 +30,7 @@ export interface PlatformEvent {
   isFreeEvent?: boolean;
   hasTicketLots?: boolean;
   coverUrl: string | null;
+  imageUrl?: string | null;
   organization: PlatformEventOrganization;
   location: PlatformEventLocation;
 }
@@ -144,16 +145,49 @@ export interface GetUpcomingEventsParams {
   pageSize?: number;
 }
 
+export const resolvePlatformEventImageUrl = (
+  event: Pick<PlatformEvent, "coverUrl" | "imageUrl">,
+): string | null => {
+  const candidate = event.imageUrl ?? event.coverUrl;
+  if (!candidate) {
+    return null;
+  }
+
+  const raw = candidate.trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return raw;
+  }
+
+  const apiBase = process.env.EXPO_PUBLIC_API_URL;
+  if (!apiBase) {
+    return null;
+  }
+
+  try {
+    return new URL(raw, apiBase).toString();
+  } catch {
+    return null;
+  }
+};
+
 /** Maps a PlatformEvent to a minimal EventCardItem-compatible object. */
-export const platformEventToCardItem = (event: PlatformEvent) => ({
-  id: event.id,
-  slug: event.slug ?? undefined,
-  title: event.name,
-  date: event.startsAt.split("T")[0],
-  city: `${event.location.city}, ${event.location.state}`,
-  eventType: "",
-  image: event.coverUrl ? { uri: event.coverUrl } : null,
-});
+export const platformEventToCardItem = (event: PlatformEvent) => {
+  const imageUrl = resolvePlatformEventImageUrl(event);
+
+  return {
+    id: event.id,
+    slug: event.slug ?? undefined,
+    title: event.name,
+    date: event.startsAt.split("T")[0],
+    city: `${event.location.city}, ${event.location.state}`,
+    eventType: "",
+    image: imageUrl ? { uri: imageUrl } : null,
+  };
+};
 
 export const eventsService = {
   getAll: async (

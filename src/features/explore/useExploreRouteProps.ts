@@ -2,7 +2,10 @@ import { useMemo } from "react";
 import { useRouter } from "expo-router";
 
 import { useUpcomingEvents } from "@/hooks/useEvents";
-import type { PlatformEvent } from "@/services/events.service";
+import {
+  resolvePlatformEventImageUrl,
+  type PlatformEvent,
+} from "@/services/events.service";
 import type { ExploreEvent, ExploreRouteProps } from "@/features/explore/types";
 
 const FALLBACK_EVENT_IMAGE = require("../../../assets/events/event-running.jpg");
@@ -35,6 +38,8 @@ const formatDateLabel = (isoDate: string) =>
 
 export const mapEventToExploreItem = (event: PlatformEvent): ExploreEvent => {
   const category = inferCategoryFromName(event.name);
+  const imageUrl = resolvePlatformEventImageUrl(event);
+
   return {
     id: event.slug ?? event.id,
     type: CATEGORY_TYPE_LABEL[category] ?? "Evento",
@@ -45,7 +50,7 @@ export const mapEventToExploreItem = (event: PlatformEvent): ExploreEvent => {
     price: "A confirmar",
     attendeesLabel: event.organization.tradeName,
     hot: event.isTrending || event.isFeatured,
-    image: event.coverUrl ? { uri: event.coverUrl } : FALLBACK_EVENT_IMAGE,
+    image: imageUrl ? { uri: imageUrl } : FALLBACK_EVENT_IMAGE,
   };
 };
 

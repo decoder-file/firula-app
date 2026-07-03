@@ -10,7 +10,10 @@ import {
 } from "@/hooks/useEvents";
 import { useUnreadCount } from "@/hooks/useNotifications";
 import { useSports } from "@/hooks/useSports";
-import type { PlatformEvent } from "@/services/events.service";
+import {
+  resolvePlatformEventImageUrl,
+  type PlatformEvent,
+} from "@/services/events.service";
 
 import {
   getSportIconBySlug,
@@ -86,6 +89,8 @@ export const mapEventToHomeItem = (
 ): HomeEvent => {
   const category = inferCategoryFromName(event.name);
   const { day, mon, dateLabel } = formatDateBits(event.startsAt);
+  const imageUrl = resolvePlatformEventImageUrl(event);
+
   return {
     id: event.slug ?? event.id,
     type: CATEGORY_TYPE_LABEL[category] ?? "Evento",
@@ -98,7 +103,7 @@ export const mapEventToHomeItem = (
     price: getStartingPriceLabel(event),
     attendeesLabel: event.organization.tradeName,
     hot: isHot,
-    image: event.coverUrl ? { uri: event.coverUrl } : FALLBACK_EVENT_IMAGE,
+    image: imageUrl ? { uri: imageUrl } : FALLBACK_EVENT_IMAGE,
   };
 };
 
