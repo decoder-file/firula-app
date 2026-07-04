@@ -79,7 +79,7 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
 
   const handleLogout = () => {
     logout.mutate(undefined, {
-      onSuccess: () => router.replace("/login"),
+      onSuccess: () => router.replace("/(tabs)"),
       onError: () => {
         Alert.alert("Erro", "Não foi possível sair agora. Tente novamente.");
       },
