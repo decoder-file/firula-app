@@ -67,6 +67,20 @@ export const ticketsService = {
     return data.data;
   },
 
+  getAppleWalletPassUrl: async (ticketId: string): Promise<string> => {
+    const { data } = await apiClient.post<{ success: boolean; data: { passUrl: string } }>(
+      `/public/customer/tickets/${ticketId}/pass`,
+    );
+    return data.data.passUrl;
+  },
+
+  getGoogleWalletUrl: async (ticketId: string): Promise<string> => {
+    const { data } = await apiClient.get<{ success: boolean; data: { url: string } }>(
+      `/public/customer/tickets/${ticketId}/google-wallet`,
+    );
+    return data.data.url;
+  },
+
   getById: async (id: string): Promise<UserTicket> => {
     const { data } = await apiClient.get<ApiResponse<UserTicket>>(
       `/tickets/${id}`,

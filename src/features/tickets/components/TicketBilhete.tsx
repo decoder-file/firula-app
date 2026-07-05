@@ -1,6 +1,6 @@
 import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import { CalendarDays, MapPin, QrCode, ScanFace } from "lucide-react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { CalendarDays, MapPin, QrCode, ScanFace, Wallet } from "lucide-react-native";
 
 import { Button, Text, useTheme } from "@/design-system";
 import { STATUS_LABEL } from "@/features/tickets/constants";
@@ -9,9 +9,13 @@ import type { AppTicket } from "@/features/tickets/types";
 export function TicketBilhete({
   ticket,
   onOpenQr,
+  onAddToWallet,
+  isAddingToWallet = false,
 }: {
   ticket: AppTicket;
   onOpenQr: () => void;
+  onAddToWallet?: () => void;
+  isAddingToWallet?: boolean;
 }) {
   const { colors } = useTheme();
   const active = ticket.status === "active";
@@ -174,6 +178,16 @@ export function TicketBilhete({
             </View>
           ) : null}
         </View>
+        {active && onAddToWallet ? (
+          <Button
+            label={isAddingToWallet ? "…" : Platform.OS === "ios" ? "Apple Wallet" : "Google Wallet"}
+            icon={Wallet}
+            size="sm"
+            variant="secondary"
+            onPress={onAddToWallet}
+            disabled={isAddingToWallet}
+          />
+        ) : null}
         <Button
           label="QR"
           icon={QrCode}

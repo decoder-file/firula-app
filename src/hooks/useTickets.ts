@@ -1,3 +1,4 @@
+import { Linking, Platform } from "react-native";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ticketsService } from "@/services/tickets.service";
@@ -24,6 +25,19 @@ export const useTicket = (id: string) =>
       return ticket;
     },
     enabled: Boolean(id),
+  });
+
+export const useAddToWallet = () =>
+  useMutation({
+    mutationFn: async (ticketId: string) => {
+      if (Platform.OS === "ios") {
+        const url = await ticketsService.getAppleWalletPassUrl(ticketId);
+        await Linking.openURL(url);
+      } else {
+        const url = await ticketsService.getGoogleWalletUrl(ticketId);
+        await Linking.openURL(url);
+      }
+    },
   });
 
 export const usePurchaseTicket = () => {

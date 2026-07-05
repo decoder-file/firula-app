@@ -23,6 +23,8 @@ export function TicketsScreen({
   isLoading = false,
   renderQr,
   onExplore,
+  onAddToWallet,
+  isAddingToWallet = false,
 }: TicketsScreenProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -109,6 +111,8 @@ export function TicketsScreen({
                 key={t.id}
                 ticket={t}
                 onOpenQr={() => setQrTicket(t)}
+                onAddToWallet={onAddToWallet ? () => onAddToWallet(t.id) : undefined}
+                isAddingToWallet={isAddingToWallet}
               />
             ))}
           </View>
