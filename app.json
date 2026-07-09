@@ -42,7 +42,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.firulaapp.firulaapp"
+      "package": "com.firulaapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -71,6 +71,12 @@
     "scheme": "firula-mobile",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "809a7ea8-d491-4ac3-9d13-8fc79d2d8b1d"
+      }
     }
   }
 }
