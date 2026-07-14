@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import NetInfo from "@react-native-community/netinfo";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import {
   PlusJakartaSans_400Regular,
@@ -20,6 +21,14 @@ import { isNetworkError, isServerError } from "@/api/errors";
 import { colors } from "@/theme/colors";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+// Informa o TanStack Query sobre o estado real de conectividade.
+// Queries pausam quando offline e refazem automaticamente quando a conexão volta.
+onlineManager.setEventListener((setOnline) =>
+  NetInfo.addEventListener((state) => {
+    setOnline(state.isConnected !== false);
+  }),
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
