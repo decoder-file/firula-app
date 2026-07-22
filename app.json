@@ -66,7 +66,15 @@
         }
       ],
       "expo-apple-authentication",
-      "./plugins/withGoogleSignInPodfile"
+      "./plugins/withGoogleSignInPodfile",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon-firula.png",
+          "color": "#00C853",
+          "androidMode": "default"
+        }
+      ]
     ],
     "scheme": "firula-mobile",
     "experiments": {

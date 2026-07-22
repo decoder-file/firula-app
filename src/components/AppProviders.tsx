@@ -19,8 +19,14 @@ import { AppProvider } from "@/contexts/AppContext";
 import { useAuthStore } from "@/stores/authStore";
 import { isNetworkError, isServerError } from "@/api/errors";
 import { colors } from "@/theme/colors";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+function PushSetup() {
+  usePushNotifications();
+  return null;
+}
 
 // Informa o TanStack Query sobre o estado real de conectividade.
 // Queries pausam quando offline e refazem automaticamente quando a conexão volta.
@@ -92,7 +98,10 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <QueryClientProvider client={queryClient}>
-        <AppProvider>{children}</AppProvider>
+        <AppProvider>
+          <PushSetup />
+          {children}
+        </AppProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

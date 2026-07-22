@@ -1,8 +1,11 @@
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
 import { useAuthUser, useIsAuthenticated, useLogout, useMe } from "@/hooks/useAuth";
 import { useMyTickets } from "@/hooks/useTickets";
+import { pushTokenService } from "@/services/pushToken.service";
 import type { ProfileScreenProps } from "@/features/profile/types";
 
 const formatMemberSince = (createdAt?: string): string => {
@@ -77,7 +80,15 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
+    const tokenData = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    ).catch(() => null);
+    if (tokenData) {
+      await pushTokenService.deregister(tokenData.data).catch(() => {});
+    }
+
     logout.mutate(undefined, {
       onSuccess: () => router.replace("/(tabs)"),
       onError: () => {
