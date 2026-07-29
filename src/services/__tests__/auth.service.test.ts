@@ -48,6 +48,16 @@ const LOGIN_RESPONSE: LoginResponse = {
   data: LOGIN_RESPONSE_DATA,
 };
 
+const LOGIN_RESPONSE_DATA_WITH_REFRESH: LoginResponseData = {
+  ...LOGIN_RESPONSE_DATA,
+  refreshToken: "mobile-refresh-token",
+};
+
+const LOGIN_RESPONSE_WITH_REFRESH: LoginResponse = {
+  success: true,
+  data: LOGIN_RESPONSE_DATA_WITH_REFRESH,
+};
+
 const REQUEST_LOGIN_CODE_RESPONSE: RequestLoginCodeResponse = {
   success: true,
   data: {
@@ -75,6 +85,7 @@ const PROFILE = { id: "profile_uuid", cpf: "12345678900", phone: "11999999999" }
 
 const REFRESH_RESPONSE: RefreshTokenResponse = {
   accessToken: "new-access-token-abc",
+  refreshToken: "rotated-refresh-token-def",
   expiresIn: "24h",
 };
 
@@ -152,6 +163,16 @@ describe("authService.verifyLoginCode", () => {
     expect(result.identityId).toBe(LOGIN_RESPONSE_DATA.identityId);
     expect(tokenStorage.getAccessToken()).toBe(LOGIN_RESPONSE_DATA.accessToken);
   });
+
+  it("persists the refresh token when the response includes it", async () => {
+    mock
+      .onPost("/public/auth/customer/verify-code")
+      .reply(200, LOGIN_RESPONSE_WITH_REFRESH);
+
+    await authService.verifyLoginCode({ email: "cliente@exemplo.com", code: "12345" });
+
+    expect(tokenStorage.getRefreshToken()).toBe("mobile-refresh-token");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -171,8 +192,22 @@ describe("authService.login", () => {
     expect(result.accessToken).toBe(LOGIN_RESPONSE_DATA.accessToken);
     expect(result.identityId).toBe("6e6fd093-959c-4fa2-95a6-b2fb07215bd8");
     expect(tokenStorage.getAccessToken()).toBe(LOGIN_RESPONSE_DATA.accessToken);
-    // Note: new API does not provide refresh token
+  });
+
+  it("does not store a refresh token when the response omits it", async () => {
+    mock.onPost("/auth/login").reply(200, LOGIN_RESPONSE);
+
+    await authService.login({ email: "cliente@exemplo.com", password: "senha123" });
+
     expect(tokenStorage.getRefreshToken()).toBeNull();
+  });
+
+  it("persists the refresh token when the response includes it", async () => {
+    mock.onPost("/auth/login").reply(200, LOGIN_RESPONSE_WITH_REFRESH);
+
+    await authService.login({ email: "cliente@exemplo.com", password: "senha123" });
+
+    expect(tokenStorage.getRefreshToken()).toBe("mobile-refresh-token");
   });
 
   it("throws ApiError with INVALID_CREDENTIALS code on 401", async () => {
@@ -261,7 +296,7 @@ describe("authService.register", () => {
 
 describe("authService.refreshToken", () => {
   it("returns new access token and updates storage", async () => {
-    mock.onPost("/public/auth/refresh").reply(200, REFRESH_RESPONSE);
+    mock.onPost("/auth/refresh").reply(200, REFRESH_RESPONSE);
 
     const result = await authService.refreshToken("refresh-token-xyz");
 
@@ -269,8 +304,16 @@ describe("authService.refreshToken", () => {
     expect(tokenStorage.getAccessToken()).toBe("new-access-token-abc");
   });
 
+  it("persists the rotated refresh token returned by the backend", async () => {
+    mock.onPost("/auth/refresh").reply(200, REFRESH_RESPONSE);
+
+    await authService.refreshToken("refresh-token-xyz");
+
+    expect(tokenStorage.getRefreshToken()).toBe("rotated-refresh-token-def");
+  });
+
   it("throws ApiError with INVALID_REFRESH_TOKEN code on 401", async () => {
-    mock.onPost("/public/auth/refresh").reply(401, {
+    mock.onPost("/auth/refresh").reply(401, {
       success: false,
       error: {
         code: "INVALID_REFRESH_TOKEN",
@@ -283,6 +326,54 @@ describe("authService.refreshToken", () => {
     expect(isApiError(err)).toBe(true);
     expect(isInvalidRefreshTokenError(err)).toBe(true);
     expect((err as { statusCode: number }).statusCode).toBe(401);
+  });
+
+  it("shares a single in-flight request across concurrent calls", async () => {
+    mock.onPost("/auth/refresh").reply(200, REFRESH_RESPONSE);
+
+    const [first, second] = await Promise.all([
+      authService.refreshToken("refresh-token-xyz"),
+      authService.refreshToken("refresh-token-xyz"),
+    ]);
+
+    expect(first).toEqual(second);
+    expect(mock.history.post.filter((r) => r.url === "/auth/refresh")).toHaveLength(1);
+  });
+
+  it("allows a new request once the in-flight one has settled", async () => {
+    mock.onPost("/auth/refresh").reply(200, REFRESH_RESPONSE);
+
+    await authService.refreshToken("refresh-token-xyz");
+    await authService.refreshToken("refresh-token-xyz");
+
+    expect(mock.history.post.filter((r) => r.url === "/auth/refresh")).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// confirmPasswordReset
+// ---------------------------------------------------------------------------
+
+describe("authService.confirmPasswordReset", () => {
+  it("returns session data and stores the access token on success", async () => {
+    mock
+      .onPost("/public/auth/customer/password-reset/confirm")
+      .reply(200, LOGIN_RESPONSE);
+
+    const result = await authService.confirmPasswordReset("reset-token-abc", "NewPassword123!");
+
+    expect(result).toEqual(LOGIN_RESPONSE_DATA);
+    expect(tokenStorage.getAccessToken()).toBe(LOGIN_RESPONSE_DATA.accessToken);
+  });
+
+  it("persists the refresh token when the response includes it", async () => {
+    mock
+      .onPost("/public/auth/customer/password-reset/confirm")
+      .reply(200, LOGIN_RESPONSE_WITH_REFRESH);
+
+    await authService.confirmPasswordReset("reset-token-abc", "NewPassword123!");
+
+    expect(tokenStorage.getRefreshToken()).toBe("mobile-refresh-token");
   });
 });
 
@@ -345,7 +436,7 @@ describe("authService.getMe", () => {
 // ---------------------------------------------------------------------------
 
 describe("apiClient 401 refresh interceptor", () => {
-  it("returns error immediately on 401 since new API does not provide refresh token", async () => {
+  it("returns error immediately on 401 when there is no stored refresh token", async () => {
     tokenStorage.setAccessToken("expired-token");
 
     mock.onGet("/auth/me").reply(401, {
@@ -357,22 +448,46 @@ describe("apiClient 401 refresh interceptor", () => {
 
     expect(isApiError(err)).toBe(true);
     expect((err as { statusCode: number }).statusCode).toBe(401);
-    // Note: new API doesn't provide refresh token, so no refresh attempt
-    // The access token remains as is (clearUser should be called by the app)
+    // App should handle clearUser() when 401 occurs and there's nothing to refresh
   });
 
-  it("clears tokens when 401 occurs and refresh token is not available", async () => {
+  it("silently refreshes and retries the original request when a refresh token is available", async () => {
     tokenStorage.setAccessToken("expired-token");
+    tokenStorage.setRefreshToken("stored-refresh-token");
+
+    let attempt = 0;
+    mock.onGet("/auth/me").reply(() => {
+      attempt += 1;
+      if (attempt === 1) {
+        return [401, { success: false, error: { code: "UNAUTHORIZED", message: "Token expired" } }];
+      }
+      return [200, ME_RESPONSE];
+    });
+    mock.onPost("/auth/refresh").reply(200, REFRESH_RESPONSE);
+
+    const result = await authService.getMe();
+
+    expect(result).toEqual(ME_RESPONSE);
+    expect(tokenStorage.getAccessToken()).toBe("new-access-token-abc");
+    expect(tokenStorage.getRefreshToken()).toBe("rotated-refresh-token-def");
+  });
+
+  it("clears tokens when the refresh attempt itself fails", async () => {
+    tokenStorage.setAccessToken("expired-token");
+    tokenStorage.setRefreshToken("expired-refresh-token");
 
     mock.onGet("/auth/me").reply(401, {
       success: false,
       error: { code: "UNAUTHORIZED", message: "Token expired" },
     });
+    mock.onPost("/auth/refresh").reply(401, {
+      success: false,
+      error: { code: "INVALID_REFRESH_TOKEN", message: "Invalid or expired refresh token" },
+    });
 
-    const err = await expectToThrow(authService.getMe());
+    await expectToThrow(authService.getMe());
 
-    expect(isApiError(err)).toBe(true);
-    expect((err as { statusCode: number }).statusCode).toBe(401);
-    // App should handle clearUser() when 401 occurs
+    expect(tokenStorage.getAccessToken()).toBeNull();
+    expect(tokenStorage.getRefreshToken()).toBeNull();
   });
 });

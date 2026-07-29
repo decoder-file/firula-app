@@ -97,6 +97,10 @@ apiClient.interceptors.request.use(
     // Inject X-API-Key header for authentication
     config.headers["X-API-Key"] = "supersecretadminkey1";
 
+    // Lets the backend know it's safe to include the refreshToken in the
+    // JSON body (mobile has no persistent cookie jar across app restarts).
+    config.headers["X-Client-Platform"] = "mobile";
+
     logApiRequest(config);
 
     return config;
@@ -130,12 +134,11 @@ apiClient.interceptors.response.use(
     const { status, data, config: originalConfig } = error.response;
     logApiError(originalConfig, status, data);
 
-    // On 401: clear tokens and user state so user is logged out
-    // Note: new API does not provide refresh token, so auto-refresh is not possible
+    // On 401: try to refresh the session using the persisted refresh token;
+    // if that's not possible or fails, clear tokens and user state.
     if (status === 401 && originalConfig) {
       const refreshToken = tokenStorage.getRefreshToken();
-      
-      // Only attempt refresh if we somehow have a refresh token (legacy support)
+
       if (
         refreshToken &&
         !originalConfig.headers?.[RETRY_HEADER]
@@ -143,6 +146,7 @@ apiClient.interceptors.response.use(
         try {
           const { data: refreshData } = await apiClient.post<{
             accessToken: string;
+            refreshToken?: string;
             expiresIn: string;
           }>(
             "/auth/refresh",
@@ -151,6 +155,9 @@ apiClient.interceptors.response.use(
           );
 
           tokenStorage.setAccessToken(refreshData.accessToken);
+          if (refreshData.refreshToken) {
+            tokenStorage.setRefreshToken(refreshData.refreshToken);
+          }
           originalConfig.headers.Authorization = `Bearer ${refreshData.accessToken}`;
           return apiClient.request(originalConfig);
         } catch {

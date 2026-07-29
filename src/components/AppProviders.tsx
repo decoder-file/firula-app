@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import FirulaSplashScreen from "@/components/FirulaSplashScreen";
 
 import { tokenStorage } from "@/api/tokenStorage";
+import { authService } from "@/services/auth.service";
 import { AppProvider } from "@/contexts/AppContext";
 import { useAuthStore } from "@/stores/authStore";
 import { isNetworkError, isServerError } from "@/api/errors";
@@ -60,6 +61,7 @@ const SPLASH_MIN_DURATION = 2500;
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   const clearUser = useAuthStore((state) => state.clearUser);
   const [showSplash, setShowSplash] = useState(true);
+  const [authCheckDone, setAuthCheckDone] = useState(false);
 
   const [loaded] = useFonts({
     "PlusJakartaSans-Regular": PlusJakartaSans_400Regular,
@@ -75,14 +77,43 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     tokenStorage
       .init()
-      .then(() => {
-        if (!tokenStorage.getRefreshToken() && !tokenStorage.getAccessToken()) {
-          clearUser();
+      .then(async () => {
+        const storedRefreshToken = tokenStorage.getRefreshToken();
+
+        if (!storedRefreshToken && !tokenStorage.getAccessToken()) {
+          if (!cancelled) clearUser();
+          return;
+        }
+
+        if (storedRefreshToken && !tokenStorage.getAccessToken()) {
+          // Cold start: the in-memory access token is gone (by design), but
+          // we have a persisted refresh token — try a silent refresh before
+          // deciding the session is actually over, so the user isn't logged
+          // out just because the app process restarted.
+          try {
+            await authService.refreshToken(storedRefreshToken);
+          } catch {
+            if (!cancelled) {
+              tokenStorage.clear();
+              clearUser();
+            }
+          }
         }
       })
-      .catch(() => undefined);
+      .catch(() => {
+        if (!cancelled) clearUser();
+      })
+      .finally(() => {
+        if (!cancelled) setAuthCheckDone(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [clearUser]);
 
   useEffect(() => {
@@ -91,7 +122,7 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
     return () => clearTimeout(timer);
   }, [loaded]);
 
-  if (!loaded || showSplash) {
+  if (!loaded || showSplash || !authCheckDone) {
     return <FirulaSplashScreen />;
   }
 

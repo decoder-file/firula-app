@@ -34,6 +34,7 @@ export interface AuthUserProfile {
 
 export interface LoginResponseData {
   accessToken: string;
+  refreshToken?: string;
   identityId: string;
   name: string;
   photoUrl: string | null;
@@ -61,6 +62,7 @@ const unwrapLoginResponse = (payload: MaybeWrappedLoginResponse): LoginResponseD
 
 export interface RefreshTokenResponse {
   accessToken: string;
+  refreshToken?: string;
   expiresIn: string;
 }
 
@@ -130,6 +132,12 @@ export interface VerifyLoginCodePayload {
 // Service
 // ---------------------------------------------------------------------------
 
+// Single-flight guard: the app-launch bootstrap and the 401 retry interceptor
+// can both try to refresh at nearly the same time. Refresh tokens are
+// single-use — a concurrent duplicate call would trigger reuse-detection on
+// the backend and revoke the whole session, reintroducing the logout bug.
+let inFlightRefresh: Promise<RefreshTokenResponse> | null = null;
+
 export const authService = {
   /**
    * POST /public/auth/customer/request-code
@@ -158,12 +166,15 @@ export const authService = {
     );
     const parsed = unwrapLoginResponse(data);
     tokenStorage.setAccessToken(parsed.accessToken);
+    if (parsed.refreshToken) {
+      tokenStorage.setRefreshToken(parsed.refreshToken);
+    }
     return parsed;
   },
 
   /**
    * POST /auth/login
-   * Stores access token in tokenStorage on success.
+   * Stores access token (and refresh token, when provided) in tokenStorage on success.
    * Returns the full response with identity data.
    */
   login: async (payload: LoginPayload): Promise<LoginResponseData> => {
@@ -173,7 +184,9 @@ export const authService = {
     );
     const parsed = unwrapLoginResponse(data);
     tokenStorage.setAccessToken(parsed.accessToken);
-    // Note: new API does not provide a refresh token
+    if (parsed.refreshToken) {
+      tokenStorage.setRefreshToken(parsed.refreshToken);
+    }
     return parsed;
   },
 
@@ -190,16 +203,33 @@ export const authService = {
   },
 
   /**
-   * POST /public/auth/refresh
-   * Updates the access token in tokenStorage on success.
+   * POST /auth/refresh
+   * Updates the access token (and rotated refresh token, when provided) in
+   * tokenStorage on success. Concurrent calls share the same in-flight
+   * request — see `inFlightRefresh` above.
    */
   refreshToken: async (refreshToken: string): Promise<RefreshTokenResponse> => {
-    const { data } = await apiClient.post<RefreshTokenResponse>(
-      "/public/auth/refresh",
-      { refreshToken },
-    );
-    tokenStorage.setAccessToken(data.accessToken);
-    return data;
+    if (inFlightRefresh) {
+      return inFlightRefresh;
+    }
+
+    inFlightRefresh = (async () => {
+      const { data } = await apiClient.post<RefreshTokenResponse>(
+        "/auth/refresh",
+        { refreshToken },
+      );
+      tokenStorage.setAccessToken(data.accessToken);
+      if (data.refreshToken) {
+        tokenStorage.setRefreshToken(data.refreshToken);
+      }
+      return data;
+    })();
+
+    try {
+      return await inFlightRefresh;
+    } finally {
+      inFlightRefresh = null;
+    }
   },
 
   /**
@@ -259,6 +289,9 @@ export const authService = {
     );
     const parsed = unwrapLoginResponse(data);
     tokenStorage.setAccessToken(parsed.accessToken);
+    if (parsed.refreshToken) {
+      tokenStorage.setRefreshToken(parsed.refreshToken);
+    }
     return parsed;
   },
 };

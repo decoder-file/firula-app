@@ -34,6 +34,9 @@ export const socialAuthService = {
     );
 
     tokenStorage.setAccessToken(data.data.accessToken);
+    if (data.data.refreshToken) {
+      tokenStorage.setRefreshToken(data.data.refreshToken);
+    }
 
     return {
       sessionData: data.data,
@@ -64,6 +67,9 @@ export const socialAuthService = {
     );
 
     tokenStorage.setAccessToken(data.data.accessToken);
+    if (data.data.refreshToken) {
+      tokenStorage.setRefreshToken(data.data.refreshToken);
+    }
 
     return {
       sessionData: data.data,
