@@ -25,3 +25,6 @@ export { usersService } from "./users.service";
 
 export { sportsService } from "./sports.service";
 export type { PublicSport } from "./sports.service";
+
+export { appConfigService } from "./appConfig.service";
+export type { AppConfigResponse, PlatformVersionConfig } from "./appConfig.service";

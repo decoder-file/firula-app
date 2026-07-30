@@ -8,17 +8,22 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import Constants from "expo-constants";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import FirulaSplashScreen from "@/components/FirulaSplashScreen";
+import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
 
 import { tokenStorage } from "@/api/tokenStorage";
 import { authService } from "@/services/auth.service";
+import { appConfigService } from "@/services/appConfig.service";
 import { AppProvider } from "@/contexts/AppContext";
 import { useAuthStore } from "@/stores/authStore";
 import { isNetworkError, isServerError } from "@/api/errors";
+import { isVersionBelow } from "@/utils/version";
 import { colors } from "@/theme/colors";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
@@ -62,6 +67,10 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   const clearUser = useAuthStore((state) => state.clearUser);
   const [showSplash, setShowSplash] = useState(true);
   const [authCheckDone, setAuthCheckDone] = useState(false);
+  const [forceUpdateCheckDone, setForceUpdateCheckDone] = useState(false);
+  const [updateRequired, setUpdateRequired] = useState(false);
+  const [updateStoreUrl, setUpdateStoreUrl] = useState<string | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
 
   const [loaded] = useFonts({
     "PlusJakartaSans-Regular": PlusJakartaSans_400Regular,
@@ -117,13 +126,51 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   }, [clearUser]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    appConfigService
+      .getAppConfig()
+      .then((config) => {
+        if (cancelled) return;
+
+        const currentVersion = Constants.expoConfig?.version;
+        const platformConfig =
+          Platform.OS === "ios" ? config.ios : Platform.OS === "android" ? config.android : null;
+
+        if (
+          currentVersion &&
+          platformConfig &&
+          isVersionBelow(currentVersion, platformConfig.minVersion)
+        ) {
+          setUpdateRequired(true);
+          setUpdateStoreUrl(platformConfig.storeUrl);
+          setUpdateMessage(config.updateMessage || null);
+        }
+      })
+      .catch(() => {
+        // Fail-open: network/timeout/server errors never block the app.
+      })
+      .finally(() => {
+        if (!cancelled) setForceUpdateCheckDone(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!loaded) return;
     const timer = setTimeout(() => setShowSplash(false), SPLASH_MIN_DURATION);
     return () => clearTimeout(timer);
   }, [loaded]);
 
-  if (!loaded || showSplash || !authCheckDone) {
+  if (!loaded || showSplash || !authCheckDone || !forceUpdateCheckDone) {
     return <FirulaSplashScreen />;
+  }
+
+  if (updateRequired && updateStoreUrl) {
+    return <ForceUpdateScreen storeUrl={updateStoreUrl} message={updateMessage} />;
   }
 
   return (

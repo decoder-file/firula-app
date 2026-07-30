@@ -4,6 +4,7 @@ import { Text } from "react-native";
 import { AppProviders } from "@/components/AppProviders";
 import { tokenStorage } from "@/api/tokenStorage";
 import { authService } from "@/services/auth.service";
+import { appConfigService } from "@/services/appConfig.service";
 
 jest.mock("@expo-google-fonts/plus-jakarta-sans", () => ({
   useFonts: () => [true],
@@ -52,6 +53,27 @@ jest.mock("@/services/auth.service", () => ({
   },
 }));
 
+jest.mock("@/services/appConfig.service", () => ({
+  appConfigService: {
+    getAppConfig: jest.fn(),
+  },
+}));
+
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: { expoConfig: { version: "1.0.4" } },
+}));
+
+jest.mock("@/components/ForceUpdateScreen", () => {
+  const { Text: RNText } = require("react-native");
+  return {
+    __esModule: true,
+    ForceUpdateScreen: ({ storeUrl }: { storeUrl: string }) => (
+      <RNText testID="force-update-screen">{storeUrl}</RNText>
+    ),
+  };
+});
+
 const clearUser = jest.fn();
 jest.mock("@/stores/authStore", () => ({
   useAuthStore: (selector: (state: { clearUser: () => void }) => unknown) =>
@@ -64,6 +86,14 @@ describe("AppProviders auth bootstrap", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (tokenStorage.init as jest.Mock).mockResolvedValue(undefined);
+    (appConfigService.getAppConfig as jest.Mock).mockResolvedValue({
+      ios: { minVersion: "0.0.0", storeUrl: "https://apps.apple.com/app/id123" },
+      android: {
+        minVersion: "0.0.0",
+        storeUrl: "https://play.google.com/store/apps/details?id=com.firulaapp",
+      },
+      updateMessage: null,
+    });
   });
 
   it("clears the user when there is no access token and no refresh token", async () => {
@@ -153,6 +183,129 @@ describe("AppProviders auth bootstrap", () => {
 
     await act(async () => {
       await jest.advanceTimersByTimeAsync(SPLASH_MIN_DURATION);
+    });
+
+    expect(queryByTestId("splash-screen")).toBeNull();
+
+    jest.useRealTimers();
+  });
+});
+
+describe("AppProviders force-update check", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (tokenStorage.init as jest.Mock).mockResolvedValue(undefined);
+    (tokenStorage.getRefreshToken as jest.Mock).mockReturnValue(null);
+    (tokenStorage.getAccessToken as jest.Mock).mockReturnValue(null);
+  });
+
+  it("shows ForceUpdateScreen when the current version is below the configured minimum", async () => {
+    jest.useFakeTimers();
+
+    (appConfigService.getAppConfig as jest.Mock).mockResolvedValue({
+      ios: { minVersion: "9.9.9", storeUrl: "https://apps.apple.com/app/id123" },
+      android: {
+        minVersion: "9.9.9",
+        storeUrl: "https://play.google.com/store/apps/details?id=com.firulaapp",
+      },
+      updateMessage: "Atualize agora",
+    });
+
+    const { findByTestId } = render(
+      <AppProviders>
+        <Text>children</Text>
+      </AppProviders>,
+    );
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_DURATION);
+    });
+
+    expect(await findByTestId("force-update-screen")).toBeTruthy();
+
+    jest.useRealTimers();
+  });
+
+  it("does not show ForceUpdateScreen when the current version already satisfies the minimum", async () => {
+    jest.useFakeTimers();
+
+    (appConfigService.getAppConfig as jest.Mock).mockResolvedValue({
+      ios: { minVersion: "1.0.4", storeUrl: "https://apps.apple.com/app/id123" },
+      android: {
+        minVersion: "1.0.4",
+        storeUrl: "https://play.google.com/store/apps/details?id=com.firulaapp",
+      },
+      updateMessage: null,
+    });
+
+    const { findByText, queryByTestId } = render(
+      <AppProviders>
+        <Text>children</Text>
+      </AppProviders>,
+    );
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_DURATION);
+    });
+
+    expect(await findByText("children")).toBeTruthy();
+    expect(queryByTestId("force-update-screen")).toBeNull();
+
+    jest.useRealTimers();
+  });
+
+  it("fails open (does not block) when the config check errors", async () => {
+    jest.useFakeTimers();
+
+    (appConfigService.getAppConfig as jest.Mock).mockRejectedValue(new Error("network error"));
+
+    const { findByText, queryByTestId } = render(
+      <AppProviders>
+        <Text>children</Text>
+      </AppProviders>,
+    );
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_DURATION);
+    });
+
+    expect(await findByText("children")).toBeTruthy();
+    expect(queryByTestId("force-update-screen")).toBeNull();
+
+    jest.useRealTimers();
+  });
+
+  it("keeps the splash screen up until the force-update check resolves", async () => {
+    jest.useFakeTimers();
+
+    let resolveConfig: (value: unknown) => void = () => undefined;
+    (appConfigService.getAppConfig as jest.Mock).mockReturnValue(
+      new Promise((resolve) => {
+        resolveConfig = resolve;
+      }),
+    );
+
+    const { queryByTestId } = render(
+      <AppProviders>
+        <Text>children</Text>
+      </AppProviders>,
+    );
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(SPLASH_MIN_DURATION);
+    });
+
+    // Splash-min-duration and the auth check are both done, but the
+    // force-update check is still pending — splash must stay visible.
+    expect(queryByTestId("splash-screen")).toBeTruthy();
+
+    await act(async () => {
+      resolveConfig({
+        ios: { minVersion: "0.0.0", storeUrl: "" },
+        android: { minVersion: "0.0.0", storeUrl: "" },
+        updateMessage: null,
+      });
+      await Promise.resolve();
     });
 
     expect(queryByTestId("splash-screen")).toBeNull();
