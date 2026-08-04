@@ -10,6 +10,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import Constants from "expo-constants";
 import * as SplashScreen from "expo-splash-screen";
+import * as Updates from "expo-updates";
 import { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -152,6 +153,28 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
       })
       .finally(() => {
         if (!cancelled) setForceUpdateCheckDone(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Non-blocking by design: an OTA update, if found, is only fetched here.
+    // It becomes active on the next full app restart — never interrupts the
+    // current session, and a failure here must never affect app launch.
+    if (__DEV__ || !Updates.isEnabled) return;
+
+    let cancelled = false;
+
+    Updates.checkForUpdateAsync()
+      .then((result) => {
+        if (cancelled || !result.isAvailable) return;
+        return Updates.fetchUpdateAsync();
+      })
+      .catch(() => {
+        // Silent: no update fetched, next restart just keeps the current bundle.
       });
 
     return () => {
