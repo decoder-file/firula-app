@@ -40,7 +40,12 @@ export function ActionsMenuSheet({
       label: "Compartilhar perfil",
       onPress: () => {
         onClose();
-        onShareProfile();
+        // Share.share() abre outro modal nativo (o share sheet do sistema).
+        // Chamado na sequência do fechamento do BottomSheet (também um Modal
+        // nativo), o iOS ainda está no meio da transição de dismiss e
+        // silenciosamente ignora a nova apresentação — o share sheet nunca
+        // aparece. Esperar a animação de fechamento terminar resolve.
+        setTimeout(onShareProfile, 350);
       },
     },
     {

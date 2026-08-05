@@ -121,7 +121,13 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
     },
     onChallenge: () => Alert.alert("Em breve", "Os desafios 1x1 ainda não estão disponíveis."),
     onShareProfile: async () => {
-      await Share.share({ message: `Confira o perfil de ${profile?.name ?? username} na Firula\n${profileUrl}` });
+      await Share.share({
+        message: `Confira o perfil de ${profile?.name ?? username} na Firula\n${profileUrl}`,
+        // `url` só tem efeito no iOS (ignorado no Android) — habilita preview
+        // do link em apps de destino que suportam (Mensagens, Notas etc).
+        url: profileUrl,
+        title: `${profile?.name ?? username} na Firula`,
+      });
     },
     onToggleBlock: () => setIsBlocked((value) => !value),
     onReport: () => {},
