@@ -268,5 +268,6 @@ export const useHomeRouteProps = (): HomeScreenProps => {
     onOpenProfile: () => openProtectedRoute("/(tabs)/profile"),
     onOpenEvent: (slugOrId) => router.push(`/event/${slugOrId}`),
     onSeeAll: () => router.push("/(tabs)/explore"),
+    onOpenGlobalSearch: () => router.push("/search"),
   };
 };

@@ -143,5 +143,6 @@ export const useExploreRouteProps = (): ExploreRouteProps => {
     canLoadMore,
     onLoadMore: handleLoadMore,
     onOpenEvent: (slugOrId) => router.push(`/event/${slugOrId}`),
+    onOpenGlobalSearch: () => router.push("/search"),
   };
 };

@@ -20,6 +20,7 @@ export function ExploreScreen({
   canLoadMore = false,
   onLoadMore,
   onOpenEvent,
+  onOpenGlobalSearch,
 }: ExploreScreenProps) {
   const { colors } = useTheme();
   const [internalQuery, setInternalQuery] = useState("");
@@ -34,7 +35,7 @@ export function ExploreScreen({
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="auto" />
 
-      <ExploreHeader query={query} onQuery={setQuery} />
+      <ExploreHeader onOpenGlobalSearch={onOpenGlobalSearch} />
 
       <View style={{ backgroundColor: colors.surface }}>
         <ScrollView

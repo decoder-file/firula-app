@@ -18,6 +18,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#f7f7f7" } }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="login-modal" options={{ presentation: "modal" }} />
+            <Stack.Screen name="search" />
             <Stack.Screen name="register" />
             <Stack.Screen name="profile-edit" />
           </Stack>

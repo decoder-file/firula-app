@@ -44,4 +44,5 @@ export interface HomeScreenProps {
   onChangeCity?: () => void;
   onOpenEvent?: (id: string) => void;
   onSeeAll?: () => void;
+  onOpenGlobalSearch?: () => void;
 }

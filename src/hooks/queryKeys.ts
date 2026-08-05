@@ -51,4 +51,8 @@ export const queryKeys = {
     all: ["sports"] as const,
     list: () => [...queryKeys.sports.all, "list"] as const,
   },
+  search: {
+    all: ["search"] as const,
+    query: (q: string) => [...queryKeys.search.all, q] as const,
+  },
 } as const;
