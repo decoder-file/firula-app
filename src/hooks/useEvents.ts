@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { eventsService } from "@/services/events.service";
 import type { GetEventsParams, GetUpcomingEventsParams } from "@/services/events.service";
@@ -51,4 +51,16 @@ export const useEventBySlug = (slug: string) =>
     queryKey: queryKeys.events.detailBySlug(slug),
     queryFn: () => eventsService.getBySlug(slug),
     enabled: Boolean(slug),
+  });
+
+export const useEventParticipants = (eventId: string, enabled = true, take = 30) =>
+  useInfiniteQuery({
+    queryKey: queryKeys.events.participants(eventId, take),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => eventsService.getParticipants(eventId, pageParam, take),
+    getNextPageParam: (lastPage) => {
+      const nextSkip = lastPage.skip + lastPage.participants.length;
+      return nextSkip < lastPage.total && lastPage.participants.length > 0 ? nextSkip : undefined;
+    },
+    enabled: Boolean(eventId) && enabled,
   });

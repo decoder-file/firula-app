@@ -45,6 +45,15 @@ const formatDateLabel = (isoDate: string) =>
     month: "short",
   });
 
+const isEventHappeningNow = (startsAt: string): boolean => {
+  const startTime = new Date(startsAt).getTime();
+  if (!Number.isFinite(startTime)) return false;
+
+  const now = Date.now();
+  const assumedEventDuration = 24 * 60 * 60 * 1000;
+  return now >= startTime && now < startTime + assumedEventDuration;
+};
+
 export const mapEventToExploreItem = (event: PlatformEvent): ExploreEvent => {
   const category = inferCategoryFromName(event.name);
   const imageUrl = resolvePlatformEventImageUrl(event);
@@ -56,9 +65,8 @@ export const mapEventToExploreItem = (event: PlatformEvent): ExploreEvent => {
     title: event.name,
     city: `${event.location.city}, ${event.location.state}`,
     dateLabel: formatDateLabel(event.startsAt),
-    price: "A confirmar",
     attendeesLabel: event.organization.tradeName,
-    hot: event.isTrending || event.isFeatured,
+    hot: isEventHappeningNow(event.startsAt),
     image: imageUrl ? { uri: imageUrl } : FALLBACK_EVENT_IMAGE,
   };
 };

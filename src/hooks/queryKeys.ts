@@ -18,6 +18,7 @@ export const queryKeys = {
     details: () => [...queryKeys.events.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.events.details(), id] as const,
     detailBySlug: (slug: string) => [...queryKeys.events.details(), "slug", slug] as const,
+    participants: (eventId: string, take: number) => [...queryKeys.events.details(), eventId, "participants", take] as const,
   },
   tickets: {
     all: ["tickets"] as const,

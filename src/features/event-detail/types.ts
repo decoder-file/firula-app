@@ -28,6 +28,7 @@ export interface SocialProof {
 }
 
 export interface EventDetail {
+  id: string;
   title: string;
   category: string;
   image: ImageSourcePropType;
@@ -41,6 +42,7 @@ export interface EventDetail {
   organizer?: Organizer;
   social?: SocialProof;
   lotDeadlineText?: string;
+  showParticipants?: boolean;
 }
 
 export interface EventDetailScreenProps {

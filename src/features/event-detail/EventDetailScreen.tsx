@@ -25,6 +25,7 @@ import { PressScale, Text, useTheme } from "@/design-system";
 import { FactItem } from "@/features/event-detail/components/FactItem";
 import { LotCard } from "@/features/event-detail/components/LotCard";
 import { RoundButton } from "@/features/event-detail/components/RoundButton";
+import { ParticipantsSection } from "@/features/event-detail/components/ParticipantsSection";
 import { TrustItem } from "@/features/event-detail/components/TrustItem";
 import type { EventDetailScreenProps } from "@/features/event-detail/types";
 
@@ -120,6 +121,36 @@ export function EventDetailScreen({
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <StatusBar style="light" />
 
+      <View
+        pointerEvents="box-none"
+        style={[
+          styles.fixedHeader,
+          {
+            top: insets.top + 8,
+          },
+        ]}
+      >
+        <RoundButton label="Voltar" onPress={onBack}>
+          <ChevronLeft size={22} color="#141821" strokeWidth={2} />
+        </RoundButton>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <RoundButton label="Compartilhar" onPress={onShare}>
+            <Share2 size={20} color="#141821" strokeWidth={1.75} />
+          </RoundButton>
+          <RoundButton
+            label={favorite ? "Remover dos favoritos" : "Favoritar"}
+            onPress={onToggleFavorite}
+          >
+            <Heart
+              size={20}
+              color={favorite ? "#E5484D" : "#141821"}
+              fill={favorite ? "#E5484D" : "none"}
+              strokeWidth={1.75}
+            />
+          </RoundButton>
+        </View>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 132 }}
@@ -131,37 +162,6 @@ export function EventDetailScreen({
             resizeMode="cover"
           />
           <View style={[StyleSheet.absoluteFillObject, styles.heroScrim]} />
-
-          <View
-            style={{
-              position: "absolute",
-              top: insets.top + 8,
-              left: 20,
-              right: 20,
-              flexDirection: "row",
-              justifyContent: "space-between",
-            }}
-          >
-            <RoundButton label="Voltar" onPress={onBack}>
-              <ChevronLeft size={22} color="#141821" strokeWidth={2} />
-            </RoundButton>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <RoundButton label="Compartilhar" onPress={onShare}>
-                <Share2 size={20} color="#141821" strokeWidth={1.75} />
-              </RoundButton>
-              <RoundButton
-                label={favorite ? "Remover dos favoritos" : "Favoritar"}
-                onPress={onToggleFavorite}
-              >
-                <Heart
-                  size={20}
-                  color={favorite ? "#E5484D" : "#141821"}
-                  fill={favorite ? "#E5484D" : "none"}
-                  strokeWidth={1.75}
-                />
-              </RoundButton>
-            </View>
-          </View>
 
           <View
             style={{ position: "absolute", left: 20, right: 20, bottom: 18 }}
@@ -325,6 +325,8 @@ export function EventDetailScreen({
               {event.about}
             </Text>
           </View>
+
+          {event.showParticipants ? <ParticipantsSection eventId={event.id} /> : null}
 
           <View
             style={{
@@ -492,6 +494,15 @@ export function EventDetailScreen({
 }
 
 const styles = StyleSheet.create({
+  fixedHeader: {
+    position: "absolute",
+    left: 20,
+    right: 20,
+    zIndex: 20,
+    elevation: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
   heroScrim: { backgroundColor: "transparent" },
   pill: {
     flexDirection: "row",

@@ -1,6 +1,6 @@
 import React from "react";
 import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { ArrowDownUp, CalendarDays, Flame, MapPin, SearchX, Users } from "lucide-react-native";
+import { ArrowDownUp, CalendarDays, Flame, MapPin, SearchX } from "lucide-react-native";
 
 import { Button, Skeleton, Text, useTheme } from "@/design-system";
 import type { ExploreEvent } from "@/features/explore/types";
@@ -86,7 +86,7 @@ export function ExploreEventList({
               key={e.id}
               onPress={() => onOpenEvent?.(e.id)}
               accessibilityRole="button"
-              accessibilityLabel={`${e.title}, ${e.dateLabel}, ${e.city}, ${e.price}`}
+              accessibilityLabel={[e.title, e.dateLabel, e.city, e.attendeesLabel].filter(Boolean).join(", ")}
               style={{
                 flexDirection: "row",
                 gap: 14,
@@ -115,7 +115,7 @@ export function ExploreEventList({
                         letterSpacing: 0,
                       }}
                     >
-                      Alta
+                      Rolando
                     </Text>
                   </View>
                 ) : null}
@@ -183,41 +183,14 @@ export function ExploreEventList({
                     {e.city}
                   </Text>
                 </View>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
+                <Text
+                  token="label"
+                  color="primary"
+                  numberOfLines={1}
+                  style={{ fontSize: 13, flexShrink: 1 }}
                 >
-                  <Text
-                    token="label"
-                    color="primary"
-                    style={{ fontSize: 15 }}
-                  >
-                    {e.price}
-                  </Text>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <Users
-                      size={12}
-                      color={colors.textMuted}
-                      strokeWidth={2}
-                    />
-                    <Text
-                      token="caption"
-                      color="muted"
-                      style={{ textTransform: "none", letterSpacing: 0 }}
-                    >
-                      {e.attendeesLabel}
-                    </Text>
-                  </View>
-                </View>
+                  {e.attendeesLabel}
+                </Text>
               </View>
             </Pressable>
           ))}
@@ -226,7 +199,7 @@ export function ExploreEventList({
             <View style={{ marginTop: 8, alignItems: "center" }}>
               <Button
                 label={isFetchingMore ? "Carregando..." : "Carregar mais"}
-                onPress={onLoadMore}
+                onPress={() => onLoadMore?.()}
               />
             </View>
           ) : null}

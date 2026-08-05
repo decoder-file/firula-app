@@ -7,7 +7,6 @@ export interface ExploreEvent {
   title: string;
   city: string;
   dateLabel: string;
-  price: string;
   attendeesLabel: string;
   hot: boolean;
   image: ImageSourcePropType;

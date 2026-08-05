@@ -85,6 +85,7 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
   });
 
   return {
+    id: event.id,
     title: event.name,
     category: event.sports[0]?.name ?? 'Evento',
     image: imageUrl ? { uri: imageUrl } : FALLBACK_EVENT_IMAGE,
@@ -102,6 +103,7 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     },
     social: event.soldCount > 0 ? { count: event.soldCount } : undefined,
     lotDeadlineText: getLotDeadlineText(event.ticketLots),
+    showParticipants: event.settings?.showParticipantsOnEventPage !== false,
     lots: event.ticketLots.map(mapLot),
   };
 };
