@@ -4,7 +4,7 @@
  * (nativo, 60fps via Reanimated). Respeite reduce-motion (ver useReducedMotion).
  */
 
-import { Easing } from 'react-native';
+import { Easing } from 'react-native-reanimated';
 
 export const duration = {
   press: 100, // press state: scale 0.97 + opacity 0.9 — feedback imediato

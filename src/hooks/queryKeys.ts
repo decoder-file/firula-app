@@ -55,4 +55,13 @@ export const queryKeys = {
     all: ["search"] as const,
     query: (q: string) => [...queryKeys.search.all, q] as const,
   },
+  publicProfile: {
+    all: ["publicProfile"] as const,
+    detail: (username: string) => [...queryKeys.publicProfile.all, "detail", username] as const,
+    followStatus: (username: string) => [...queryKeys.publicProfile.all, "follow-status", username] as const,
+    followers: (username: string, skip: number, take: number) =>
+      [...queryKeys.publicProfile.all, "followers", username, skip, take] as const,
+    following: (username: string, skip: number, take: number) =>
+      [...queryKeys.publicProfile.all, "following", username, skip, take] as const,
+  },
 } as const;
