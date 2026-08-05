@@ -48,6 +48,7 @@ export function EventDetailScreen({
   onShare,
   onOpenMap,
   onAddToCalendar,
+  onOpenOrganizer,
   onFollowOrganizer,
   onCheckout,
 }: EventDetailScreenProps) {
@@ -263,7 +264,11 @@ export function EventDetailScreen({
           </View>
 
           {event.organizer ? (
-            <View
+            <PressScale
+              onPress={onOpenOrganizer}
+              disabled={!onOpenOrganizer}
+              accessibilityRole="button"
+              accessibilityLabel={`Ver perfil de ${event.organizer.name}`}
               style={[styles.orgCard, { backgroundColor: colors.background }]}
             >
               <View
@@ -306,7 +311,7 @@ export function EventDetailScreen({
                 style={[styles.followBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text token="label" style={{ fontSize: 12.5 }}>Seguir</Text>
               </PressScale> */}
-            </View>
+            </PressScale>
           ) : null}
 
           <View style={{ marginBottom: 22 }}>

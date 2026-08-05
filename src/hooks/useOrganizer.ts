@@ -10,6 +10,13 @@ export const useOrganizerProfile = (slug: string) =>
     enabled: Boolean(slug),
   });
 
+export const useOrganizerRatings = (slug: string, enabled = true) =>
+  useQuery({
+    queryKey: [...queryKeys.organizer.detail(slug), "ratings"],
+    queryFn: () => organizerService.getRatings(slug),
+    enabled: Boolean(slug) && enabled,
+  });
+
 export const useFollowOrganizer = (slug: string) => {
   const queryClient = useQueryClient();
   return useMutation({

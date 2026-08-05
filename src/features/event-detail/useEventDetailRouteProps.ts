@@ -95,6 +95,7 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     address: `${event.location.neighborhood}, ${event.location.city} - ${event.location.state}`,
     about: event.description || 'Sem descrição disponível para este evento.',
     organizer: {
+      slug: event.organization.slug,
       name: event.organization.tradeName,
       initials: getInitials(event.organization.tradeName),
       verified: true,
@@ -231,6 +232,10 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
       if (!opened) {
         Alert.alert('Não foi possível abrir o calendário', 'Tente novamente em alguns instantes.');
       }
+    },
+    onOpenOrganizer: () => {
+      if (!event?.organization.slug) return;
+      router.push(`/organizer/${encodeURIComponent(event.organization.slug)}`);
     },
   };
 };
