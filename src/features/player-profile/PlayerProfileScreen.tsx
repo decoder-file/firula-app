@@ -19,6 +19,7 @@ import { ActionsMenuSheet } from "@/features/player-profile/components/ActionsMe
 import { AttendedEventRow } from "@/features/player-profile/components/AttendedEventRow";
 import { FollowListSheet } from "@/features/player-profile/components/FollowListSheet";
 import { HeaderIconButton } from "@/features/player-profile/components/HeaderIconButton";
+import { ReportProfileSheet } from "@/features/player-profile/components/ReportProfileSheet";
 import type { FollowTab, PlayerProfileScreenProps } from "@/features/player-profile/types";
 
 export function PlayerProfileScreen({
@@ -36,16 +37,21 @@ export function PlayerProfileScreen({
   followingCount,
   eventsCount,
   events,
+  isAuthenticated,
   isFollowing,
+  isFollowedBy,
   isFollowBusy,
   isBlocked,
+  isReportBusy,
+  hasReported,
   onBack,
   onOpenInstagram,
   onToggleFollow,
   onUnfollow,
+  onRemoveFollower,
   onShareProfile,
   onToggleBlock,
-  onReport,
+  onSubmitReport,
   onOpenEvent,
   onOpenFollowPerson,
 }: PlayerProfileScreenProps) {
@@ -53,6 +59,7 @@ export function PlayerProfileScreen({
   const insets = useSafeAreaInsets();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [followSheet, setFollowSheet] = useState<{ open: boolean; tab: FollowTab }>({
     open: false,
     tab: "followers",
@@ -260,11 +267,22 @@ export function PlayerProfileScreen({
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         isFollowing={isFollowing}
+        isFollowedBy={isFollowedBy}
         isBlocked={isBlocked}
+        hasReported={hasReported}
+        isAuthenticated={isAuthenticated}
         onShareProfile={onShareProfile}
         onUnfollow={onUnfollow}
+        onRemoveFollower={onRemoveFollower}
         onToggleBlock={onToggleBlock}
-        onReport={onReport}
+        onOpenReport={() => setReportOpen(true)}
+      />
+
+      <ReportProfileSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        isSubmitting={isReportBusy}
+        onSubmit={onSubmitReport}
       />
 
       <FollowListSheet

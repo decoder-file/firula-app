@@ -59,6 +59,9 @@ export const isTimeoutError = (error: unknown): error is TimeoutError =>
 export const isNotFoundError = (error: unknown): error is ApiError =>
   isApiError(error) && error.statusCode === 404;
 
+export const isConflictError = (error: unknown): error is ApiError =>
+  isApiError(error) && error.statusCode === 409;
+
 export const isUnauthorizedError = (error: unknown): error is ApiError =>
   isApiError(error) && error.statusCode === 401;
 

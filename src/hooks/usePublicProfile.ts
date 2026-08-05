@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { publicProfileService } from "@/services/publicProfile.service";
+import { publicProfileService, type CustomerReportReason } from "@/services/publicProfile.service";
 import { queryKeys } from "./queryKeys";
 
 export const usePublicProfile = (username: string) =>
@@ -42,6 +42,40 @@ export const useToggleFollowByUsername = () => {
       isFollowing ? publicProfileService.unfollow(username) : publicProfileService.follow(username),
     onSuccess: (_result, { username }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+    },
+  });
+};
+
+export const useRemoveFollower = (username: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => publicProfileService.removeFollower(username),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+    },
+  });
+};
+
+export const useToggleBlock = (username: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (isBlocked: boolean) =>
+      isBlocked ? publicProfileService.unblock(username) : publicProfileService.block(username),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+    },
+  });
+};
+
+export const useReportProfile = (username: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reason, details }: { reason: CustomerReportReason; details?: string }) =>
+      publicProfileService.report(username, reason, details),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
     },
   });

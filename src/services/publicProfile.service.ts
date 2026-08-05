@@ -35,6 +35,23 @@ export interface FollowActionResult {
 
 export interface FollowStatusResult {
   isFollowing: boolean;
+  isFollowedBy: boolean;
+  isBlocked: boolean;
+  hasReported: boolean;
+}
+
+export interface RemoveFollowerResult {
+  removed: boolean;
+}
+
+export interface BlockActionResult {
+  isBlocked: boolean;
+}
+
+export type CustomerReportReason = "SPAM" | "INAPPROPRIATE_CONTENT" | "HARASSMENT" | "FAKE_PROFILE" | "OTHER";
+
+export interface ReportActionResult {
+  reported: boolean;
 }
 
 export interface PublicProfileFollower {
@@ -99,6 +116,26 @@ export const publicProfileService = {
 
   unfollow: async (username: string): Promise<FollowActionResult> => {
     const { data } = await apiClient.delete(`/public/profiles/${username}/follow`);
+    return data.data;
+  },
+
+  removeFollower: async (username: string): Promise<RemoveFollowerResult> => {
+    const { data } = await apiClient.delete(`/public/profiles/${username}/remove-follower`);
+    return data.data;
+  },
+
+  block: async (username: string): Promise<BlockActionResult> => {
+    const { data } = await apiClient.post(`/public/profiles/${username}/block`);
+    return data.data;
+  },
+
+  unblock: async (username: string): Promise<BlockActionResult> => {
+    const { data } = await apiClient.delete(`/public/profiles/${username}/block`);
+    return data.data;
+  },
+
+  report: async (username: string, reason: CustomerReportReason, details?: string): Promise<ReportActionResult> => {
+    const { data } = await apiClient.post(`/public/profiles/${username}/report`, { reason, details });
     return data.data;
   },
 

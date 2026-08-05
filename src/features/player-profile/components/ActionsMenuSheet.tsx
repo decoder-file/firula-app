@@ -8,17 +8,22 @@ interface ActionsMenuSheetProps {
   visible: boolean;
   onClose: () => void;
   isFollowing: boolean;
+  isFollowedBy: boolean;
   isBlocked: boolean;
+  hasReported: boolean;
+  isAuthenticated: boolean;
   onShareProfile: () => void;
   onUnfollow: () => void;
+  onRemoveFollower: () => void;
   onToggleBlock: () => void;
-  onReport: () => void;
+  onOpenReport: () => void;
 }
 
 interface MenuAction {
   icon: LucideIcon;
   label: string;
   destructive?: boolean;
+  disabled?: boolean;
   onPress: () => void;
 }
 
@@ -26,53 +31,65 @@ export function ActionsMenuSheet({
   visible,
   onClose,
   isFollowing,
+  isFollowedBy,
   isBlocked,
+  hasReported,
+  isAuthenticated,
   onShareProfile,
   onUnfollow,
+  onRemoveFollower,
   onToggleBlock,
-  onReport,
+  onOpenReport,
 }: ActionsMenuSheetProps) {
   const { colors } = useTheme();
+
+  // Abrir outro Modal nativo (share sheet do sistema, ou o sheet de
+  // denúncia) imediatamente depois de fechar este BottomSheet (também um
+  // Modal) faz o iOS silenciosamente ignorar a nova apresentação, ainda no
+  // meio da transição de dismiss. Esperar a animação terminar resolve.
+  const closeThenRun = (action: () => void) => {
+    onClose();
+    setTimeout(action, 350);
+  };
 
   const actions: MenuAction[] = [
     {
       icon: Share2,
       label: "Compartilhar perfil",
-      onPress: () => {
-        onClose();
-        // Share.share() abre outro modal nativo (o share sheet do sistema).
-        // Chamado na sequência do fechamento do BottomSheet (também um Modal
-        // nativo), o iOS ainda está no meio da transição de dismiss e
-        // silenciosamente ignora a nova apresentação — o share sheet nunca
-        // aparece. Esperar a animação de fechamento terminar resolve.
-        setTimeout(onShareProfile, 350);
-      },
+      onPress: () => closeThenRun(onShareProfile),
     },
-    {
-      icon: UserX,
-      label: isFollowing ? "Deixar de seguir" : "Remover seguidor",
-      onPress: () => {
-        onClose();
-        onUnfollow();
-      },
-    },
-    {
-      icon: Ban,
-      label: isBlocked ? "Desbloquear" : "Bloquear",
-      destructive: true,
-      onPress: () => {
-        onClose();
-        onToggleBlock();
-      },
-    },
+    ...(isFollowing || isFollowedBy
+      ? [
+          {
+            icon: UserX,
+            label: isFollowing ? "Deixar de seguir" : "Remover seguidor",
+            onPress: () => {
+              onClose();
+              if (isFollowing) onUnfollow();
+              else onRemoveFollower();
+            },
+          },
+        ]
+      : []),
+    ...(isAuthenticated
+      ? [
+          {
+            icon: Ban,
+            label: isBlocked ? "Desbloquear" : "Bloquear",
+            destructive: true,
+            onPress: () => {
+              onClose();
+              onToggleBlock();
+            },
+          },
+        ]
+      : []),
     {
       icon: Flag,
-      label: "Denunciar perfil",
+      label: hasReported ? "Perfil já denunciado" : "Denunciar perfil",
       destructive: true,
-      onPress: () => {
-        onClose();
-        onReport();
-      },
+      disabled: hasReported,
+      onPress: () => closeThenRun(onOpenReport),
     },
   ];
 
@@ -81,13 +98,16 @@ export function ActionsMenuSheet({
       <View style={{ paddingBottom: 4 }}>
         {actions.map((action, index) => (
           <PressScale
-            key={action.label}
+            key={index}
             onPress={action.onPress}
+            disabled={action.disabled}
             accessibilityRole="button"
             accessibilityLabel={action.label}
+            accessibilityState={{ disabled: action.disabled }}
             style={[
               styles.row,
               index > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+              action.disabled && { opacity: 0.45 },
             ]}
           >
             <action.icon

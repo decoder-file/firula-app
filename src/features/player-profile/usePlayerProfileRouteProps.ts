@@ -1,12 +1,18 @@
-import { useState } from "react";
 import { Alert, Linking, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useSnackbar } from "@/design-system";
-import { isNotFoundError } from "@/api/errors";
+import { isConflictError, isNotFoundError } from "@/api/errors";
 import { useIsAuthenticated } from "@/hooks/useAuth";
-import { useFollowPublicProfile, usePublicProfile, usePublicProfileFollowStatus } from "@/hooks/usePublicProfile";
-import type { AttendedEvent, FollowPerson, PlayerProfileScreenProps } from "@/features/player-profile/types";
+import {
+  useFollowPublicProfile,
+  usePublicProfile,
+  usePublicProfileFollowStatus,
+  useRemoveFollower,
+  useReportProfile,
+  useToggleBlock,
+} from "@/hooks/usePublicProfile";
+import type { AttendedEvent, FollowPerson, PlayerProfileScreenProps, ReportReason } from "@/features/player-profile/types";
 
 const PROFILE_BASE_URL = "https://firula.com.br/pagina-perfil";
 
@@ -32,13 +38,14 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
   const isAuthenticated = useIsAuthenticated();
   const { show: showSnackbar } = useSnackbar();
 
-  const [isBlocked, setIsBlocked] = useState(false);
-
   const { data: profile, isPending, isError, error, refetch } = usePublicProfile(username);
   const isReady = !isPending && !isError && !!profile;
 
   const { data: followStatus } = usePublicProfileFollowStatus(username, isAuthenticated && isReady);
   const followMutation = useFollowPublicProfile(username);
+  const removeFollowerMutation = useRemoveFollower(username);
+  const blockMutation = useToggleBlock(username);
+  const reportMutation = useReportProfile(username);
 
   const status: PlayerProfileScreenProps["status"] = isPending
     ? "loading"
@@ -67,6 +74,9 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
       : null;
 
   const isFollowing = followStatus?.isFollowing ?? false;
+  const isFollowedBy = followStatus?.isFollowedBy ?? false;
+  const isBlocked = followStatus?.isBlocked ?? false;
+  const hasReported = followStatus?.hasReported ?? false;
   const profileUrl = `${PROFILE_BASE_URL}/${username}`;
 
   const requireAuth = (): boolean => {
@@ -93,9 +103,14 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
     eventsCount: events.length,
     events,
 
+    isAuthenticated,
     isFollowing,
+    isFollowedBy,
     isFollowBusy: followMutation.isPending,
     isBlocked,
+    isBlockBusy: blockMutation.isPending,
+    isReportBusy: reportMutation.isPending,
+    hasReported,
 
     onBack: () => router.back(),
     onOpenInstagram: async () => {
@@ -119,6 +134,13 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
         onError: () => showSnackbar({ message: "Não foi possível deixar de seguir agora.", variant: "error" }),
       });
     },
+    onRemoveFollower: () => {
+      if (!requireAuth()) return;
+      removeFollowerMutation.mutate(undefined, {
+        onSuccess: () => showSnackbar({ message: "Seguidor removido.", variant: "success" }),
+        onError: () => showSnackbar({ message: "Não foi possível remover esse seguidor agora.", variant: "error" }),
+      });
+    },
     onChallenge: () => Alert.alert("Em breve", "Os desafios 1x1 ainda não estão disponíveis."),
     onShareProfile: async () => {
       await Share.share({
@@ -129,8 +151,41 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
         title: `${profile?.name ?? username} na Firula`,
       });
     },
-    onToggleBlock: () => setIsBlocked((value) => !value),
-    onReport: () => {},
+    onToggleBlock: () => {
+      if (!requireAuth()) return;
+      blockMutation.mutate(isBlocked, {
+        onSuccess: () =>
+          showSnackbar({ message: isBlocked ? "Perfil desbloqueado." : "Perfil bloqueado.", variant: "success" }),
+        onError: () => showSnackbar({ message: "Não foi possível atualizar o bloqueio agora.", variant: "error" }),
+      });
+    },
+    onSubmitReport: (reason: ReportReason, details?: string) => {
+      if (!requireAuth()) return Promise.resolve();
+
+      if (hasReported) {
+        showSnackbar({ message: "Você já denunciou este perfil.", variant: "error" });
+        return Promise.reject(new Error("already reported"));
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        reportMutation.mutate(
+          { reason, details },
+          {
+            onSuccess: () => {
+              showSnackbar({ message: "Denúncia enviada. Obrigado por ajudar a manter a comunidade segura.", variant: "success" });
+              resolve();
+            },
+            onError: (mutationError) => {
+              const message = isConflictError(mutationError)
+                ? "Você já denunciou este perfil."
+                : "Não foi possível enviar a denúncia agora.";
+              showSnackbar({ message, variant: "error" });
+              reject(mutationError instanceof Error ? mutationError : new Error("report failed"));
+            },
+          },
+        );
+      });
+    },
     onOpenEvent: (event: AttendedEvent) => {
       router.push(`/event/${event.slug ?? event.id}` as never);
     },

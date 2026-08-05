@@ -20,6 +20,8 @@ export type FollowTab = "followers" | "following";
 
 export type PlayerProfileStatus = "loading" | "not-found" | "error" | "ready";
 
+export type ReportReason = "SPAM" | "INAPPROPRIATE_CONTENT" | "HARASSMENT" | "FAKE_PROFILE" | "OTHER";
+
 export interface PlayerProfileScreenProps {
   status: PlayerProfileStatus;
   onRetry: () => void;
@@ -38,18 +40,24 @@ export interface PlayerProfileScreenProps {
   eventsCount: number;
   events: AttendedEvent[];
 
+  isAuthenticated: boolean;
   isFollowing: boolean;
+  isFollowedBy: boolean;
   isFollowBusy: boolean;
   isBlocked: boolean;
+  isBlockBusy: boolean;
+  isReportBusy: boolean;
+  hasReported: boolean;
 
   onBack: () => void;
   onOpenInstagram: () => void;
   onToggleFollow: () => void;
   onUnfollow: () => void;
+  onRemoveFollower: () => void;
   onChallenge: () => void;
   onShareProfile: () => void;
   onToggleBlock: () => void;
-  onReport: () => void;
+  onSubmitReport: (reason: ReportReason, details?: string) => Promise<void>;
   onOpenEvent: (event: AttendedEvent) => void;
   onOpenFollowPerson: (person: FollowPerson) => void;
 }
