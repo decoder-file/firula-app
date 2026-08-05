@@ -2,84 +2,135 @@ import { useState } from "react";
 import { Alert, Linking, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import type { AttendedEvent, FollowPerson, FollowTab, PlayerProfileScreenProps } from "@/features/player-profile/types";
+import { useSnackbar } from "@/design-system";
+import { isNotFoundError } from "@/api/errors";
+import { useIsAuthenticated } from "@/hooks/useAuth";
+import { useFollowPublicProfile, usePublicProfile, usePublicProfileFollowStatus } from "@/hooks/usePublicProfile";
+import type { AttendedEvent, FollowPerson, PlayerProfileScreenProps } from "@/features/player-profile/types";
 
-const EVENT_BEACH_TENNIS = require("../../../assets/events/event-beach-tennis.jpg");
-const EVENT_FUTEVOLEI = require("../../../assets/events/event-futevolei.jpg");
-const EVENT_RUNNING = require("../../../assets/events/event-running.jpg");
-const EVENT_YOGA = require("../../../assets/events/event-yoga.jpg");
+const PROFILE_BASE_URL = "https://firula.com.br/pagina-perfil";
 
-// TODO: dados mockados — trocar por GET /public/profiles/:username quando a
-// tela for ligada à API (o backend já expõe esse endpoint e os mesmos campos
-// isPublicProfileEnabled/showCityOnPublicProfile usados em profile-edit).
-const MOCK_EVENTS: AttendedEvent[] = [
-  { id: "ev-1", title: "Festival Firula 2026 — Verão", date: "14 fev", city: "Florianópolis", tag: "Concluído", image: EVENT_YOGA },
-  { id: "ev-2", title: "Copa de Futevôlei de Verão", date: "22 fev", city: "Jurerê", tag: "Concluído", image: EVENT_FUTEVOLEI },
-  { id: "ev-3", title: "Night Run Floripa 10K", date: "8 mar", city: "Beira-Mar", tag: "Concluído", image: EVENT_RUNNING },
-  { id: "ev-4", title: "Beach Tennis Open", date: "20 mar", city: "Jurerê", tag: "Concluído", image: EVENT_BEACH_TENNIS },
-  { id: "ev-5", title: "Torneio Society Verão", date: "2 abr", city: "Campeche", tag: "Concluído", image: EVENT_FUTEVOLEI },
-];
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "??";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+}
 
-const MOCK_FOLLOWERS: FollowPerson[] = [
-  { id: "bruno", initials: "BA", name: "Bruno Alves", meta: "Rank Prata I · Beach Tennis", isFollowing: true },
-  { id: "carla", initials: "CN", name: "Carla Nunes", meta: "Rank Ouro I · Futevôlei", isFollowing: false },
-  { id: "pedro", initials: "PM", name: "Pedro Moraes", meta: "Rank Prata III · Futebol", isFollowing: true },
-  { id: "ana", initials: "AL", name: "Ana Lima", meta: "Rank Ouro II · Beach Tennis", isFollowing: false },
-  { id: "marcos", initials: "MS", name: "Marcos Silva", meta: "Rank Prata II · Futevôlei", isFollowing: true },
-  { id: "julia", initials: "JR", name: "Julia Ramos", meta: "Rank Platina · Futebol", isFollowing: false },
-];
+function formatEventDateLabel(isoDate: string): string {
+  return new Date(isoDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
 
-const MOCK_FOLLOWING: FollowPerson[] = MOCK_FOLLOWERS.slice().reverse();
+function buildInstagramUrl(handle: string): string {
+  return handle.startsWith("http") ? handle : `https://instagram.com/${handle.replace(/^@/, "")}`;
+}
 
 export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
   const router = useRouter();
-  const { username } = useLocalSearchParams<{ username: string }>();
+  const { username: rawUsername } = useLocalSearchParams<{ username: string }>();
+  const username = rawUsername ?? "";
+  const isAuthenticated = useIsAuthenticated();
+  const { show: showSnackbar } = useSnackbar();
 
-  const [isFollowing, setIsFollowing] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [followers, setFollowers] = useState<FollowPerson[]>(MOCK_FOLLOWERS);
-  const [following, setFollowing] = useState<FollowPerson[]>(MOCK_FOLLOWING);
 
-  const instagramHandle = `@${username || "bruno.alves"}`;
-  const instagramUrl = `https://instagram.com/${username || "bruno.alves"}`;
+  const { data: profile, isPending, isError, error, refetch } = usePublicProfile(username);
+  const isReady = !isPending && !isError && !!profile;
 
-  const toggleFollowPerson = (tab: FollowTab, personId: string) => {
-    const setList = tab === "followers" ? setFollowers : setFollowing;
-    setList((list) =>
-      list.map((person) => (person.id === personId ? { ...person, isFollowing: !person.isFollowing } : person)),
-    );
+  const { data: followStatus } = usePublicProfileFollowStatus(username, isAuthenticated && isReady);
+  const followMutation = useFollowPublicProfile(username);
+
+  const status: PlayerProfileScreenProps["status"] = isPending
+    ? "loading"
+    : isError
+      ? isNotFoundError(error)
+        ? "not-found"
+        : "error"
+      : "ready";
+
+  const events: AttendedEvent[] = (profile?.attendedEvents ?? []).map((event) => ({
+    id: event.id,
+    slug: event.slug,
+    title: event.name,
+    dateLabel: formatEventDateLabel(event.startsAt),
+    organizationName: event.organizationName,
+    statusLabel: new Date(event.startsAt).getTime() < Date.now() ? "Concluído" : "Confirmado",
+    coverUrl: event.coverUrl,
+  }));
+
+  const instagramHandle = profile?.socialLinks?.instagram ?? null;
+  const instagramUrl = instagramHandle ? buildInstagramUrl(instagramHandle) : null;
+
+  const city =
+    profile?.location && (profile.location.city || profile.location.state)
+      ? [profile.location.city, profile.location.state].filter(Boolean).join(", ")
+      : null;
+
+  const isFollowing = followStatus?.isFollowing ?? false;
+  const profileUrl = `${PROFILE_BASE_URL}/${username}`;
+
+  const requireAuth = (): boolean => {
+    if (isAuthenticated) return true;
+    router.push(`/login-modal?redirectTo=/player/${username}` as never);
+    return false;
   };
 
   return {
-    name: "Bruno Alves",
-    handle: instagramHandle,
-    city: "Florianópolis, SC",
-    initials: "BA",
-    instagramHandle,
+    status,
+    onRetry: () => refetch(),
+
+    name: profile?.name ?? username,
+    username,
+    handle: `@${username}`,
+    photoUrl: profile?.photoUrl ?? null,
+    initials: getInitials(profile?.name ?? username),
+    city,
     instagramUrl,
-    followersCount: 289,
-    followingCount: 412,
-    eventsCount: MOCK_EVENTS.length,
-    events: MOCK_EVENTS,
-    followers,
-    following,
+    instagramHandle,
+
+    followersCount: profile?.followersCount ?? 0,
+    followingCount: profile?.followingCount ?? 0,
+    eventsCount: events.length,
+    events,
 
     isFollowing,
+    isFollowBusy: followMutation.isPending,
     isBlocked,
 
     onBack: () => router.back(),
     onOpenInstagram: async () => {
+      if (!instagramUrl) return;
       const canOpen = await Linking.canOpenURL(instagramUrl);
       if (canOpen) await Linking.openURL(instagramUrl);
     },
-    onToggleFollow: () => setIsFollowing((value) => !value),
-    onUnfollow: () => setIsFollowing(false),
+    onToggleFollow: () => {
+      if (!requireAuth()) return;
+      followMutation.mutate(isFollowing, {
+        onError: (mutationError) => {
+          const message =
+            mutationError instanceof Error ? mutationError.message : "Não foi possível atualizar o perfil seguido.";
+          showSnackbar({ message, variant: "error" });
+        },
+      });
+    },
+    onUnfollow: () => {
+      if (!requireAuth()) return;
+      followMutation.mutate(true, {
+        onError: () => showSnackbar({ message: "Não foi possível deixar de seguir agora.", variant: "error" }),
+      });
+    },
     onChallenge: () => Alert.alert("Em breve", "Os desafios 1x1 ainda não estão disponíveis."),
     onShareProfile: async () => {
-      await Share.share({ message: `Confira o perfil de Bruno Alves na Firula\n${instagramUrl}` });
+      await Share.share({ message: `Confira o perfil de ${profile?.name ?? username} na Firula\n${profileUrl}` });
     },
     onToggleBlock: () => setIsBlocked((value) => !value),
     onReport: () => {},
-    onToggleFollowPerson: toggleFollowPerson,
+    onOpenEvent: (event: AttendedEvent) => {
+      router.push(`/event/${event.slug ?? event.id}` as never);
+    },
+    onOpenFollowPerson: (person: FollowPerson) => {
+      if (!person.username) return;
+      router.push(`/player/${person.username}` as never);
+    },
   };
 }

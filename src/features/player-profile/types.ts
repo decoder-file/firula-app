@@ -1,37 +1,45 @@
 export interface AttendedEvent {
   id: string;
+  slug: string | null;
   title: string;
-  date: string;
-  city: string;
-  tag: string;
-  image: number | { uri: string };
+  dateLabel: string;
+  organizationName: string;
+  statusLabel: string;
+  coverUrl: string | null;
 }
 
 export interface FollowPerson {
-  id: string;
-  initials: string;
+  identityId: string;
+  username: string | null;
   name: string;
-  meta: string;
+  photoUrl: string | null;
   isFollowing: boolean;
 }
 
 export type FollowTab = "followers" | "following";
 
+export type PlayerProfileStatus = "loading" | "not-found" | "error" | "ready";
+
 export interface PlayerProfileScreenProps {
+  status: PlayerProfileStatus;
+  onRetry: () => void;
+
   name: string;
+  username: string;
   handle: string;
-  city: string;
+  photoUrl: string | null;
   initials: string;
-  instagramHandle: string;
-  instagramUrl: string;
+  city: string | null;
+  instagramUrl: string | null;
+  instagramHandle: string | null;
+
   followersCount: number;
   followingCount: number;
   eventsCount: number;
   events: AttendedEvent[];
-  followers: FollowPerson[];
-  following: FollowPerson[];
 
   isFollowing: boolean;
+  isFollowBusy: boolean;
   isBlocked: boolean;
 
   onBack: () => void;
@@ -42,5 +50,6 @@ export interface PlayerProfileScreenProps {
   onShareProfile: () => void;
   onToggleBlock: () => void;
   onReport: () => void;
-  onToggleFollowPerson: (tab: FollowTab, personId: string) => void;
+  onOpenEvent: (event: AttendedEvent) => void;
+  onOpenFollowPerson: (person: FollowPerson) => void;
 }

@@ -1,11 +1,20 @@
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { AtSign, CalendarX, ChevronLeft, ExternalLink, MoreHorizontal, Swords, UserCheck } from "lucide-react-native";
+import {
+  AlertCircle,
+  AtSign,
+  CalendarX,
+  ChevronLeft,
+  ExternalLink,
+  MoreHorizontal,
+  UserCheck,
+  UserX,
+} from "lucide-react-native";
 
-import { EmptyState, PressScale, Text, useTheme } from "@/design-system";
+import { EmptyState, PressScale, Skeleton, Text, useTheme } from "@/design-system";
 import { ActionsMenuSheet } from "@/features/player-profile/components/ActionsMenuSheet";
 import { AttendedEventRow } from "@/features/player-profile/components/AttendedEventRow";
 import { FollowListSheet } from "@/features/player-profile/components/FollowListSheet";
@@ -13,28 +22,32 @@ import { HeaderIconButton } from "@/features/player-profile/components/HeaderIco
 import type { FollowTab, PlayerProfileScreenProps } from "@/features/player-profile/types";
 
 export function PlayerProfileScreen({
+  status,
+  onRetry,
   name,
+  username,
   handle,
-  city,
+  photoUrl,
   initials,
+  city,
+  instagramUrl,
   instagramHandle,
   followersCount,
   followingCount,
   eventsCount,
   events,
-  followers,
-  following,
   isFollowing,
+  isFollowBusy,
   isBlocked,
   onBack,
   onOpenInstagram,
   onToggleFollow,
   onUnfollow,
-  onChallenge,
   onShareProfile,
   onToggleBlock,
   onReport,
-  onToggleFollowPerson,
+  onOpenEvent,
+  onOpenFollowPerson,
 }: PlayerProfileScreenProps) {
   const { colors, radius } = useTheme();
   const insets = useSafeAreaInsets();
@@ -44,6 +57,60 @@ export function PlayerProfileScreen({
     open: false,
     tab: "followers",
   });
+
+  if (status === "loading") {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style="auto" />
+        <View style={{ alignItems: "center", paddingTop: insets.top + 40, paddingHorizontal: 20 }}>
+          <Skeleton width={88} height={88} radius={999} />
+          <Skeleton width={140} height={18} radius={6} style={{ marginTop: 16 }} />
+          <Skeleton width={100} height={13} radius={6} style={{ marginTop: 8 }} />
+          <View style={{ flexDirection: "row", gap: 26, marginTop: 24 }}>
+            <Skeleton width={48} height={30} radius={8} />
+            <Skeleton width={48} height={30} radius={8} />
+            <Skeleton width={48} height={30} radius={8} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (status === "not-found") {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style="auto" />
+        <View style={{ flex: 1, justifyContent: "center" }}>
+          <EmptyState
+            icon={UserX}
+            variant="empty"
+            title="Perfil não encontrado"
+            description="Esse perfil pode ter mudado de usuário, sido desativado ou ainda não estar público."
+            actionLabel="Voltar"
+            onAction={onBack}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar style="auto" />
+        <View style={{ flex: 1, justifyContent: "center" }}>
+          <EmptyState
+            icon={AlertCircle}
+            variant="error"
+            title="Não foi possível carregar o perfil"
+            description="Tente novamente em alguns instantes."
+            actionLabel="Tentar novamente"
+            onAction={onRetry}
+          />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -67,31 +134,37 @@ export function PlayerProfileScreen({
           </View>
 
           <View style={styles.headerBody}>
-            <LinearGradient colors={["#3ED97F", "#12813F"]} style={styles.avatar}>
-              <Text token="titleLg" style={{ color: "#0A2E1A", fontSize: 30 }}>
-                {initials}
-              </Text>
-            </LinearGradient>
+            {photoUrl ? (
+              <Image source={{ uri: photoUrl }} style={styles.avatarImage} />
+            ) : (
+              <LinearGradient colors={["#3ED97F", "#12813F"]} style={styles.avatar}>
+                <Text token="titleLg" style={{ color: "#0A2E1A", fontSize: 30 }}>
+                  {initials}
+                </Text>
+              </LinearGradient>
+            )}
 
             <Text token="titleLg" style={{ color: "#fff", fontSize: 19, marginTop: 12 }}>
               {name}
             </Text>
             <Text token="bodySm" style={{ color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
-              {handle} · {city}
+              {city ? `${handle} · ${city}` : handle}
             </Text>
 
-            <PressScale
-              onPress={onOpenInstagram}
-              accessibilityRole="link"
-              accessibilityLabel={`Abrir Instagram ${instagramHandle}`}
-              style={styles.igPill}
-            >
-              <AtSign size={14} color="#3ED97F" strokeWidth={2} />
-              <Text token="caption" style={{ color: "#fff", fontWeight: "700", textTransform: "none", letterSpacing: 0 }}>
-                {instagramHandle}
-              </Text>
-              <ExternalLink size={12} color="rgba(255,255,255,0.5)" strokeWidth={2} />
-            </PressScale>
+            {instagramUrl ? (
+              <PressScale
+                onPress={onOpenInstagram}
+                accessibilityRole="link"
+                accessibilityLabel={`Abrir Instagram ${instagramHandle}`}
+                style={styles.igPill}
+              >
+                <AtSign size={14} color="#3ED97F" strokeWidth={2} />
+                <Text token="caption" style={{ color: "#fff", fontWeight: "700", textTransform: "none", letterSpacing: 0 }}>
+                  {instagramHandle}
+                </Text>
+                <ExternalLink size={12} color="rgba(255,255,255,0.5)" strokeWidth={2} />
+              </PressScale>
+            ) : null}
 
             <View style={styles.statsRow}>
               <PressScale
@@ -135,6 +208,7 @@ export function PlayerProfileScreen({
             <View style={styles.actionsRow}>
               <PressScale
                 onPress={onToggleFollow}
+                disabled={isFollowBusy}
                 accessibilityRole="button"
                 accessibilityLabel={isFollowing ? "Deixar de seguir" : "Seguir"}
                 style={[
@@ -143,27 +217,20 @@ export function PlayerProfileScreen({
                     borderRadius: radius.lg - 3,
                     backgroundColor: isFollowing ? "rgba(255,255,255,0.08)" : colors.primary,
                     borderColor: isFollowing ? "rgba(255,255,255,0.15)" : colors.primary,
+                    opacity: isFollowBusy ? 0.6 : 1,
                   },
                 ]}
               >
-                {isFollowing ? <UserCheck size={16} color="#fff" strokeWidth={2} /> : null}
-                <Text
-                  token="label"
-                  style={{ fontSize: 13.5, color: isFollowing ? "#fff" : "#0A2E1A" }}
-                >
-                  {isFollowing ? "Seguindo" : "Seguir"}
-                </Text>
-              </PressScale>
-              <PressScale
-                onPress={onChallenge}
-                accessibilityRole="button"
-                accessibilityLabel="Desafiar"
-                style={[styles.actionBtn, styles.challengeBtn, { borderRadius: radius.lg - 3 }]}
-              >
-                <Swords size={16} color="#3ED97F" strokeWidth={2} />
-                <Text token="label" style={{ fontSize: 13.5, color: "#fff" }}>
-                  Desafiar
-                </Text>
+                {isFollowBusy ? (
+                  <ActivityIndicator size="small" color={isFollowing ? "#fff" : "#0A2E1A"} />
+                ) : (
+                  <>
+                    {isFollowing ? <UserCheck size={16} color="#fff" strokeWidth={2} /> : null}
+                    <Text token="label" style={{ fontSize: 13.5, color: isFollowing ? "#fff" : "#0A2E1A" }}>
+                      {isFollowing ? "Seguindo" : "Seguir"}
+                    </Text>
+                  </>
+                )}
               </PressScale>
             </View>
           </View>
@@ -178,7 +245,7 @@ export function PlayerProfileScreen({
           {events.length > 0 ? (
             <View style={[styles.eventsCard, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.xl }]}>
               {events.map((event, index) => (
-                <AttendedEventRow key={event.id} event={event} isFirst={index === 0} />
+                <AttendedEventRow key={event.id} event={event} isFirst={index === 0} onPress={() => onOpenEvent(event)} />
               ))}
             </View>
           ) : (
@@ -204,10 +271,14 @@ export function PlayerProfileScreen({
         visible={followSheet.open}
         onClose={() => setFollowSheet((s) => ({ ...s, open: false }))}
         profileName={name}
+        username={username}
         initialTab={followSheet.tab}
-        followers={followers}
-        following={following}
-        onTogglePerson={onToggleFollowPerson}
+        followersCount={followersCount}
+        followingCount={followingCount}
+        onOpenPerson={(person) => {
+          setFollowSheet((s) => ({ ...s, open: false }));
+          onOpenFollowPerson(person);
+        }}
       />
     </View>
   );
@@ -232,6 +303,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 3,
+    borderColor: "#1FBD63",
+  },
+  avatarImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 999,
     borderWidth: 3,
     borderColor: "#1FBD63",
   },
