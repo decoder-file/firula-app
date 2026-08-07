@@ -82,6 +82,8 @@ export interface OrganizerProfileScreenProps {
 
   isFollowing: boolean;
   isFollowBusy: boolean;
+  isFavorited: boolean;
+  isFavoriteBusy: boolean;
 
   tabs: OrganizerTabItem[];
   activeTab: OrganizerTab;
@@ -114,6 +116,7 @@ export interface OrganizerProfileScreenProps {
   onBack: () => void;
   onShare: () => void;
   onToggleFollow: () => void;
+  onToggleFavorite: () => void;
   onOpenEvent: (event: OrganizerEventItem) => void;
   onOpenStoreProduct: (product: OrganizerStoreProductItem) => void;
   onReserveDayUseOffering: (offering: OrganizerDayUseOfferingItem) => void;

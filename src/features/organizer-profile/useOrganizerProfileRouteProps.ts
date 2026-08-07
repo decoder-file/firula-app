@@ -7,6 +7,7 @@ import { isNotFoundError } from "@/api/errors";
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import {
   useCourtAvailability,
+  useFavoriteOrganizer,
   useFollowOrganizer,
   useOrganizerCourts,
   useOrganizerDayUseOfferings,
@@ -172,6 +173,7 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
 
   const { data: organizer, isPending, isError, error, refetch } = useOrganizerProfile(slug);
   const followMutation = useFollowOrganizer(slug);
+  const favoriteMutation = useFavoriteOrganizer(slug);
   const rateMutation = useRateOrganizer(slug);
 
   const [activeTab, setActiveTab] = useState<OrganizerTab>("events");
@@ -300,6 +302,8 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
 
     isFollowing: Boolean(organizer?.following),
     isFollowBusy: followMutation.isPending,
+    isFavorited: Boolean(organizer?.isFavorited),
+    isFavoriteBusy: favoriteMutation.isPending,
 
     tabs,
     activeTab,
@@ -370,6 +374,18 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
       if (!requireAuth()) return;
       followMutation.mutate(Boolean(organizer?.following), {
         onError: () => showSnackbar({ message: "Não foi possível atualizar o perfil seguido.", variant: "error" }),
+      });
+    },
+    onToggleFavorite: () => {
+      if (!requireAuth()) return;
+      const wasFavorited = Boolean(organizer?.isFavorited);
+      favoriteMutation.mutate(wasFavorited, {
+        onSuccess: () =>
+          showSnackbar({
+            message: wasFavorited ? "Removido dos favoritos." : "Adicionado aos favoritos.",
+            variant: "success",
+          }),
+        onError: () => showSnackbar({ message: "Não foi possível atualizar os favoritos.", variant: "error" }),
       });
     },
     onOpenEvent: (event) => {

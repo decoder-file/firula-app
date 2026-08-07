@@ -33,6 +33,7 @@ export interface OrganizerProfile {
   ratingsCount: number;
   averageRating: number;
   following?: boolean;
+  isFavorited?: boolean;
   store?: { slug: string } | null;
   courts?: { status?: string | null }[];
   dayUses?: { status?: string | null }[];
@@ -133,6 +134,16 @@ export const organizerService = {
 
   unfollow: async (slug: string): Promise<{ following: boolean }> => {
     const { data } = await apiClient.delete(`/public/organizations/${slug}/follow`);
+    return data.data;
+  },
+
+  favorite: async (slug: string): Promise<{ isFavorited: boolean }> => {
+    const { data } = await apiClient.post(`/public/organizations/${slug}/favorite`);
+    return data.data;
+  },
+
+  unfavorite: async (slug: string): Promise<{ isFavorited: boolean }> => {
+    const { data } = await apiClient.delete(`/public/organizations/${slug}/favorite`);
     return data.data;
   },
 

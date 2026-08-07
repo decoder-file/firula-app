@@ -28,6 +28,35 @@ export const useFollowOrganizer = (slug: string) => {
   });
 };
 
+export const useFavoriteOrganizer = (slug: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (isFavorited: boolean) =>
+      isFavorited ? organizerService.unfavorite(slug) : organizerService.favorite(slug),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizer.detail(slug) });
+    },
+  });
+};
+
+/**
+ * Igual a useFavoriteOrganizer, mas não fica preso a um único slug — pensado
+ * pra alternar favoritar/desfavoritar em cada linha de uma lista com várias
+ * organizações diferentes (ex.: tela de Favoritos), mesmo espírito de
+ * useToggleFollowByUsername em usePublicProfile.ts.
+ */
+export const useToggleFavoriteOrganizationBySlug = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orgSlug, isFavorited }: { orgSlug: string; isFavorited: boolean }) =>
+      isFavorited ? organizerService.unfavorite(orgSlug) : organizerService.favorite(orgSlug),
+    onSuccess: (_result, { orgSlug }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.favorites.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizer.detail(orgSlug) });
+    },
+  });
+};
+
 export const useRateOrganizer = (slug: string) => {
   const queryClient = useQueryClient();
   return useMutation({

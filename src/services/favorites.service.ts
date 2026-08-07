@@ -25,11 +25,18 @@ export interface FavoriteEvent {
   sports: Array<{ id: string; name: string; slug: string }>;
 }
 
-export interface FavoriteItem {
-  favoriteId: string;
-  addedAt: string;
-  event: FavoriteEvent;
+export interface FavoriteOrganization {
+  id: string;
+  slug: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  logoUrl: string | null;
 }
+
+export type FavoriteItem =
+  | { favoriteId: string; addedAt: string; type: "EVENT"; event: FavoriteEvent; organization: null }
+  | { favoriteId: string; addedAt: string; type: "ORGANIZATION"; event: null; organization: FavoriteOrganization };
 
 export interface FavoritesPage {
   total: number;

@@ -11,6 +11,7 @@ import {
   CalendarDays,
   ChevronLeft,
   Globe,
+  Heart,
   MapPin,
   MessageCircle,
   Phone,
@@ -60,6 +61,8 @@ export function OrganizerProfileScreen({
   reviewsCount,
   isFollowing,
   isFollowBusy,
+  isFavorited,
+  isFavoriteBusy,
   tabs,
   activeTab,
   onChangeTab,
@@ -84,6 +87,7 @@ export function OrganizerProfileScreen({
   onBack,
   onShare,
   onToggleFollow,
+  onToggleFavorite,
   onOpenEvent,
   onOpenStoreProduct,
   onReserveDayUseOffering,
@@ -294,6 +298,13 @@ export function OrganizerProfileScreen({
                 </>
               )}
             </PressScale>
+            <IconButton
+              icon={Heart}
+              variant={isFavorited ? "filled" : "outlined"}
+              loading={isFavoriteBusy}
+              accessibilityLabel={isFavorited ? "Remover dos favoritos" : "Favoritar"}
+              onPress={onToggleFavorite}
+            />
             <IconButton icon={Star} variant="outlined" accessibilityLabel="Ver avaliações" onPress={onOpenReviews} />
           </View>
         </View>
