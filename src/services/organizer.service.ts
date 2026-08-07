@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/client";
-import axios from "axios";
+import { isApiError } from "@/api/errors";
 
 export interface OrganizerEvent {
   id: string;
@@ -74,6 +74,44 @@ export interface OrganizerRating {
   author?: { name?: string | null; avatarUrl?: string | null } | null;
 }
 
+export interface StoreProductSummary {
+  id: string;
+  slug: string;
+  name: string;
+  imageUrl: string | null;
+  minPriceCents: number | null;
+  maxPriceCents: number | null;
+  inStock: boolean;
+}
+
+export interface DayUseOffering {
+  id: string;
+  name: string;
+  description: string | null;
+  date: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  priceInCents: number;
+  confirmedCount: number;
+  allowMultiplePerCustomer: boolean;
+}
+
+export interface CourtSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  capacity: number | null;
+  granularityMin: number;
+  requiresApproval: boolean;
+}
+
+export interface CourtTimeSlot {
+  startTime: string;
+  endTime: string;
+  priceInCents: number;
+}
+
 export const organizerService = {
   getProfile: async (slug: string): Promise<OrganizerProfile> => {
     const { data } = await apiClient.get(`/public/organizations/${slug}`);
@@ -110,8 +148,30 @@ export const organizerService = {
     try {
       await apiClient.patch(`/public/organizations/${slug}/ratings`, payload);
     } catch (error) {
-      if (!axios.isAxiosError(error) || error.response?.status !== 400) throw error;
+      if (!isApiError(error) || error.statusCode !== 400) throw error;
       await apiClient.post(`/public/organizations/${slug}/ratings`, payload);
     }
+  },
+
+  listStoreProducts: async (storeSlug: string): Promise<StoreProductSummary[]> => {
+    const { data } = await apiClient.get(`/public/store/${storeSlug}/products`, {
+      params: { pageSize: 50 },
+    });
+    return Array.isArray(data.data?.data) ? data.data.data : [];
+  },
+
+  listDayUseOfferings: async (orgSlug: string): Promise<DayUseOffering[]> => {
+    const { data } = await apiClient.get(`/public/courts/day-uses/orgs/${orgSlug}`);
+    return Array.isArray(data.data) ? data.data : [];
+  },
+
+  listCourts: async (orgSlug: string): Promise<CourtSummary[]> => {
+    const { data } = await apiClient.get(`/public/courts/orgs/${orgSlug}`);
+    return Array.isArray(data.data) ? data.data : [];
+  },
+
+  getCourtAvailability: async (courtId: string, date: string): Promise<CourtTimeSlot[]> => {
+    const { data } = await apiClient.get(`/public/courts/${courtId}/availability/${date}`);
+    return Array.isArray(data.data) ? data.data : [];
   },
 };

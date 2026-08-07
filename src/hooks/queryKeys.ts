@@ -32,6 +32,11 @@ export const queryKeys = {
   organizer: {
     all: ["organizer"] as const,
     detail: (slug: string) => [...queryKeys.organizer.all, "detail", slug] as const,
+    storeProducts: (storeSlug: string) => [...queryKeys.organizer.all, "store-products", storeSlug] as const,
+    dayUseOfferings: (orgSlug: string) => [...queryKeys.organizer.all, "day-use-offerings", orgSlug] as const,
+    courts: (orgSlug: string) => [...queryKeys.organizer.all, "courts", orgSlug] as const,
+    courtAvailability: (courtId: string, date: string) =>
+      [...queryKeys.organizer.all, "court-availability", courtId, date] as const,
   },
   notifications: {
     all: ["notifications"] as const,

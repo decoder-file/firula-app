@@ -38,3 +38,31 @@ export const useRateOrganizer = (slug: string) => {
     },
   });
 };
+
+export const useOrganizerStoreProducts = (storeSlug: string, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.organizer.storeProducts(storeSlug),
+    queryFn: () => organizerService.listStoreProducts(storeSlug),
+    enabled: Boolean(storeSlug) && enabled,
+  });
+
+export const useOrganizerDayUseOfferings = (orgSlug: string, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.organizer.dayUseOfferings(orgSlug),
+    queryFn: () => organizerService.listDayUseOfferings(orgSlug),
+    enabled: Boolean(orgSlug) && enabled,
+  });
+
+export const useOrganizerCourts = (orgSlug: string, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.organizer.courts(orgSlug),
+    queryFn: () => organizerService.listCourts(orgSlug),
+    enabled: Boolean(orgSlug) && enabled,
+  });
+
+export const useCourtAvailability = (courtId: string, date: string, enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.organizer.courtAvailability(courtId, date),
+    queryFn: () => organizerService.getCourtAvailability(courtId, date),
+    enabled: Boolean(courtId) && Boolean(date) && enabled,
+  });
