@@ -133,7 +133,7 @@ export function TicketsScreen({
             >
               {emptyCopy[tab].body}
             </Text>
-            <Button label="Explorar eventos" onPress={onExplore ?? (() => {})} />
+            <Button label="Explorar eventos" variant="tonal" onPress={onExplore ?? (() => {})} />
           </View>
         )}
       </ScrollView>

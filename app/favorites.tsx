@@ -187,7 +187,7 @@ export default function FavoritesScreen() {
           <View style={styles.stateAction}>
             <Button
               label="Explorar eventos"
-              variant="secondary"
+              variant="tonal"
               fullWidth
               onPress={() => router.push("/(tabs)/explore")}
             />
