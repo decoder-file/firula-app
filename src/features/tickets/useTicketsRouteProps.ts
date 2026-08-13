@@ -62,6 +62,13 @@ export const useTicketsRouteProps = (): TicketsScreenProps => {
     renderQr: (value, size) =>
       React.createElement(QRCode, { value, size }),
     onExplore: () => router.push("/(tabs)/explore"),
+    onBack: () => {
+      if (router.canGoBack()) {
+        router.back();
+        return;
+      }
+      router.replace("/(tabs)/profile");
+    },
     onAddToWallet: handleAddToWallet,
     isAddingToWallet: addToWallet.isPending,
   };
