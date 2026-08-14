@@ -16,6 +16,7 @@ export function HomeHeader({
   onOpenNotifications,
   onOpenProfile,
   onChangeCity,
+  onOpenGlobalSearch,
 }: {
   userName: string;
   userAvatar?: ImageSourcePropType;
@@ -26,6 +27,7 @@ export function HomeHeader({
   onOpenNotifications?: () => void;
   onOpenProfile?: () => void;
   onChangeCity?: () => void;
+  onOpenGlobalSearch?: () => void;
 }) {
   const { colors, iconStrokeWidth } = useTheme();
   const insets = useSafeAreaInsets();
@@ -72,6 +74,14 @@ export function HomeHeader({
           </View>
         </Pressable>
         <Pressable
+          onPress={onOpenGlobalSearch}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar organizações, eventos e pessoas"
+          style={[styles.bellBtn, { backgroundColor: colors.surfaceAlt }]}
+        >
+          <Search size={20} color={colors.text} strokeWidth={iconStrokeWidth} />
+        </Pressable>
+        <Pressable
           onPress={onOpenNotifications}
           accessibilityRole="button"
           accessibilityLabel={
@@ -100,7 +110,7 @@ export function HomeHeader({
         </Pressable>
       </View>
 
-      <View
+      {/* <View
         style={{
           marginTop: 12,
           position: "relative",
@@ -139,7 +149,7 @@ export function HomeHeader({
             <X size={16} color={colors.text} strokeWidth={2} />
           </Pressable>
         ) : null}
-      </View>
+      </View> */}
     </View>
   );
 }

@@ -12,6 +12,7 @@ export interface TicketLot {
 }
 
 export interface Organizer {
+  slug: string;
   name: string;
   initials: string;
   verified?: boolean;
@@ -52,6 +53,7 @@ export interface EventDetailScreenProps {
   onShare?: () => void;
   onOpenMap?: () => void;
   onAddToCalendar?: () => void;
+  onOpenOrganizer?: () => void;
   onFollowOrganizer?: () => void;
   onCheckout?: (selection: Record<string, number>, totalCents: number) => void;
 }

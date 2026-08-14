@@ -30,6 +30,7 @@ export interface ExploreScreenProps {
   canLoadMore?: boolean;
   onLoadMore?: () => void;
   onOpenEvent?: (id: string) => void;
+  onOpenGlobalSearch?: () => void;
 }
 
 export interface ExploreRouteProps extends ExploreScreenProps {}

@@ -35,6 +35,7 @@ export function HomeScreen({
   onChangeCity,
   onOpenEvent,
   onSeeAll,
+  onOpenGlobalSearch,
 }: HomeScreenProps) {
   const { colors } = useTheme();
   const [internalQuery, setInternalQuery] = useState("");
@@ -80,6 +81,7 @@ export function HomeScreen({
         onOpenNotifications={onOpenNotifications}
         onOpenProfile={onOpenProfile}
         onChangeCity={onChangeCity}
+        onOpenGlobalSearch={onOpenGlobalSearch}
       />
 
       <ScrollView

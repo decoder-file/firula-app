@@ -32,6 +32,11 @@ export const queryKeys = {
   organizer: {
     all: ["organizer"] as const,
     detail: (slug: string) => [...queryKeys.organizer.all, "detail", slug] as const,
+    storeProducts: (storeSlug: string) => [...queryKeys.organizer.all, "store-products", storeSlug] as const,
+    dayUseOfferings: (orgSlug: string) => [...queryKeys.organizer.all, "day-use-offerings", orgSlug] as const,
+    courts: (orgSlug: string) => [...queryKeys.organizer.all, "courts", orgSlug] as const,
+    courtAvailability: (courtId: string, date: string) =>
+      [...queryKeys.organizer.all, "court-availability", courtId, date] as const,
   },
   notifications: {
     all: ["notifications"] as const,
@@ -50,5 +55,18 @@ export const queryKeys = {
   sports: {
     all: ["sports"] as const,
     list: () => [...queryKeys.sports.all, "list"] as const,
+  },
+  search: {
+    all: ["search"] as const,
+    query: (q: string) => [...queryKeys.search.all, q] as const,
+  },
+  publicProfile: {
+    all: ["publicProfile"] as const,
+    detail: (username: string) => [...queryKeys.publicProfile.all, "detail", username] as const,
+    followStatus: (username: string) => [...queryKeys.publicProfile.all, "follow-status", username] as const,
+    followers: (username: string, skip: number, take: number) =>
+      [...queryKeys.publicProfile.all, "followers", username, skip, take] as const,
+    following: (username: string, skip: number, take: number) =>
+      [...queryKeys.publicProfile.all, "following", username, skip, take] as const,
   },
 } as const;
