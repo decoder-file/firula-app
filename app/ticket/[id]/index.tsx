@@ -23,7 +23,7 @@ import { Screen } from "@/components/Screen";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import { useTicket } from "@/hooks/useTickets";
 import { colors } from "@/theme/colors";
-import { formatCurrencyFromCents } from "@/utils/format";
+import { formatCurrencyFromCents, formatPassportDates } from "@/utils/format";
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR", {
@@ -84,6 +84,8 @@ export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: ticket, isPending, isError, refetch } = useTicket(id ?? "");
   const qrCodeRef = useRef<QRCode | null>(null);
+  const passportDates =
+    ticket?.ticketLot.type === "PASSPORT" ? formatPassportDates(ticket.ticketLot.passportValidDates) : [];
 
   const buildShareMessage = () => {
     if (!ticket) {
@@ -280,6 +282,20 @@ export default function TicketDetailScreen() {
                   value={ticket.canTransfer ? "Disponível" : "Bloqueada"}
                 />
               </View>
+
+              {passportDates.length > 0 ? (
+                <View className="mt-4 rounded-2xl bg-secondary p-3">
+                  <View className="mb-1.5 flex-row items-center gap-1.5">
+                    <CalendarDays color={colors.foreground} size={14} strokeWidth={2} />
+                    <Text className="font-bold text-xs text-foreground">Dias e horários válidos</Text>
+                  </View>
+                  {passportDates.map((formatted) => (
+                    <Text key={formatted} className="text-xs text-muted-foreground">
+                      {formatted}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
 
               <AnimatedPressable
                 className="mt-5 flex-row items-center justify-center gap-2 rounded-2xl border border-primary/30 py-3"

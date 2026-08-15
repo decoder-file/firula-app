@@ -56,6 +56,7 @@ const mapLot = (lot: AdminEventTicketLot): TicketLot => {
     total: lot.quantity,
     soldOut: !isAdminLotAvailable(lot),
     popular: lot.quantity > 0 && lot.quantitySold / lot.quantity >= 0.6,
+    passportValidDates: lot.type === "PASSPORT" ? lot.passportValidDates : undefined,
   };
 };
 

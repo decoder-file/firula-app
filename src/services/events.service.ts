@@ -71,6 +71,8 @@ export interface AdminEventTicketLot {
   salesStart: string;
   salesEnd: string;
   active: boolean;
+  /** Datas/horários válidos, presente quando `type === "PASSPORT"`. */
+  passportValidDates?: string[];
 }
 
 export interface AdminEventDetail {

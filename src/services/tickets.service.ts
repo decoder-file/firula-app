@@ -34,6 +34,9 @@ export interface CustomerTicketLot {
   id: string;
   name: string;
   price: number;
+  type?: string;
+  /** Datas/horários válidos, presente quando `type === "PASSPORT"`. */
+  passportValidDates?: string[];
 }
 
 export interface CustomerTicket {

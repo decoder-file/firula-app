@@ -9,6 +9,8 @@ export interface TicketLot {
   total: number;
   popular?: boolean;
   soldOut?: boolean;
+  /** Datas/horários válidos, presente quando este lote é um ingresso passaporte. */
+  passportValidDates?: string[];
 }
 
 export interface Organizer {

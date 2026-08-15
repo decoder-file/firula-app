@@ -29,6 +29,7 @@ export const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
   status: toAppTicketStatus(ticket.status),
   facial: false,
   image: ticket.event.coverUrl ? { uri: ticket.event.coverUrl } : undefined,
+  passportValidDates: ticket.ticketLot.type === "PASSPORT" ? ticket.ticketLot.passportValidDates : undefined,
 });
 
 export const useTicketsRouteProps = (): TicketsScreenProps => {

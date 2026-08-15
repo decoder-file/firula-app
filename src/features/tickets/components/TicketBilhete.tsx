@@ -5,6 +5,7 @@ import { CalendarDays, MapPin, QrCode, ScanFace, Wallet } from "lucide-react-nat
 import { Button, Text, useTheme } from "@/design-system";
 import { STATUS_LABEL } from "@/features/tickets/constants";
 import type { AppTicket } from "@/features/tickets/types";
+import { formatPassportDates } from "@/utils/format";
 
 export function TicketBilhete({
   ticket,
@@ -21,6 +22,7 @@ export function TicketBilhete({
   const active = ticket.status === "active";
   const headerBg = active ? colors.text : colors.textMuted;
   const accent = active ? colors.primary : colors.border;
+  const passportDates = formatPassportDates(ticket.passportValidDates);
 
   return (
     <View
@@ -138,63 +140,83 @@ export function TicketBilhete({
           borderStyle: "dashed",
           borderTopColor: colors.border,
           padding: 14,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 14,
         }}
       >
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            style={{
-              fontFamily: "PlusJakartaSans-Medium",
-              fontSize: 12,
-              letterSpacing: 1.5,
-              color: colors.textMuted,
-            }}
-          >
-            {ticket.code}
-          </Text>
-          {ticket.facial ? (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                marginTop: 5,
-              }}
-            >
-              <ScanFace size={13} color={colors.primaryText} strokeWidth={2} />
-              <Text
-                token="caption"
-                color="primary"
-                style={{
-                  textTransform: "none",
-                  letterSpacing: 0,
-                  fontSize: 11,
-                }}
-              >
-                Facial ID ativo
+        {passportDates.length > 0 ? (
+          <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 10, marginBottom: 12 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <CalendarDays size={14} color={colors.text} strokeWidth={2} />
+              <Text token="caption" style={{ textTransform: "none", letterSpacing: 0, fontWeight: "800", fontSize: 12 }}>
+                Dias e horários válidos
               </Text>
             </View>
-          ) : null}
-        </View>
-        {active && onAddToWallet ? (
-          <Button
-            label={isAddingToWallet ? "…" : Platform.OS === "ios" ? "Apple Wallet" : "Google Wallet"}
-            icon={Wallet}
-            size="sm"
-            variant="secondary"
-            onPress={onAddToWallet}
-            disabled={isAddingToWallet}
-          />
+            {passportDates.map((formatted) => (
+              <Text
+                key={formatted}
+                token="caption"
+                color="muted"
+                style={{ textTransform: "none", letterSpacing: 0, fontSize: 12, lineHeight: 18 }}
+              >
+                {formatted}
+              </Text>
+            ))}
+          </View>
         ) : null}
-        <Button
-          label="QR"
-          icon={QrCode}
-          size="sm"
-          variant={active ? "primary" : "secondary"}
-          onPress={onOpenQr}
-        />
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{
+                fontFamily: "PlusJakartaSans-Medium",
+                fontSize: 12,
+                letterSpacing: 1.5,
+                color: colors.textMuted,
+              }}
+            >
+              {ticket.code}
+            </Text>
+            {ticket.facial ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 4,
+                  marginTop: 5,
+                }}
+              >
+                <ScanFace size={13} color={colors.primaryText} strokeWidth={2} />
+                <Text
+                  token="caption"
+                  color="primary"
+                  style={{
+                    textTransform: "none",
+                    letterSpacing: 0,
+                    fontSize: 11,
+                  }}
+                >
+                  Facial ID ativo
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {active && onAddToWallet ? (
+            <Button
+              label={isAddingToWallet ? "…" : Platform.OS === "ios" ? "Apple Wallet" : "Google Wallet"}
+              icon={Wallet}
+              size="sm"
+              variant="secondary"
+              onPress={onAddToWallet}
+              disabled={isAddingToWallet}
+            />
+          ) : null}
+          <Button
+            label="QR"
+            icon={QrCode}
+            size="sm"
+            variant={active ? "primary" : "secondary"}
+            onPress={onOpenQr}
+          />
+        </View>
       </View>
     </View>
   );
