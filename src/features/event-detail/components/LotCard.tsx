@@ -42,8 +42,8 @@ export function LotCard({ lot, qty, onAdd, onRemove, colors, radius }: LotCardPr
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <Text token="subtitle" style={{ fontWeight: '800' }}>{lot.name}</Text>
             {lot.popular ? (
-              <View style={{ backgroundColor: '#3ED97F', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
-                <Text token="caption" style={{ color: '#0A2E1A', fontSize: 10, letterSpacing: 0.3 }}>POPULAR</Text>
+              <View style={{ backgroundColor: colors.primary, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                <Text token="caption" style={{ color: colors.onPrimary, fontSize: 10, letterSpacing: 0.3 }}>POPULAR</Text>
               </View>
             ) : null}
           </View>

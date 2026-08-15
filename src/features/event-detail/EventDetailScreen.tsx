@@ -21,12 +21,13 @@ import {
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import { Skeleton } from "@/components/Skeleton";
-import { PressScale, Text, useTheme } from "@/design-system";
+import { PressScale, Text, ThemeProvider, useTheme } from "@/design-system";
 import { FactItem } from "@/features/event-detail/components/FactItem";
 import { LotCard } from "@/features/event-detail/components/LotCard";
 import { RoundButton } from "@/features/event-detail/components/RoundButton";
 import { TrustItem } from "@/features/event-detail/components/TrustItem";
 import type { EventDetailScreenProps } from "@/features/event-detail/types";
+import { getEventAccentColors } from "@/utils/eventTheme";
 
 function formatBRL(cents: number) {
   return (
@@ -38,7 +39,20 @@ function formatBRL(cents: number) {
   );
 }
 
-export function EventDetailScreen({
+export function EventDetailScreen(props: EventDetailScreenProps) {
+  const accentColors = useMemo(
+    () => getEventAccentColors(props.event?.accentColor),
+    [props.event?.accentColor],
+  );
+
+  return (
+    <ThemeProvider paletteOverride={accentColors}>
+      <EventDetailScreenContent {...props} />
+    </ThemeProvider>
+  );
+}
+
+function EventDetailScreenContent({
   event,
   isLoading,
   isError,
@@ -276,7 +290,7 @@ export function EventDetailScreen({
               >
                 <Text
                   token="subtitle"
-                  style={{ color: "#3ED97F", fontWeight: "800" }}
+                  style={{ color: colors.primary, fontWeight: "800" }}
                 >
                   {event.organizer.initials}
                 </Text>

@@ -41,6 +41,8 @@ export interface EventDetail {
   organizer?: Organizer;
   social?: SocialProof;
   lotDeadlineText?: string;
+  /** Cor de destaque customizada do evento (hex #RRGGBB), definida pelo dono da plataforma. */
+  accentColor?: string | null;
 }
 
 export interface EventDetailScreenProps {

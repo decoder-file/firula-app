@@ -113,6 +113,7 @@ export interface AdminEventDetail {
   settings: {
     limitPerCpf: boolean;
     maxTicketsPerCpf: number;
+    ticketPageAccentColor?: string | null;
   };
   ticketLots: AdminEventTicketLot[];
   sports: Array<{ name: string; slug: string }>;

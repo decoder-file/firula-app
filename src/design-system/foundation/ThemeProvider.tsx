@@ -66,10 +66,16 @@ function buildTheme(scheme: ColorScheme): Theme {
 export interface ThemeProviderProps {
   /** Modo inicial. 'system' segue o esquema do dispositivo. Default: 'system'. */
   initialMode?: ThemeMode;
+  /**
+   * Sobrescreve parcialmente a paleta resolvida (light/dark) — usado para aninhar um
+   * `ThemeProvider` escopado a uma tela específica, ex.: cor de destaque por evento
+   * (`getEventAccentColors`). `undefined`/omitido não altera nada.
+   */
+  paletteOverride?: Partial<Palette>;
   children: React.ReactNode;
 }
 
-export function ThemeProvider({ initialMode = 'system', children }: ThemeProviderProps) {
+export function ThemeProvider({ initialMode = 'system', paletteOverride, children }: ThemeProviderProps) {
   const [mode, setMode] = useState<ThemeMode>(initialMode);
   const [systemScheme, setSystemScheme] = useState<ColorScheme>(
     (Appearance.getColorScheme() as ColorScheme) ?? 'light',
@@ -84,10 +90,15 @@ export function ThemeProvider({ initialMode = 'system', children }: ThemeProvide
 
   const scheme: ColorScheme = mode === 'system' ? systemScheme : mode;
 
-  const value = useMemo<ThemeContextValue>(
-    () => ({ ...buildTheme(scheme), mode, setMode }),
-    [scheme, mode],
-  );
+  const value = useMemo<ThemeContextValue>(() => {
+    const base = buildTheme(scheme);
+    return {
+      ...base,
+      colors: paletteOverride ? { ...base.colors, ...paletteOverride } : base.colors,
+      mode,
+      setMode,
+    };
+  }, [scheme, mode, paletteOverride]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

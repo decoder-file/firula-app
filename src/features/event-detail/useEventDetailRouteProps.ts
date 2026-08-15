@@ -10,6 +10,7 @@ import {
   type AdminEventDetail,
   type AdminEventTicketLot,
 } from '@/services/events.service';
+import { stripHtml } from '@/utils/stripHtml';
 
 import type { EventDetail, EventDetailScreenProps, TicketLot } from '@/features/event-detail/types';
 
@@ -93,7 +94,7 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     timeLabel: formatTimeLabel(event.startsAt),
     venueName: `${event.location.address}, ${event.location.addressNumber}`,
     address: `${event.location.neighborhood}, ${event.location.city} - ${event.location.state}`,
-    about: event.description || 'Sem descrição disponível para este evento.',
+    about: stripHtml(event.description) || 'Sem descrição disponível para este evento.',
     organizer: {
       slug: event.organization.slug,
       name: event.organization.tradeName,
@@ -103,6 +104,7 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     social: event.soldCount > 0 ? { count: event.soldCount } : undefined,
     lotDeadlineText: getLotDeadlineText(event.ticketLots),
     lots: event.ticketLots.map(mapLot),
+    accentColor: event.settings?.ticketPageAccentColor,
   };
 };
 
@@ -160,7 +162,7 @@ const buildCalendarUrls = (event: AdminEventDetail): string[] => {
   const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
   const toGoogleDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
-  const detailsValue = encodeURIComponent(event.description || 'Evento Firula');
+  const detailsValue = encodeURIComponent(stripHtml(event.description) || 'Evento Firula');
   const location = encodeURIComponent(
     `${event.location.address}, ${event.location.addressNumber}, ${event.location.city}, ${event.location.state}`,
   );
