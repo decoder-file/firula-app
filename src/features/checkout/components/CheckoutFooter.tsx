@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Clock } from "lucide-react-native";
 
 import { Text, useTheme } from "@/design-system";
@@ -9,6 +10,7 @@ const SESSION_MINUTES = 30;
 
 export function CheckoutFooter({ onExpire }: { onExpire: () => void }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const expiresAtRef = useRef(new Date(Date.now() + SESSION_MINUTES * 60 * 1000).toISOString());
   const { label, expired } = useCountdown(expiresAtRef.current);
   const firedRef = useRef(false);
@@ -27,7 +29,8 @@ export function CheckoutFooter({ onExpire }: { onExpire: () => void }) {
         alignItems: "center",
         justifyContent: "center",
         gap: 6,
-        paddingVertical: 8,
+        paddingTop: 8,
+        paddingBottom: insets.bottom + 8,
         backgroundColor: colors.surfaceAlt,
         borderTopWidth: 1,
         borderTopColor: colors.border,
