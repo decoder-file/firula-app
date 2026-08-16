@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ScrollView, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft } from "lucide-react-native";
@@ -82,8 +82,12 @@ function CheckoutContent() {
           <Skeleton className="h-24 w-full rounded-2xl" />
         </View>
       ) : (
-        <>
-          <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={{ padding: 20 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             {checkout.step === "review" ? <ReviewStep checkout={checkout} /> : null}
             {checkout.step === "custom" ? <CustomFieldsStep checkout={checkout} /> : null}
             {checkout.step === "info" ? <InfoStep checkout={checkout} /> : null}
@@ -91,7 +95,7 @@ function CheckoutContent() {
             {checkout.step === "success" ? <SuccessStep checkout={checkout} /> : null}
           </ScrollView>
           {checkout.step !== "success" ? <CheckoutFooter onExpire={() => router.back()} /> : null}
-        </>
+        </KeyboardAvoidingView>
       )}
     </Screen>
   );
