@@ -30,6 +30,7 @@ import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import { Skeleton } from "@/components/Skeleton";
 import { PressScale, Text, ThemeProvider, useTheme } from "@/design-system";
+import { EventDescriptionSection } from "@/features/event-detail/components/EventDescriptionSection";
 import { FactItem } from "@/features/event-detail/components/FactItem";
 import { LotCard } from "@/features/event-detail/components/LotCard";
 import { RoundButton } from "@/features/event-detail/components/RoundButton";
@@ -351,17 +352,7 @@ function EventDetailScreenContent({
             </PressScale>
           ) : null}
 
-          <View style={{ marginBottom: 22 }}>
-            <Text
-              token="subtitle"
-              style={{ fontWeight: "800", marginBottom: 8 }}
-            >
-              Sobre o evento
-            </Text>
-            <Text token="body" color="muted" style={{ lineHeight: 22 }}>
-              {event.about}
-            </Text>
-          </View>
+          <EventDescriptionSection description={event.about} colors={colors} radius={radius} />
 
           {event.showParticipants ? <ParticipantsSection eventId={event.id} /> : null}
 
