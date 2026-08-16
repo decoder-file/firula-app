@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronLeft,
   ChevronRight,
   FileText,
   Monitor,
@@ -15,7 +14,7 @@ import {
   Trash2,
 } from "lucide-react-native";
 
-import { Text, useTheme } from "@/design-system";
+import { Text, TopBar, useTheme } from "@/design-system";
 import type { ThemeMode } from "@/design-system";
 import { isApiError } from "@/api/errors";
 import { tokenStorage } from "@/api/tokenStorage";
@@ -75,30 +74,17 @@ export default function SettingsScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="auto" />
 
-      {/* Header */}
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          paddingTop: insets.top + 8,
-          paddingBottom: 16,
-          paddingHorizontal: 20,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+      <TopBar
+        title="Configurações"
+        variant="detail"
+        onBack={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+          router.replace("/(tabs)/profile");
         }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          style={{ alignSelf: "flex-start", marginBottom: 12 }}
-          hitSlop={8}
-        >
-          <ChevronLeft size={24} color={colors.text} strokeWidth={1.75} />
-        </Pressable>
-        <Text token="titleLg" style={{ fontSize: 24 }}>
-          Configurações
-        </Text>
-      </View>
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

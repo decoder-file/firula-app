@@ -21,6 +21,7 @@ export interface TicketsScreenProps {
   isLoading?: boolean;
   renderQr?: (value: string, size: number) => React.ReactNode;
   onExplore?: () => void;
+  onBack?: () => void;
   onAddToWallet?: (ticketId: string) => void;
   isAddingToWallet?: boolean;
 }

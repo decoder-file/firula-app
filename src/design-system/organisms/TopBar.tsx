@@ -60,7 +60,7 @@ export function TopBar({ title, variant = 'root', onBack, actions = [] }: TopBar
             )}
           </>
         )}
-        <View style={styles.actions}>
+        <View style={[styles.actions, variant === 'detail' && actions.length === 0 ? styles.detailSpacer : null]}>
           {actions.slice(0, 2).map((a, i) => (
             <IconButton key={i} icon={a.icon} accessibilityLabel={a.label} onPress={a.onPress} badge={a.badge} variant={transparent ? 'outlined' : 'ghost'} />
           ))}
@@ -74,4 +74,5 @@ const styles = StyleSheet.create({
   bar: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingLeft: 16 },
   centerTitle: { flex: 1, textAlign: 'center' },
   actions: { flexDirection: 'row' },
+  detailSpacer: { width: 48 },
 });

@@ -19,7 +19,7 @@ import type { Palette } from '../foundation/colors';
 import { PressScale } from './PressScale';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive';
+export type ButtonVariant = 'primary' | 'tonal' | 'secondary' | 'outline' | 'ghost' | 'destructive';
 export type ButtonSize = 'md' | 'sm';
 
 export interface ButtonProps {
@@ -46,6 +46,8 @@ function resolveVariant(variant: ButtonVariant, c: Palette): VariantStyle {
   switch (variant) {
     case 'primary':
       return { bg: c.primary, fg: 'onPrimary' };
+    case 'tonal':
+      return { bg: c.primarySoft, fg: 'primary' };
     case 'secondary':
       return { bg: c.surfaceAlt, fg: 'default' };
     case 'outline':
