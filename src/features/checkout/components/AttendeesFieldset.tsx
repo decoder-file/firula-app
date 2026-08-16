@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { Ticket } from "lucide-react-native";
 
 import { Checkbox, Text, TextField, useTheme } from "@/design-system";
 import { formatCpf, formatPhone } from "@/utils/mask";
@@ -18,22 +19,55 @@ export function AttendeesFieldset({
   attendee: AdditionalAttendee;
   onChange: (patch: Partial<AdditionalAttendee>) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, radius } = useTheme();
 
   const setCustomField = (key: string, value: string) =>
     onChange({ customFieldValues: { ...attendee.customFieldValues, [key]: value } });
 
   return (
-    <View style={{ gap: 12, backgroundColor: colors.surfaceAlt, borderRadius: 16, padding: 14 }}>
-      <Text token="bodySm" style={{ fontWeight: "800" }}>
-        Ingresso {index + 2} — {lotName}
-      </Text>
+    <View
+      style={{
+        gap: 14,
+        backgroundColor: colors.surfaceAlt,
+        borderRadius: radius.lg,
+        padding: 14,
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <View
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: 999,
+            backgroundColor: colors.surface,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ticket size={14} color={colors.primaryText} strokeWidth={2} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text token="bodySm" style={{ fontWeight: "800" }}>
+            Participante {index + 2}
+          </Text>
+          <Text
+            token="caption"
+            color="muted"
+            numberOfLines={1}
+            style={{ textTransform: "none", letterSpacing: 0, marginTop: 1 }}
+          >
+            {lotName}
+          </Text>
+        </View>
+      </View>
 
-      <Checkbox
-        checked={attendee.sameAsBuyer}
-        onChange={(checked) => onChange({ sameAsBuyer: checked })}
-        label="Mesmo que o comprador"
-      />
+      <View style={{ marginHorizontal: -16 }}>
+        <Checkbox
+          checked={attendee.sameAsBuyer}
+          onChange={(checked) => onChange({ sameAsBuyer: checked })}
+          label="Mesmo que o comprador"
+        />
+      </View>
 
       {!attendee.sameAsBuyer ? (
         <View style={{ gap: 12 }}>
