@@ -1,6 +1,6 @@
 import { useRef } from "react";
-import { TextInput, View } from "react-native";
-import { Check, ScanLine } from "lucide-react-native";
+import { ActivityIndicator, TextInput, View } from "react-native";
+import { Check, MapPin, ScanLine } from "lucide-react-native";
 
 import { PressScale, Text, TextField, useTheme } from "@/design-system";
 import { formatCardExpiry, formatCardNumber, formatCep } from "@/utils/mask";
@@ -138,15 +138,37 @@ export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
       </View>
 
       {checkout.isLookingUpCep ? (
-        <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>
-          Buscando endereço…
-        </Text>
-      ) : addressFound ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Check size={13} color={colors.primaryText} strokeWidth={2.5} />
-          <Text token="caption" style={{ fontWeight: "700", color: colors.primaryText, textTransform: "none", letterSpacing: 0 }}>
-            Endereço encontrado — {checkout.billingCity}, {checkout.billingState}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+          <ActivityIndicator size="small" color={colors.textMuted} />
+          <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>
+            Buscando endereço…
           </Text>
+        </View>
+      ) : addressFound ? (
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            backgroundColor: colors.primarySoft,
+            borderRadius: radius.md,
+            padding: 10,
+          }}
+        >
+          <MapPin size={15} color={colors.primaryText} strokeWidth={2} style={{ marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Check size={12} color={colors.primaryText} strokeWidth={2.5} />
+              <Text token="caption" style={{ fontWeight: "700", color: colors.primaryText, textTransform: "none", letterSpacing: 0 }}>
+                Endereço encontrado
+              </Text>
+            </View>
+            <Text token="caption" style={{ color: colors.primaryText, textTransform: "none", letterSpacing: 0, marginTop: 2, lineHeight: 16 }}>
+              {checkout.billingStreet}
+              {checkout.billingNeighborhood ? ` — ${checkout.billingNeighborhood}` : ""}
+              {"\n"}
+              {checkout.billingCity}, {checkout.billingState}
+            </Text>
+          </View>
         </View>
       ) : !checkout.cepError ? (
         <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, lineHeight: 15 }}>
