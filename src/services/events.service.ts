@@ -115,6 +115,7 @@ export interface AdminEventDetail {
   settings: {
     limitPerCpf: boolean;
     maxTicketsPerCpf: number;
+    showParticipantsOnEventPage?: boolean;
     ticketPageAccentColor?: string | null;
     /** Se os dados de cada participante são exigidos antes do pagamento ou podem ser preenchidos depois. */
     attendeeDataStrategy?: "REQUIRED_BEFORE_PAYMENT" | "OPTIONAL_AFTER_PAYMENT";
@@ -140,6 +141,21 @@ export interface AdminEventDetail {
     ticketLotId: string | null;
     currentVersion: { fileUrl: string | null } | null;
   }>;
+}
+
+export interface EventParticipant {
+  id: string;
+  name: string;
+  photoUrl: string | null;
+  username: string | null;
+  verified: boolean;
+}
+
+export interface EventParticipantsPage {
+  participants: EventParticipant[];
+  total: number;
+  skip: number;
+  take: number;
 }
 
 interface AdminEventDetailResponse {
@@ -243,6 +259,47 @@ export const eventsService = {
       `/admin/events/slug/${slug}`,
     );
     return data.data;
+  },
+
+  getParticipants: async (
+    eventId: string,
+    skip = 0,
+    take = 30,
+  ): Promise<EventParticipantsPage> => {
+    const { data } = await apiClient.get<
+      ApiResponse<{
+        participants?: Array<{
+          id?: string;
+          name?: string | null;
+          photoUrl?: string | null;
+          avatarUrl?: string | null;
+          username?: string | null;
+          isVerified?: boolean;
+          verified?: boolean;
+        }>;
+        total?: number;
+        skip?: number;
+        take?: number;
+      }>
+    >(`/public/events/${encodeURIComponent(eventId)}/participants`, {
+      params: { skip, take },
+    });
+
+    const payload = data.data;
+    const participants = (payload.participants ?? []).map((participant, index) => ({
+      id: participant.id ?? participant.username ?? `${skip + index}-${participant.name ?? "participante"}`,
+      name: participant.name?.trim() || "Participante",
+      photoUrl: participant.photoUrl ?? participant.avatarUrl ?? null,
+      username: participant.username?.trim() || null,
+      verified: Boolean(participant.isVerified ?? participant.verified),
+    }));
+
+    return {
+      participants,
+      total: Number(payload.total ?? participants.length),
+      skip: Number(payload.skip ?? skip),
+      take: Number(payload.take ?? take),
+    };
   },
 
   getUpcoming: async (

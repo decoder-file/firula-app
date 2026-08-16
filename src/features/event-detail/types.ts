@@ -30,6 +30,7 @@ export interface SocialProof {
 }
 
 export interface EventDetail {
+  id: string;
   title: string;
   category: string;
   image: ImageSourcePropType;
@@ -43,6 +44,7 @@ export interface EventDetail {
   organizer?: Organizer;
   social?: SocialProof;
   lotDeadlineText?: string;
+  showParticipants?: boolean;
   /** Cor de destaque customizada do evento (hex #RRGGBB), definida pelo dono da plataforma. */
   accentColor?: string | null;
 }
