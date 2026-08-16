@@ -1,41 +1,32 @@
 import { useRef } from "react";
-import { Keyboard, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
+import { Check, ScanLine } from "lucide-react-native";
 
-import { Button, RadioGroup, Text, TextField } from "@/design-system";
+import { PressScale, Text, TextField, useTheme } from "@/design-system";
 import { formatCardExpiry, formatCardNumber, formatCep } from "@/utils/mask";
 import { formatCurrencyFromCents } from "@/utils/format";
 import type { UseCheckoutReturn } from "@/features/checkout/useCheckout";
 
+/**
+ * Formulário do fluxo TRANSPARENT (Marlim) — sem 3DS, envia os dados direto. Conteúdo
+ * puro (sem navegação/botão de pagar), embutido inline em `CheckoutScreen`, que é quem
+ * decide quando mostrar (linha "Novo cartão" selecionada) e tem o único CTA da tela.
+ */
 export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
-  const { quote, isSubmitting, goBack } = checkout;
-
-  const flow = quote?.card?.flow ?? "TRANSPARENT";
+  const { colors, radius } = useTheme();
+  const { quote } = checkout;
 
   const holderNameRef = useRef<TextInput>(null);
   const expiryRef = useRef<TextInput>(null);
   const cvvRef = useRef<TextInput>(null);
   const cepRef = useRef<TextInput>(null);
-  const streetRef = useRef<TextInput>(null);
   const numberRef = useRef<TextInput>(null);
-  const complementRef = useRef<TextInput>(null);
-  const neighborhoodRef = useRef<TextInput>(null);
-  const cityRef = useRef<TextInput>(null);
-  const stateRef = useRef<TextInput>(null);
 
-  if (flow === "REDIRECT") {
-    return <CardRedirectView checkout={checkout} />;
-  }
+  const addressFound = checkout.billingStreet.trim().length > 0 && checkout.billingCity.trim().length > 0;
 
   return (
-    <View style={{ gap: 20 }}>
-      <Text token="titleLg">Pagamento com cartão</Text>
-      {quote ? (
-        <Text token="body" color="muted">
-          Total a pagar: {formatCurrencyFromCents(quote.finalAmountCents)}
-        </Text>
-      ) : null}
-
-      <View style={{ gap: 12 }}>
+    <View style={{ gap: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, marginTop: 13 }}>
+      <View style={{ position: "relative" }}>
         <TextField
           label="Número do cartão"
           value={formatCardNumber(checkout.cardNumber)}
@@ -45,197 +36,123 @@ export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
           returnKeyType="next"
           onSubmitEditing={() => holderNameRef.current?.focus()}
         />
-        <TextField
-          ref={holderNameRef}
-          label="Nome impresso no cartão"
-          value={checkout.cardHolderName}
-          onChangeText={(value) => checkout.setCardHolderName(value.toUpperCase())}
-          autoCapitalize="characters"
-          returnKeyType="next"
-          onSubmitEditing={() => expiryRef.current?.focus()}
-        />
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <TextField
-              ref={expiryRef}
-              label="Validade (MM/AA)"
-              value={formatCardExpiry(checkout.cardExpiry)}
-              onChangeText={checkout.setCardExpiry}
-              keyboardType="number-pad"
-              maxLength={5}
-              returnKeyType="next"
-              onSubmitEditing={() => cvvRef.current?.focus()}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextField
-              ref={cvvRef}
-              label="CVV"
-              value={checkout.cardCvv}
-              onChangeText={(value) => checkout.setCardCvv(value.replace(/\D/g, "").slice(0, 4))}
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry
-              returnKeyType="next"
-              onSubmitEditing={() => cepRef.current?.focus()}
-            />
-          </View>
-        </View>
+        <ScanLine size={19} color={colors.primaryText} strokeWidth={2} style={{ position: "absolute", right: 14, top: 36 }} />
       </View>
 
-      <View style={{ gap: 12 }}>
-        <Text token="bodySm" style={{ fontWeight: "700" }}>
-          Endereço de cobrança
-        </Text>
-        <TextField
-          ref={cepRef}
-          label="CEP"
-          value={formatCep(checkout.billingCep)}
-          onChangeText={checkout.setBillingCep}
-          keyboardType="number-pad"
-          maxLength={9}
-          helper={checkout.isLookingUpCep ? "Buscando endereço…" : undefined}
-          error={checkout.cepError ?? undefined}
-          returnKeyType="next"
-          onSubmitEditing={() => streetRef.current?.focus()}
-        />
-        <TextField
-          ref={streetRef}
-          label="Rua"
-          value={checkout.billingStreet}
-          onChangeText={checkout.setBillingStreet}
-          returnKeyType="next"
-          onSubmitEditing={() => numberRef.current?.focus()}
-        />
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <TextField
-              ref={numberRef}
-              label="Número"
-              value={checkout.billingNumber}
-              onChangeText={checkout.setBillingNumber}
-              keyboardType="number-pad"
-              returnKeyType="next"
-              onSubmitEditing={() => complementRef.current?.focus()}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextField
-              ref={complementRef}
-              label="Complemento"
-              value={checkout.billingComplement}
-              onChangeText={checkout.setBillingComplement}
-              returnKeyType="next"
-              onSubmitEditing={() => neighborhoodRef.current?.focus()}
-            />
-          </View>
+      <TextField
+        ref={holderNameRef}
+        label="Nome como está no cartão"
+        value={checkout.cardHolderName}
+        onChangeText={(value) => checkout.setCardHolderName(value.toUpperCase())}
+        autoCapitalize="characters"
+        returnKeyType="next"
+        onSubmitEditing={() => expiryRef.current?.focus()}
+      />
+
+      <View style={{ flexDirection: "row", gap: 9 }}>
+        <View style={{ flex: 1 }}>
+          <TextField
+            ref={expiryRef}
+            label="MM/AA"
+            value={formatCardExpiry(checkout.cardExpiry)}
+            onChangeText={checkout.setCardExpiry}
+            keyboardType="number-pad"
+            maxLength={5}
+            returnKeyType="next"
+            onSubmitEditing={() => cvvRef.current?.focus()}
+          />
         </View>
-        <TextField
-          ref={neighborhoodRef}
-          label="Bairro"
-          value={checkout.billingNeighborhood}
-          onChangeText={checkout.setBillingNeighborhood}
-          returnKeyType="next"
-          onSubmitEditing={() => cityRef.current?.focus()}
-        />
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 2 }}>
-            <TextField
-              ref={cityRef}
-              label="Cidade"
-              value={checkout.billingCity}
-              onChangeText={checkout.setBillingCity}
-              returnKeyType="next"
-              onSubmitEditing={() => stateRef.current?.focus()}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextField
-              ref={stateRef}
-              label="UF"
-              value={checkout.billingState}
-              onChangeText={(value) => checkout.setBillingState(value.toUpperCase().slice(0, 2))}
-              autoCapitalize="characters"
-              maxLength={2}
-              returnKeyType="done"
-              onSubmitEditing={() => Keyboard.dismiss()}
-            />
-          </View>
+        <View style={{ flex: 1 }}>
+          <TextField
+            ref={cvvRef}
+            label="CVV"
+            value={checkout.cardCvv}
+            onChangeText={(value) => checkout.setCardCvv(value.replace(/\D/g, "").slice(0, 4))}
+            keyboardType="number-pad"
+            maxLength={4}
+            secureTextEntry
+            returnKeyType="next"
+            onSubmitEditing={() => cepRef.current?.focus()}
+          />
         </View>
       </View>
 
       {quote?.card && quote.card.installments.length > 1 ? (
-        <View>
-          <Text token="bodySm" style={{ fontWeight: "700", marginBottom: 6 }}>
-            Parcelas
+        <View style={{ flexDirection: "row", gap: 7, marginTop: 2 }}>
+          {quote.card.installments.map((option) => {
+            const active = checkout.installments === option.installments;
+            return (
+              <PressScale
+                key={option.installments}
+                onPress={() => checkout.setInstallments(option.installments)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={{
+                  flex: 1,
+                  height: 52,
+                  borderRadius: radius.md,
+                  borderWidth: 1.5,
+                  borderColor: active ? colors.primary : colors.border,
+                  backgroundColor: active ? colors.primarySoft : colors.surface,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1,
+                }}
+              >
+                <Text token="bodySm" style={{ fontWeight: "800", color: active ? colors.primaryText : colors.text }}>
+                  {option.installments === 1 ? "À vista" : `${option.installments}×`}
+                </Text>
+                <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, fontSize: 10 }}>
+                  {formatCurrencyFromCents(option.installmentValueCents)}
+                </Text>
+              </PressScale>
+            );
+          })}
+        </View>
+      ) : null}
+
+      <View style={{ flexDirection: "row", gap: 9, alignItems: "flex-start" }}>
+        <View style={{ width: 128 }}>
+          <TextField
+            ref={cepRef}
+            label="CEP"
+            value={formatCep(checkout.billingCep)}
+            onChangeText={checkout.setBillingCep}
+            keyboardType="number-pad"
+            maxLength={9}
+            error={checkout.cepError ?? undefined}
+            returnKeyType="next"
+            onSubmitEditing={() => numberRef.current?.focus()}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <TextField
+            ref={numberRef}
+            label="Número"
+            value={checkout.billingNumber}
+            onChangeText={checkout.setBillingNumber}
+            keyboardType="number-pad"
+            returnKeyType="done"
+          />
+        </View>
+      </View>
+
+      {checkout.isLookingUpCep ? (
+        <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>
+          Buscando endereço…
+        </Text>
+      ) : addressFound ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Check size={13} color={colors.primaryText} strokeWidth={2.5} />
+          <Text token="caption" style={{ fontWeight: "700", color: colors.primaryText, textTransform: "none", letterSpacing: 0 }}>
+            Endereço encontrado — {checkout.billingCity}, {checkout.billingState}
           </Text>
-          <RadioGroup
-            value={String(checkout.installments)}
-            onChange={(value) => checkout.setInstallments(Number(value))}
-            options={quote.card.installments.map((option) => ({
-              value: String(option.installments),
-              label: `${option.installments}x de ${formatCurrencyFromCents(option.installmentValueCents)}${
-                option.interestRate > 0 ? " (com juros)" : " sem juros"
-              }`,
-            }))}
-          />
         </View>
-      ) : null}
-
-      {checkout.paymentError ? (
-        <Text token="bodySm" color="error">
-          {checkout.paymentError}
+      ) : !checkout.cepError ? (
+        <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, lineHeight: 15 }}>
+          Só o CEP — buscamos o resto do endereço
         </Text>
       ) : null}
-
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <Button label="Voltar" variant="secondary" onPress={goBack} disabled={isSubmitting} />
-        <View style={{ flex: 1 }}>
-          <Button
-            label={checkout.paymentError ? "Tentar novamente" : "Pagar"}
-            onPress={checkout.paymentError ? checkout.retryCardPayment : checkout.createCardPayment}
-            disabled={!checkout.isCardFormValid}
-            loading={isSubmitting}
-            fullWidth
-          />
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function CardRedirectView({ checkout }: { checkout: UseCheckoutReturn }) {
-  const { quote, isSubmitting, goBack } = checkout;
-
-  return (
-    <View style={{ gap: 20 }}>
-      <Text token="titleLg">Pagamento com cartão</Text>
-      {quote ? (
-        <Text token="body" color="muted">
-          Total a pagar: {formatCurrencyFromCents(quote.finalAmountCents)}
-        </Text>
-      ) : null}
-      <Text token="bodySm" color="muted">
-        Você será redirecionado para concluir o pagamento com cartão de forma segura.
-      </Text>
-
-      {checkout.paymentError ? (
-        <Text token="bodySm" color="error">
-          {checkout.paymentError}
-        </Text>
-      ) : null}
-
-      <View style={{ flexDirection: "row", gap: 10 }}>
-        <Button label="Voltar" variant="secondary" onPress={goBack} disabled={isSubmitting} />
-        <View style={{ flex: 1 }}>
-          <Button
-            label="Pagar com cartão"
-            onPress={checkout.createCardRedirectPayment}
-            loading={isSubmitting}
-            fullWidth
-          />
-        </View>
-      </View>
     </View>
   );
 }

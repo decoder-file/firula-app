@@ -8,6 +8,7 @@ import { useAuthUser, useAuthUserProfile } from "@/hooks/useAuth";
 import { checkoutService } from "@/services/checkout.service";
 import type { AdminEventDetail } from "@/services/events.service";
 import { onlyDigits } from "@/utils/mask";
+import { isValidCpf } from "@/utils/cpf";
 import type {
   AttendeeInput,
   CheckoutOrderData,
@@ -18,7 +19,7 @@ import type {
   TicketLotSelectionInput,
 } from "@/features/checkout/types";
 
-export type CheckoutStep = "review" | "custom" | "info" | "payment" | "success";
+export type CheckoutStep = "checkout" | "pix" | "success";
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 30 * 60 * 1000;
@@ -267,34 +268,20 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     filterCustomFieldsForLot,
   ]);
 
-  // ── Passos ───────────────────────────────────────────────────────────────
-  const steps = useMemo<CheckoutStep[]>(() => {
-    const list: CheckoutStep[] = ["review"];
-    if (hasCustomFields && !perAttendeeCustomFields) list.push("custom");
-    list.push("info");
-    if (!quote || !quote.isFree) list.push("payment");
-    list.push("success");
-    return list;
-  }, [hasCustomFields, perAttendeeCustomFields, quote]);
-
-  const [step, setStep] = useState<CheckoutStep>("review");
-
-  const goNext = useCallback(() => {
-    setStep((current) => {
-      const index = steps.indexOf(current);
-      return steps[index + 1] ?? current;
-    });
-  }, [steps]);
-
-  const goBack = useCallback(() => {
-    setStep((current) => {
-      const index = steps.indexOf(current);
-      return index > 0 ? steps[index - 1] : current;
-    });
-  }, [steps]);
+  // ── Tela atual ───────────────────────────────────────────────────────────
+  const [step, setStep] = useState<CheckoutStep>("checkout");
 
   // ── Forma de pagamento ───────────────────────────────────────────────────
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+
+  // Pré-seleciona Pix assim que a cotação chegar (padrão recomendado — aprovação
+  // imediata); se só cartão estiver disponível, seleciona esse.
+  useEffect(() => {
+    if (paymentMethod !== null || !quote) return;
+    const available = quote.availablePaymentMethods;
+    if (available.includes("PIX")) setPaymentMethod("PIX");
+    else if (available.length === 1) setPaymentMethod(available[0]);
+  }, [paymentMethod, quote]);
 
   // ── Cartão ───────────────────────────────────────────────────────────────
   const [cardNumber, setCardNumber] = useState("");
@@ -306,7 +293,6 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
   const [billingCep, setBillingCep] = useState("");
   const [billingStreet, setBillingStreet] = useState("");
   const [billingNumber, setBillingNumber] = useState("");
-  const [billingComplement, setBillingComplement] = useState("");
   const [billingNeighborhood, setBillingNeighborhood] = useState("");
   const [billingCity, setBillingCity] = useState("");
   const [billingState, setBillingState] = useState("");
@@ -582,7 +568,6 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
             postalCode: onlyDigits(billingCep),
             addressNumber: billingNumber.trim(),
             city: billingCity.trim() || undefined,
-            complement: billingComplement.trim() || undefined,
             state: billingState.trim() || undefined,
             street: billingStreet.trim() || undefined,
             zone: billingNeighborhood.trim() || undefined,
@@ -619,7 +604,6 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     billingCep,
     billingNumber,
     billingCity,
-    billingComplement,
     billingState,
     billingStreet,
     billingNeighborhood,
@@ -666,6 +650,65 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     void runCardRedirectPayment();
   }, [startNewAttempt, runCardRedirectPayment]);
 
+  // ── Validação + envio único (tela unificada) ─────────────────────────────
+  const isBuyerValid = useMemo(
+    () => buyerName.trim().length >= 3 && isValidCpf(buyerCpf) && onlyDigits(buyerPhone).length >= 10,
+    [buyerName, buyerCpf, buyerPhone],
+  );
+
+  const areAdditionalAttendeesValid = useMemo(() => {
+    // Unidade 0 (comprador) fica de fora — mesma ordem/agrupamento de ticketLotsPayload
+    // usada em buildAttendeesPayload.
+    const flatLotIds: string[] = [];
+    for (const lot of ticketLotsPayload) {
+      for (let i = 0; i < lot.quantity; i++) flatLotIds.push(lot.ticketLotId);
+    }
+    const attendeeLotIds = flatLotIds.slice(1);
+    return additionalAttendees.every((attendee, index) =>
+      isAdditionalAttendeeValid(attendee, attendeeLotIds[index] ?? ""),
+    );
+  }, [additionalAttendees, ticketLotsPayload, isAdditionalAttendeeValid]);
+
+  const canSubmitCheckout = useMemo(() => {
+    if (!quote || quoteLoading) return false;
+    if (!isBuyerValid || !areAdditionalAttendeesValid || !areRequiredCustomFieldsFilled) return false;
+    if (requiresTermsAcceptance && !acceptedTerms) return false;
+    if (quote.isFree) return true;
+    if (!paymentMethod) return false;
+    if (paymentMethod === "CARD" && (quote.card?.flow ?? "TRANSPARENT") === "TRANSPARENT" && !isCardFormValid) {
+      return false;
+    }
+    return true;
+  }, [
+    quote,
+    quoteLoading,
+    isBuyerValid,
+    areAdditionalAttendeesValid,
+    areRequiredCustomFieldsFilled,
+    requiresTermsAcceptance,
+    acceptedTerms,
+    paymentMethod,
+    isCardFormValid,
+  ]);
+
+  const submitCheckout = useCallback(() => {
+    if (!quote) return;
+    if (quote.isFree) {
+      void createFreeOrder();
+      return;
+    }
+    if (paymentMethod === "PIX") {
+      createPixPayment();
+      setStep("pix");
+      return;
+    }
+    if (paymentMethod === "CARD") {
+      const flow = quote.card?.flow ?? "TRANSPARENT";
+      if (flow === "REDIRECT") createCardRedirectPayment();
+      else createCardPayment();
+    }
+  }, [quote, paymentMethod, createFreeOrder, createPixPayment, createCardRedirectPayment, createCardPayment]);
+
   return {
     event,
     ticketLotsPayload,
@@ -701,10 +744,10 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     updateAdditionalAttendee,
     isAdditionalAttendeeValid,
     step,
-    steps,
     setStep,
-    goNext,
-    goBack,
+    isBuyerValid,
+    canSubmitCheckout,
+    submitCheckout,
     isSubmitting,
     paymentError,
     pixSession,
@@ -734,8 +777,6 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     setBillingStreet,
     billingNumber,
     setBillingNumber,
-    billingComplement,
-    setBillingComplement,
     billingNeighborhood,
     setBillingNeighborhood,
     billingCity,
