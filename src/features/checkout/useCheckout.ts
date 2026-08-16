@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Linking } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 
 import { isApiError } from "@/api/errors";
@@ -12,16 +13,25 @@ import type {
   CheckoutOrderData,
   CreatePurchasePayload,
   CustomFieldAnswerInput,
+  PaymentMethod,
   PurchaseQuote,
   TicketLotSelectionInput,
 } from "@/features/checkout/types";
 
-export type CheckoutStep = "review" | "custom" | "info" | "pix" | "success";
+export type CheckoutStep = "review" | "custom" | "info" | "payment" | "success";
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 30 * 60 * 1000;
 const ORDER_TERMINAL_FAILURE_STATUSES = ["CANCELED", "EXPIRED"];
 const PIX_EXPIRES_IN_MINUTES = 30;
+
+interface ViaCepAddress {
+  logradouro: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+  erro?: boolean;
+}
 
 function generateIdempotencyKey(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
@@ -262,7 +272,7 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     const list: CheckoutStep[] = ["review"];
     if (hasCustomFields && !perAttendeeCustomFields) list.push("custom");
     list.push("info");
-    if (!quote || !quote.isFree) list.push("pix");
+    if (!quote || !quote.isFree) list.push("payment");
     list.push("success");
     return list;
   }, [hasCustomFields, perAttendeeCustomFields, quote]);
@@ -283,14 +293,83 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     });
   }, [steps]);
 
-  // ── Compra + pagamento PIX ───────────────────────────────────────────────
+  // ── Forma de pagamento ───────────────────────────────────────────────────
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+
+  // ── Cartão ───────────────────────────────────────────────────────────────
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolderName, setCardHolderName] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [installments, setInstallments] = useState(1);
+
+  const [billingCep, setBillingCep] = useState("");
+  const [billingStreet, setBillingStreet] = useState("");
+  const [billingNumber, setBillingNumber] = useState("");
+  const [billingComplement, setBillingComplement] = useState("");
+  const [billingNeighborhood, setBillingNeighborhood] = useState("");
+  const [billingCity, setBillingCity] = useState("");
+  const [billingState, setBillingState] = useState("");
+  const [isLookingUpCep, setIsLookingUpCep] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
+
+  const lookupBillingCep = useCallback(async (rawCep: string) => {
+    const cep = onlyDigits(rawCep);
+    if (cep.length !== 8) return;
+
+    setIsLookingUpCep(true);
+    setCepError(null);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = (await response.json()) as ViaCepAddress;
+      if (data.erro) {
+        setCepError("CEP não encontrado.");
+        return;
+      }
+      setBillingStreet(data.logradouro ?? "");
+      setBillingNeighborhood(data.bairro ?? "");
+      setBillingCity(data.localidade ?? "");
+      setBillingState(data.uf ?? "");
+    } catch {
+      setCepError("Não foi possível buscar o CEP.");
+    } finally {
+      setIsLookingUpCep(false);
+    }
+  }, []);
+
+  // Busca automática assim que o CEP completa 8 dígitos — mesmo gatilho do b2c.
+  useEffect(() => {
+    const cep = onlyDigits(billingCep);
+    if (cep.length === 8) {
+      void lookupBillingCep(billingCep);
+    } else {
+      setCepError(null);
+    }
+  }, [billingCep, lookupBillingCep]);
+
+  const isCardFormValid = useMemo(
+    () =>
+      onlyDigits(cardNumber).length >= 13 &&
+      cardHolderName.trim().length >= 3 &&
+      onlyDigits(cardExpiry).length === 4 &&
+      cardCvv.length >= 3 &&
+      onlyDigits(billingCep).length === 8 &&
+      billingStreet.trim().length > 0 &&
+      billingNumber.trim().length > 0 &&
+      billingNeighborhood.trim().length > 0 &&
+      billingCity.trim().length > 0 &&
+      billingState.trim().length === 2,
+    [cardNumber, cardHolderName, cardExpiry, cardCvv, billingCep, billingStreet, billingNumber, billingNeighborhood, billingCity, billingState],
+  );
+
+  // ── Compra + pagamento ───────────────────────────────────────────────────
   const idempotencyKeyRef = useRef(generateIdempotencyKey());
   const startNewAttempt = useCallback(() => {
     idempotencyKeyRef.current = generateIdempotencyKey();
   }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pixError, setPixError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [pixSession, setPixSession] = useState<{
     orderId: string;
     qrCodeText: string;
@@ -365,6 +444,9 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
       let message = "Não foi possível concluir a compra. Tente novamente.";
       if (isApiError(err)) {
         message = err.message || message;
+        if (err.code === "MARLIM_ERROR") {
+          message = "Não foi possível processar o pagamento com este cartão. Verifique os dados e tente novamente.";
+        }
         if (message.includes("Idempotency key already used")) {
           startNewAttempt();
         }
@@ -380,7 +462,7 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
   const runPixPayment = useCallback(async () => {
     if (!event) return;
     setIsSubmitting(true);
-    setPixError(null);
+    setPaymentError(null);
     try {
       const response = await checkoutService.createPurchase(event.id, {
         ...buildBasePayload(),
@@ -422,7 +504,7 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
       setStep("success");
     } catch (err) {
       setIsPollingPix(false);
-      setPixError(handlePurchaseError(err));
+      setPaymentError(handlePurchaseError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -440,7 +522,7 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
   const createFreeOrder = useCallback(async () => {
     if (!event) return false;
     setIsSubmitting(true);
-    setPixError(null);
+    setPaymentError(null);
     try {
       const response = await checkoutService.createPurchase(event.id, buildBasePayload());
       setSuccessOrderId(response.order.id);
@@ -456,12 +538,133 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
       setStep("success");
       return true;
     } catch (err) {
-      setPixError(handlePurchaseError(err));
+      setPaymentError(handlePurchaseError(err));
       return false;
     } finally {
       setIsSubmitting(false);
     }
   }, [event, buildBasePayload, handlePurchaseError]);
+
+  const applyPurchaseSuccess = useCallback((response: Awaited<ReturnType<typeof checkoutService.createPurchase>>) => {
+    setSuccessOrderId(response.order.id);
+    setSuccessTotalCents(response.order.totalAmountCents);
+    setSuccessTickets(
+      response.tickets.map((ticket) => ({
+        id: ticket.id,
+        qrCode: ticket.qrCode,
+        attendeeName: ticket.attendee?.name ?? "",
+        lotName: ticket.orderItem?.ticketLot?.name ?? "",
+      })),
+    );
+    setStep("success");
+  }, []);
+
+  const runCardPayment = useCallback(async () => {
+    if (!event) return;
+    setIsSubmitting(true);
+    setPaymentError(null);
+    try {
+      const response = await checkoutService.createPurchase(event.id, {
+        ...buildBasePayload(),
+        payment: {
+          method: "CARD",
+          creditCard: {
+            holderName: cardHolderName.trim(),
+            number: onlyDigits(cardNumber),
+            expiryMonth: onlyDigits(cardExpiry).slice(0, 2),
+            expiryYear: `20${onlyDigits(cardExpiry).slice(2, 4)}`,
+            ccv: cardCvv,
+          },
+          creditCardHolderInfo: {
+            name: buyerName.trim(),
+            email: buyerEmail,
+            cpfCnpj: onlyDigits(buyerCpf),
+            postalCode: onlyDigits(billingCep),
+            addressNumber: billingNumber.trim(),
+            city: billingCity.trim() || undefined,
+            complement: billingComplement.trim() || undefined,
+            state: billingState.trim() || undefined,
+            street: billingStreet.trim() || undefined,
+            zone: billingNeighborhood.trim() || undefined,
+            phone: onlyDigits(buyerPhone) || undefined,
+          },
+          installments,
+          idempotencyKey: idempotencyKeyRef.current,
+        },
+      });
+
+      if (response.payment?.status !== "PAID") {
+        throw new Error("Não foi possível confirmar o pagamento com este cartão.");
+      }
+
+      applyPurchaseSuccess(response);
+    } catch (err) {
+      setPaymentError(handlePurchaseError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    event,
+    buildBasePayload,
+    applyPurchaseSuccess,
+    handlePurchaseError,
+    cardHolderName,
+    cardNumber,
+    cardExpiry,
+    cardCvv,
+    buyerName,
+    buyerEmail,
+    buyerCpf,
+    buyerPhone,
+    billingCep,
+    billingNumber,
+    billingCity,
+    billingComplement,
+    billingState,
+    billingStreet,
+    billingNeighborhood,
+    installments,
+  ]);
+
+  const createCardPayment = useCallback(() => {
+    startNewAttempt();
+    void runCardPayment();
+  }, [startNewAttempt, runCardPayment]);
+
+  const retryCardPayment = useCallback(() => {
+    void runCardPayment();
+  }, [runCardPayment]);
+
+  const runCardRedirectPayment = useCallback(async () => {
+    if (!event) return;
+    setIsSubmitting(true);
+    setPaymentError(null);
+    try {
+      const response = await checkoutService.createPurchase(event.id, {
+        ...buildBasePayload(),
+        payment: {
+          method: "CARD",
+          installments: 1,
+          idempotencyKey: idempotencyKeyRef.current,
+        },
+      });
+
+      const redirectUrl = response.payment?.action?.redirectUrl ?? response.payment?.checkoutUrl;
+      if (!redirectUrl) {
+        throw new Error("Não foi possível iniciar o pagamento com cartão.");
+      }
+      await Linking.openURL(redirectUrl);
+    } catch (err) {
+      setPaymentError(handlePurchaseError(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [event, buildBasePayload, handlePurchaseError]);
+
+  const createCardRedirectPayment = useCallback(() => {
+    startNewAttempt();
+    void runCardRedirectPayment();
+  }, [startNewAttempt, runCardRedirectPayment]);
 
   return {
     event,
@@ -503,7 +706,7 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     goNext,
     goBack,
     isSubmitting,
-    pixError,
+    paymentError,
     pixSession,
     isPollingPix,
     orderData,
@@ -513,6 +716,39 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     createPixPayment,
     retryPixPayment,
     createFreeOrder,
+    paymentMethod,
+    setPaymentMethod,
+    cardNumber,
+    setCardNumber,
+    cardHolderName,
+    setCardHolderName,
+    cardExpiry,
+    setCardExpiry,
+    cardCvv,
+    setCardCvv,
+    installments,
+    setInstallments,
+    billingCep,
+    setBillingCep,
+    billingStreet,
+    setBillingStreet,
+    billingNumber,
+    setBillingNumber,
+    billingComplement,
+    setBillingComplement,
+    billingNeighborhood,
+    setBillingNeighborhood,
+    billingCity,
+    setBillingCity,
+    billingState,
+    setBillingState,
+    isLookingUpCep,
+    cepError,
+    lookupBillingCep,
+    isCardFormValid,
+    createCardPayment,
+    retryCardPayment,
+    createCardRedirectPayment,
   };
 }
 

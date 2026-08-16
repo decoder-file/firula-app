@@ -1,7 +1,8 @@
 /**
- * Tipos do fluxo de compra nativo (fase 1: PIX). Contratos confirmados diretamente no
- * backend (`firula-event-back-end`) — não copiados dos tipos do b2c, que estão
- * desatualizados em alguns pontos (formato da resposta de `/purchase`, enum de `OrderStatus`).
+ * Tipos do fluxo de compra nativo (PIX + cartão, sem 3DS/tokenização). Contratos
+ * confirmados diretamente no backend (`firula-event-back-end`) — não copiados dos tipos
+ * do b2c, que estão desatualizados em alguns pontos (formato da resposta de `/purchase`,
+ * enum de `OrderStatus`).
  */
 
 export type PaymentMethod = "PIX" | "CARD";
@@ -12,6 +13,13 @@ export interface PurchaseQuoteItem {
   quantity: number;
   unitPriceCents: number;
   subtotalCents: number;
+}
+
+export interface PurchaseQuoteInstallment {
+  installments: number;
+  interestRate: number;
+  totalCents: number;
+  installmentValueCents: number;
 }
 
 export interface PurchaseQuote {
@@ -27,7 +35,7 @@ export interface PurchaseQuote {
   isFree: boolean;
   availablePaymentMethods: PaymentMethod[];
   pix: { totalCents: number } | null;
-  card: { flow?: "TRANSPARENT" | "REDIRECT"; installments: unknown[] } | null;
+  card: { flow?: "TRANSPARENT" | "REDIRECT"; installments: PurchaseQuoteInstallment[] } | null;
 }
 
 export type ValidateCouponResult =
@@ -51,6 +59,38 @@ export interface TicketLotSelectionInput {
   quantity: number;
 }
 
+export interface RawCreditCardInput {
+  holderName: string;
+  number: string;
+  expiryMonth: string;
+  expiryYear: string;
+  ccv: string;
+}
+
+export interface CreditCardHolderInfo {
+  name: string;
+  email: string;
+  cpfCnpj: string;
+  postalCode: string;
+  addressNumber: string;
+  city?: string;
+  complement?: string;
+  state?: string;
+  street?: string;
+  zone?: string;
+  phone?: string;
+}
+
+export type PurchasePaymentInput =
+  | { method: "PIX"; expiresInMinutes?: number; idempotencyKey?: string }
+  | {
+      method: "CARD";
+      creditCard?: RawCreditCardInput;
+      creditCardHolderInfo?: CreditCardHolderInfo;
+      installments?: number;
+      idempotencyKey?: string;
+    };
+
 export interface CreatePurchasePayload {
   fullName: string;
   phone: string;
@@ -60,11 +100,7 @@ export interface CreatePurchasePayload {
   attendees: AttendeeInput[];
   couponCode?: string;
   /** Ausente só quando o pedido é gratuito (`isFree`). */
-  payment?: {
-    method: "PIX";
-    expiresInMinutes?: number;
-    idempotencyKey?: string;
-  };
+  payment?: PurchasePaymentInput;
 }
 
 export interface CreatedTicket {
@@ -87,10 +123,13 @@ export interface CreatePurchaseResponse {
   payment?: {
     paymentId: string;
     orderId: string;
-    method: "PIX";
+    method: "PIX" | "CARD";
     status: string;
     amountCents: number;
-    pix: { expiresAt: string; qrCodeText: string; qrCodeImage: string | null };
+    pix?: { expiresAt: string; qrCodeText: string; qrCodeImage: string | null };
+    checkoutUrl?: string | null;
+    requiresAction?: boolean;
+    action?: { type: "REDIRECT"; redirectUrl: string };
   };
 }
 

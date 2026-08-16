@@ -11,7 +11,7 @@ import type { UseCheckoutReturn } from "@/features/checkout/useCheckout";
 
 export function PixStep({ checkout }: { checkout: UseCheckoutReturn }) {
   const { colors } = useTheme();
-  const { quote, pixSession, isSubmitting, isPollingPix, pixError, createPixPayment, retryPixPayment, goBack } =
+  const { quote, pixSession, isSubmitting, isPollingPix, paymentError, createPixPayment, retryPixPayment, goBack } =
     checkout;
   const [copied, setCopied] = useState(false);
   const { label: countdownLabel, expired } = useCountdown(pixSession?.expiresAt);
@@ -46,9 +46,9 @@ export function PixStep({ checkout }: { checkout: UseCheckoutReturn }) {
             Total a pagar: {formatCurrencyFromCents(quote.finalAmountCents)}
           </Text>
         ) : null}
-        {pixError ? (
+        {paymentError ? (
           <Text token="bodySm" color="error">
-            {pixError}
+            {paymentError}
           </Text>
         ) : null}
         <View style={{ flexDirection: "row", gap: 10 }}>
@@ -103,10 +103,10 @@ export function PixStep({ checkout }: { checkout: UseCheckoutReturn }) {
         </Text>
       ) : null}
 
-      {pixError ? (
+      {paymentError ? (
         <View style={{ gap: 10, width: "100%" }}>
           <Text token="bodySm" color="error" style={{ textAlign: "center" }}>
-            {pixError}
+            {paymentError}
           </Text>
           <Button label="Tentar novamente" onPress={retryPixPayment} loading={isSubmitting} fullWidth />
         </View>

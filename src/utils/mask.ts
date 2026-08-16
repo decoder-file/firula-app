@@ -14,3 +14,20 @@ export const formatPhone = (value: string) => {
   if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
+
+export const formatCardNumber = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+};
+
+export const formatCardExpiry = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+};
+
+export const formatCep = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};

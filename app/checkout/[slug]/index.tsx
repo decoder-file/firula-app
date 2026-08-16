@@ -14,14 +14,14 @@ import { CheckoutFooter } from "@/features/checkout/components/CheckoutFooter";
 import { ReviewStep } from "@/features/checkout/components/ReviewStep";
 import { CustomFieldsStep } from "@/features/checkout/components/CustomFieldsStep";
 import { InfoStep } from "@/features/checkout/components/InfoStep";
-import { PixStep } from "@/features/checkout/components/PixStep";
+import { PaymentStep } from "@/features/checkout/components/PaymentStep";
 import { SuccessStep } from "@/features/checkout/components/SuccessStep";
 
 const STEP_TITLES: Record<string, string> = {
   review: "Revisão",
   custom: "Informações",
   info: "Seus dados",
-  pix: "Pagamento",
+  payment: "Pagamento",
   success: "Confirmação",
 };
 
@@ -87,7 +87,7 @@ function CheckoutContent() {
             {checkout.step === "review" ? <ReviewStep checkout={checkout} /> : null}
             {checkout.step === "custom" ? <CustomFieldsStep checkout={checkout} /> : null}
             {checkout.step === "info" ? <InfoStep checkout={checkout} /> : null}
-            {checkout.step === "pix" ? <PixStep checkout={checkout} /> : null}
+            {checkout.step === "payment" ? <PaymentStep checkout={checkout} /> : null}
             {checkout.step === "success" ? <SuccessStep checkout={checkout} /> : null}
           </ScrollView>
           {checkout.step !== "success" ? <CheckoutFooter onExpire={() => router.back()} /> : null}
