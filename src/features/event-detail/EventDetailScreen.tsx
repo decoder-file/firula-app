@@ -1,5 +1,13 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Image,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -29,6 +37,10 @@ import { ParticipantsSection } from "@/features/event-detail/components/Particip
 import { TrustItem } from "@/features/event-detail/components/TrustItem";
 import type { EventDetailScreenProps } from "@/features/event-detail/types";
 import { getEventAccentColors } from "@/utils/eventTheme";
+
+// Abaixo desse offset de scroll, a imagem de capa (dark) já saiu praticamente toda de
+// trás da status bar — troca pra ícones escuros pra não ficar branco sobre branco.
+const HERO_SCROLL_THRESHOLD = 260;
 
 function formatBRL(cents: number) {
   return (
@@ -70,6 +82,15 @@ function EventDetailScreenContent({
   const { colors, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const [qty, setQty] = useState<Record<string, number>>({});
+  const [statusBarStyle, setStatusBarStyle] = useState<"light" | "dark">("light");
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const shouldBeDark = e.nativeEvent.contentOffset.y > HERO_SCROLL_THRESHOLD;
+    setStatusBarStyle((prev) => {
+      const next = shouldBeDark ? "dark" : "light";
+      return prev === next ? prev : next;
+    });
+  }, []);
 
   const add = useCallback(
     (id: string) => setQty((q) => ({ ...q, [id]: (q[id] ?? 0) + 1 })),
@@ -133,7 +154,7 @@ function EventDetailScreenContent({
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
-      <StatusBar style="light" />
+      <StatusBar style={statusBarStyle} />
 
       <View
         pointerEvents="box-none"
@@ -168,6 +189,8 @@ function EventDetailScreenContent({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 132 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         <View style={{ height: 340 }}>
           <Image
