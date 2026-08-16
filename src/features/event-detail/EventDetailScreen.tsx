@@ -35,6 +35,7 @@ import { FactItem } from "@/features/event-detail/components/FactItem";
 import { LotCard } from "@/features/event-detail/components/LotCard";
 import { RoundButton } from "@/features/event-detail/components/RoundButton";
 import { ParticipantsSection } from "@/features/event-detail/components/ParticipantsSection";
+import { SpeakersSection } from "@/features/event-detail/components/SpeakersSection";
 import { TrustItem } from "@/features/event-detail/components/TrustItem";
 import type { EventDetailScreenProps } from "@/features/event-detail/types";
 import { getEventAccentColors } from "@/utils/eventTheme";
@@ -353,6 +354,10 @@ function EventDetailScreenContent({
           ) : null}
 
           <EventDescriptionSection description={event.about} colors={colors} radius={radius} />
+
+          {event.speakers && event.speakers.length > 0 ? (
+            <SpeakersSection speakers={event.speakers} colors={colors} radius={radius} />
+          ) : null}
 
           {event.showParticipants ? <ParticipantsSection eventId={event.id} /> : null}
 

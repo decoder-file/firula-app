@@ -29,6 +29,15 @@ export interface SocialProof {
   reviews?: number;
 }
 
+export interface FeaturedPerson {
+  id: string;
+  name: string;
+  photoUrl?: string | null;
+  shortDescription?: string | null;
+  description?: string | null;
+  instagram?: string | null;
+}
+
 export interface EventDetail {
   id: string;
   title: string;
@@ -45,6 +54,7 @@ export interface EventDetail {
   social?: SocialProof;
   lotDeadlineText?: string;
   showParticipants?: boolean;
+  speakers?: FeaturedPerson[];
   /** Cor de destaque customizada do evento (hex #RRGGBB), definida pelo dono da plataforma. */
   accentColor?: string | null;
 }

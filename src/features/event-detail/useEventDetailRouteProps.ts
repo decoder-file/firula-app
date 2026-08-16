@@ -109,6 +109,17 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     lotDeadlineText: getLotDeadlineText(event.ticketLots),
     showParticipants: event.settings?.showParticipantsOnEventPage !== false,
     lots: event.ticketLots.map(mapLot),
+    // já vem ordenado por position asc do backend (mapEvent()), sem precisar reordenar aqui.
+    speakers: (event.featuredPeople ?? [])
+      .filter((person) => person.id && person.name)
+      .map((person) => ({
+        id: person.id,
+        name: person.name,
+        photoUrl: person.photoUrl,
+        shortDescription: person.shortDescription,
+        description: person.description,
+        instagram: person.instagram,
+      })),
     accentColor: event.settings?.ticketPageAccentColor,
   };
 };

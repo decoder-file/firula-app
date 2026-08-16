@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -15,7 +14,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useEventParticipants } from "@/hooks/useEvents";
 import type { EventParticipant } from "@/services/events.service";
-import { PressScale, Text, useTheme } from "@/design-system";
+import { EmptyState, PressScale, Text, useTheme } from "@/design-system";
+import { InitialsAvatar } from "@/components/InitialsAvatar";
 
 type ParticipantsSectionProps = { eventId: string };
 
@@ -61,9 +61,12 @@ export function ParticipantsSection({ eventId }: ParticipantsSectionProps) {
             <Text token="label" color="primary">Tentar novamente</Text>
           </Pressable>
         ) : total === 0 ? (
-          <View style={styles.messageRow}>
-            <UsersRound size={18} color={colors.textMuted} />
-            <Text token="bodySm" color="muted">Ainda não há participantes</Text>
+          <View style={{ marginTop: 16 }}>
+            <EmptyState
+              icon={UsersRound}
+              title="Ainda não há participantes"
+              description="Seja a primeira pessoa a participar deste evento."
+            />
           </View>
         ) : (
           <View style={[styles.previewRow, { borderTopColor: colors.border }]}> 
@@ -147,14 +150,30 @@ function ParticipantsModal({ eventId, visible, onClose }: { eventId: string; vis
             )}
             ListEmptyComponent={
               <View style={styles.empty}>
-                {query.isLoading ? <ActivityIndicator color={colors.primary} /> : (
-                  <>
-                    <UsersRound size={30} color={colors.textMuted} />
-                    <Text token="bodySm" color="muted" style={{ textAlign: "center" }}>
-                      {query.isError ? "Não foi possível carregar os participantes." : normalizedSearch ? "Nenhum participante encontrado" : "Ainda não há participantes"}
-                    </Text>
-                    {query.isError ? <Pressable onPress={() => query.refetch()}><Text color="primary" token="label">Tentar novamente</Text></Pressable> : null}
-                  </>
+                {query.isLoading ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : query.isError ? (
+                  <EmptyState
+                    variant="error"
+                    icon={UsersRound}
+                    title="Não foi possível carregar os participantes."
+                    description="Tente novamente em alguns instantes."
+                    actionLabel="Tentar novamente"
+                    onAction={() => query.refetch()}
+                  />
+                ) : normalizedSearch ? (
+                  <EmptyState
+                    variant="noResults"
+                    icon={Search}
+                    title="Nenhum participante encontrado"
+                  />
+                ) : (
+                  <EmptyState
+                    variant="empty"
+                    icon={UsersRound}
+                    title="Ainda não há participantes"
+                    description="Seja a primeira pessoa a participar deste evento."
+                  />
                 )}
               </View>
             }
@@ -170,7 +189,7 @@ function ParticipantRow({ participant, onPress, colors }: { participant: EventPa
   const enabled = Boolean(participant.username);
   return (
     <Pressable disabled={!enabled} onPress={onPress} style={[styles.person, { backgroundColor: colors.background, opacity: enabled ? 1 : 0.8 }]}> 
-      <ParticipantAvatar participant={participant} size={48} />
+      <InitialsAvatar name={participant.name} photoUrl={participant.photoUrl} size={48} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
           <Text token="bodySm" numberOfLines={1} style={{ fontWeight: "800", flexShrink: 1 }}>{participant.name}</Text>
@@ -188,23 +207,21 @@ function AvatarStack({ participants, total }: { participants: EventParticipant[]
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       {participants.slice(0, 5).map((participant, index) => (
         <View key={`${participant.id}-${index}`} style={{ marginLeft: index === 0 ? 0 : -10 }}>
-          <ParticipantAvatar participant={participant} size={42} />
+          <InitialsAvatar name={participant.name} photoUrl={participant.photoUrl} size={42} />
         </View>
       ))}
       {total > participants.length ? (
-        <View style={styles.more}><Text style={{ color: "white", fontWeight: "800", fontSize: 11 }}>+{formatNumber(total - participants.length)}</Text></View>
+        <View style={styles.more}><Text style={{ color: "white", fontWeight: "800", fontSize: 11 }}>+{formatCompactNumber(total - participants.length)}</Text></View>
       ) : null}
     </View>
   );
 }
 
-function ParticipantAvatar({ participant, size }: { participant: EventParticipant; size: number }) {
-  const initials = participant.name.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
-  if (participant.photoUrl) return <Image source={{ uri: participant.photoUrl }} style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 2, borderColor: "white" }} />;
-  return <View style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}><Text style={{ color: "white", fontWeight: "800", fontSize: size * 0.3 }}>{initials || "?"}</Text></View>;
-}
-
 function formatNumber(value: number) { return new Intl.NumberFormat("pt-BR").format(value); }
+
+function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+}
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 24, padding: 20, marginBottom: 22, minHeight: 82, justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
@@ -223,6 +240,5 @@ const styles = StyleSheet.create({
   listContent: { paddingHorizontal: 14, paddingBottom: 20, flexGrow: 1 },
   person: { flexDirection: "row", alignItems: "center", padding: 12, borderRadius: 16, marginBottom: 10, gap: 12 },
   empty: { flex: 1, minHeight: 220, alignItems: "center", justifyContent: "center", gap: 10, paddingHorizontal: 30 },
-  avatarFallback: { backgroundColor: "#27272A", borderWidth: 2, borderColor: "white", alignItems: "center", justifyContent: "center" },
   more: { marginLeft: -8, minWidth: 42, height: 42, paddingHorizontal: 8, borderRadius: 21, borderWidth: 2, borderColor: "white", backgroundColor: "#18181B", alignItems: "center", justifyContent: "center" },
 });

@@ -141,6 +141,15 @@ export interface AdminEventDetail {
     ticketLotId: string | null;
     currentVersion: { fileUrl: string | null } | null;
   }>;
+  featuredPeople: Array<{
+    id: string;
+    name: string;
+    photoUrl: string | null;
+    shortDescription: string | null;
+    description: string | null;
+    instagram: string | null;
+    position: number;
+  }>;
 }
 
 export interface EventParticipant {
