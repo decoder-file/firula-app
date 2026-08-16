@@ -60,6 +60,11 @@ export const queryKeys = {
     all: ["search"] as const,
     query: (q: string) => [...queryKeys.search.all, q] as const,
   },
+  checkout: {
+    all: ["checkout"] as const,
+    quote: (eventId: string, selection: Record<string, number>, couponCode?: string) =>
+      [...queryKeys.checkout.all, "quote", eventId, selection, couponCode ?? null] as const,
+  },
   publicProfile: {
     all: ["publicProfile"] as const,
     detail: (username: string) => [...queryKeys.publicProfile.all, "detail", username] as const,

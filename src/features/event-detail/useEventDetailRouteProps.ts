@@ -109,17 +109,11 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
   };
 };
 
-const buildCheckoutUrl = (eventSlug: string, selection: Record<string, number>) => {
-  const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL;
-  if (!websiteUrl) return null;
-
-  const ticketsParam = Object.entries(selection)
+const buildTicketsParam = (selection: Record<string, number>) =>
+  Object.entries(selection)
     .filter(([, qty]) => qty > 0)
     .map(([lotId, qty]) => `${lotId}:${qty}`)
     .join(',');
-
-  return `${websiteUrl}/eventos/${eventSlug}?tickets=${ticketsParam}&checkout=1`;
-};
 
 const buildEventUrl = (eventSlug: string) => {
   const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL;
@@ -209,11 +203,23 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
       if (isFavoritePending) return;
       toggleFavorite({ eventId: event.id, isFavorited });
     },
-    onCheckout: async (selection: Record<string, number>) => {
+    onCheckout: (selection: Record<string, number>) => {
       if (!event) return;
-      const checkoutUrl = buildCheckoutUrl(event.slug, selection);
-      if (!checkoutUrl) return;
-      await Linking.openURL(checkoutUrl);
+      const ticketsParam = buildTicketsParam(selection);
+
+      if (!isAuthenticated) {
+        // O tickets param tem ":" e "," (ex.: "lotId:2,lotId:1"), que confundem o
+        // parser de rota do expo-router se forem embutidos crus numa string de path —
+        // precisa codificar antes de virar querystring do redirectTo.
+        const checkoutPath = `/checkout/${event.slug}?tickets=${encodeURIComponent(ticketsParam)}`;
+        router.push(`/login-modal?redirectTo=${encodeURIComponent(checkoutPath)}`);
+        return;
+      }
+
+      router.push({
+        pathname: "/checkout/[slug]",
+        params: { slug: event.slug, tickets: ticketsParam },
+      } as never);
     },
     onShare: async () => {
       if (!event) return;
