@@ -1,9 +1,11 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { CalendarDays, Heart, HeartOff, MapPin } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Building2, CalendarDays, Heart, HeartOff, MapPin } from "lucide-react-native";
 import { FlatList, Image, StyleSheet, View } from "react-native";
 
+import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import {
   BottomSheet,
@@ -21,6 +23,8 @@ import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useToggleFavoriteOrganizationBySlug } from "@/hooks/useOrganizer";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import type { FavoriteItem } from "@/services/favorites.service";
+
+type EventFavorite = Extract<FavoriteItem, { type: "EVENT" }>;
 
 function formatEventDate(startsAt: string, long = false) {
   return new Intl.DateTimeFormat("pt-BR", long
@@ -49,11 +53,11 @@ function FavoritesHeader({ onBack }: { onBack: () => void }) {
 }
 
 function FavoriteDetails({ item, removing, onClose, onOpenEvent, onRemove }: {
-  item: FavoriteItem | null;
+  item: EventFavorite | null;
   removing: boolean;
   onClose: () => void;
-  onOpenEvent: (item: FavoriteItem) => void;
-  onRemove: (item: FavoriteItem) => void;
+  onOpenEvent: (item: EventFavorite) => void;
+  onRemove: (item: EventFavorite) => void;
 }) {
   const { colors, radius } = useTheme();
 
@@ -126,6 +130,7 @@ function FavoriteDetails({ item, removing, onClose, onOpenEvent, onRemove }: {
 
 function OrganizationFavoriteRow({ item }: { item: Extract<FavoriteItem, { type: "ORGANIZATION" }> }) {
   const router = useRouter();
+  const { colors } = useTheme();
   const { mutate: toggle, isPending } = useToggleFavoriteOrganizationBySlug();
   const { organization } = item;
 
@@ -172,9 +177,29 @@ function OrganizationFavoriteRow({ item }: { item: Extract<FavoriteItem, { type:
   );
 }
 
-function FavoriteRow({ item }: { item: FavoriteItem }) {
+function EventFavoriteRow({ item, onPress }: { item: EventFavorite; onPress: () => void }) {
+  const { event } = item;
+
+  return (
+    <EventCard
+      variant="compact"
+      event={{
+        id: event.id,
+        slug: event.slug,
+        title: event.name,
+        dateLabel: formatEventDate(event.startsAt),
+        city: `${event.location.city}, ${event.location.state}`,
+        eventType: event.sports[0]?.name ?? "Evento",
+        image: event.coverUrl ? { uri: event.coverUrl } : null,
+      }}
+      onPress={onPress}
+    />
+  );
+}
+
+function FavoriteRow({ item, onPressEvent }: { item: FavoriteItem; onPressEvent: (item: EventFavorite) => void }) {
   if (item.type === "ORGANIZATION") return <OrganizationFavoriteRow item={item} />;
-  return <EventFavoriteRow item={item} />;
+  return <EventFavoriteRow item={item} onPress={() => onPressEvent(item)} />;
 }
 
 export default function FavoritesScreen() {
@@ -184,16 +209,16 @@ export default function FavoritesScreen() {
   const isAuthenticated = useIsAuthenticated();
   const { data, isLoading, refetch, isRefetching } = useFavorites();
   const { mutate: toggleFavorite, isPending: removingFavorite } = useToggleFavorite();
-  const [selectedFavorite, setSelectedFavorite] = useState<FavoriteItem | null>(null);
+  const [selectedFavorite, setSelectedFavorite] = useState<EventFavorite | null>(null);
 
   const favorites = data?.favorites ?? [];
 
-  const openEvent = (item: FavoriteItem) => {
+  const openEvent = (item: EventFavorite) => {
     setSelectedFavorite(null);
     router.push(`/event/${item.event.slug || item.event.id}`);
   };
 
-  const removeFavorite = (item: FavoriteItem) => {
+  const removeFavorite = (item: EventFavorite) => {
     toggleFavorite(
       { eventId: item.event.id, isFavorited: true },
       { onSuccess: () => setSelectedFavorite(null) },
@@ -252,19 +277,7 @@ export default function FavoritesScreen() {
           data={favorites}
           keyExtractor={(item) => item.favoriteId}
           renderItem={({ item }) => (
-            <EventCard
-              variant="compact"
-              event={{
-                id: item.event.id,
-                slug: item.event.slug,
-                title: item.event.name,
-                dateLabel: formatEventDate(item.event.startsAt),
-                city: `${item.event.location.city}, ${item.event.location.state}`,
-                eventType: item.event.sports[0]?.name ?? "Evento",
-                image: item.event.coverUrl ? { uri: item.event.coverUrl } : null,
-              }}
-              onPress={() => setSelectedFavorite(item)}
-            />
+            <FavoriteRow item={item} onPressEvent={(eventItem) => setSelectedFavorite(eventItem)} />
           )}
           contentContainerStyle={styles.listContent}
           onRefresh={refetch}
