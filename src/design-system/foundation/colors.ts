@@ -2,9 +2,10 @@
  * Firula Design System — Color tokens
  * Base neutra fria + verde Firula como cor de marca.
  *
- * Regra de contraste crítica:
- *   Texto sobre `primary` é SEMPRE `onPrimary` (verde-escuro, 8.9:1) — nunca branco (2.4:1, reprova AA).
- *   Verde como texto/ícone sobre fundo claro usa `primaryText` (#12813F, 4.6:1 AA).
+ * Texto sobre `primary` é sempre `onPrimary` (branco — decisão de produto: abaixo do
+ * contraste AA recomendado para texto pequeno neste verde específico, ~3,3:1, mas
+ * mantido por preferência visual em vez do verde-escuro que passava no contraste).
+ * Verde como texto/ícone sobre fundo claro usa `primaryText` (#12813F, 4.6:1 AA).
  */
 
 /** Escala bruta da marca — não use direto na UI; prefira os semânticos abaixo. */
@@ -56,7 +57,7 @@ export const light: Palette = {
   text: '#141821', // 15.9:1
   textMuted: '#5C6470', // 5.8:1 AA
   primary: '#1FBD63',
-  onPrimary: '#0A2E1A', // 8.9:1 sobre primary
+  onPrimary: '#FFFFFF', // ~3.3:1 sobre primary — abaixo do AA pra texto pequeno, mantido por decisão de produto
   primaryText: '#12813F', // 4.6:1 AA — verde como texto/ícone
   primarySoft: '#EBFAF1',
   border: '#E7EAEE',
@@ -79,7 +80,7 @@ export const dark: Palette = {
   text: '#F2F4F7', // 15.2:1
   textMuted: '#A6AEBB', // 7.4:1 AAA
   primary: '#2BD473',
-  onPrimary: '#0A2E1A', // 10.7:1 sobre primary
+  onPrimary: '#FFFFFF', // decisão de produto — mesmo token do light, ver comentário acima
   primaryText: '#4ADE8C', // 8.1:1 AAA — verde como texto
   primarySoft: '#12291C',
   border: '#2A313C',
