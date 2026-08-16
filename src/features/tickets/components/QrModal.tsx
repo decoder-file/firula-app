@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text, useTheme } from "@/design-system";
 import type { AppTicket } from "@/features/tickets/types";
+import { formatPassportDates } from "@/utils/format";
 
 export function QrModal({
   ticket,
@@ -18,6 +19,7 @@ export function QrModal({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const visible = !!ticket;
+  const passportDates = formatPassportDates(ticket?.passportValidDates);
 
   return (
     <Modal
@@ -168,6 +170,33 @@ export function QrModal({
                   </Text>
                 </View>
               </View>
+              {passportDates.length > 0 ? (
+                <View
+                  style={{
+                    marginTop: 12,
+                    backgroundColor: colors.surfaceAlt,
+                    borderRadius: 14,
+                    padding: 14,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <CalendarDays size={14} color={colors.text} strokeWidth={2} />
+                    <Text token="caption" style={{ textTransform: "none", letterSpacing: 0, fontWeight: "800", fontSize: 12 }}>
+                      Dias e horários válidos deste passaporte
+                    </Text>
+                  </View>
+                  {passportDates.map((formatted) => (
+                    <Text
+                      key={formatted}
+                      token="caption"
+                      color="muted"
+                      style={{ textTransform: "none", letterSpacing: 0, fontSize: 12, lineHeight: 18 }}
+                    >
+                      {formatted}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               {ticket.facial ? (
                 <View
                   style={{

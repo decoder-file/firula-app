@@ -1,205 +1,342 @@
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
   AlertCircle,
   ArrowDownToLine,
   ArrowUpFromLine,
   Bell,
+  CheckCheck,
   CheckCircle2,
   Info,
   RefreshCw,
   ShoppingBag,
   XCircle,
 } from "lucide-react-native";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 
-import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
-import { Skeleton } from "@/components/Skeleton";
-import { FormButton } from "@/components/ui/FormButton";
+import {
+  Button,
+  BottomSheet,
+  EmptyState,
+  PressScale,
+  Skeleton,
+  Surface,
+  Text,
+  TopBar,
+  useTheme,
+} from "@/design-system";
+import type { Palette } from "@/design-system";
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import { useMarkAllRead, useMarkRead, useNotifications } from "@/hooks/useNotifications";
 import { useScreenLog } from "@/hooks/useScreenLog";
 import type { AppNotification } from "@/services/notifications.service";
-import { colors } from "@/theme/colors";
 
-const TYPE_CONFIG: Record<
-  AppNotification["type"],
-  { icon: React.ElementType; color: string; bg: string }
-> = {
-  ORDER_PAID: { icon: ShoppingBag, color: "#16a34a", bg: "#dcfce7" },
-  ORDER_CANCELED: { icon: XCircle, color: "#dc2626", bg: "#fee2e2" },
-  REFUND_COMPLETED: { icon: RefreshCw, color: "#16a34a", bg: "#dcfce7" },
-  REFUND_FAILED: { icon: AlertCircle, color: "#dc2626", bg: "#fee2e2" },
-  TICKET_TRANSFERRED_IN: { icon: ArrowDownToLine, color: "#2563eb", bg: "#dbeafe" },
-  TICKET_TRANSFERRED_OUT: { icon: ArrowUpFromLine, color: "#7c3aed", bg: "#ede9fe" },
-  EVENT_UPDATE: { icon: Info, color: "#d97706", bg: "#fef3c7" },
+type NotificationAppearance = {
+  icon: React.ElementType;
+  color: string;
+  backgroundColor: string;
 };
 
-function NotificationItem({ notification, onPress }: { notification: AppNotification; onPress: () => void }) {
-  const config = TYPE_CONFIG[notification.type];
-  const Icon = config?.icon ?? Bell;
-  const iconColor = config?.color ?? colors.mutedForeground;
-  const iconBg = config?.bg ?? "#f3f4f6";
+function getNotificationAppearance(type: AppNotification["type"], colors: Palette): NotificationAppearance {
+  switch (type) {
+    case "ORDER_PAID":
+      return { icon: ShoppingBag, color: colors.success, backgroundColor: colors.successSoft };
+    case "REFUND_COMPLETED":
+      return { icon: RefreshCw, color: colors.success, backgroundColor: colors.successSoft };
+    case "ORDER_CANCELED":
+      return { icon: XCircle, color: colors.error, backgroundColor: colors.errorSoft };
+    case "REFUND_FAILED":
+      return { icon: AlertCircle, color: colors.error, backgroundColor: colors.errorSoft };
+    case "TICKET_TRANSFERRED_IN":
+      return { icon: ArrowDownToLine, color: colors.info, backgroundColor: colors.infoSoft };
+    case "TICKET_TRANSFERRED_OUT":
+      return { icon: ArrowUpFromLine, color: colors.warning, backgroundColor: colors.warningSoft };
+    case "EVENT_UPDATE":
+      return { icon: Info, color: colors.warning, backgroundColor: colors.warningSoft };
+    default:
+      return { icon: Bell, color: colors.textMuted, backgroundColor: colors.surfaceAlt };
+  }
+}
 
-  const timeAgo = (() => {
-    const diff = Date.now() - new Date(notification.createdAt).getTime();
-    const mins = Math.floor(diff / 60_000);
-    if (mins < 1) return "agora";
-    if (mins < 60) return `${mins}min`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h`;
-    return `${Math.floor(hrs / 24)}d`;
-  })();
+function formatTimeAgo(createdAt: string) {
+  const diff = Math.max(0, Date.now() - new Date(createdAt).getTime());
+  const minutes = Math.floor(diff / 60_000);
+
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `há ${minutes} min`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `há ${hours} h`;
+
+  const days = Math.floor(hours / 24);
+  return `há ${days} d`;
+}
+
+function formatNotificationDate(createdAt: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(new Date(createdAt));
+}
+
+function getNotificationAction(notification: AppNotification) {
+  switch (notification.type) {
+    case "ORDER_PAID":
+    case "ORDER_CANCELED":
+    case "REFUND_COMPLETED":
+    case "REFUND_FAILED":
+    case "TICKET_TRANSFERRED_IN":
+    case "TICKET_TRANSFERRED_OUT":
+      return { label: "Ver meus ingressos", route: "/(tabs)/tickets" as const };
+    case "EVENT_UPDATE":
+      return notification.metadata?.eventId
+        ? { label: "Ver evento", route: `/event/${notification.metadata.eventId}` as const }
+        : null;
+    default:
+      return null;
+  }
+}
+
+function NotificationItem({ notification, onPress }: { notification: AppNotification; onPress: () => void }) {
+  const { colors, radius } = useTheme();
+  const appearance = getNotificationAppearance(notification.type, colors);
+  const Icon = appearance.icon;
 
   return (
-    <AnimatedPressable
+    <PressScale
       onPress={onPress}
-      className={`flex-row gap-3 px-4 py-4 ${!notification.read ? "bg-accent/40" : ""}`}
+      accessibilityRole="button"
+      accessibilityLabel={`${notification.read ? "" : "Nova notificação: "}${notification.title}. ${notification.body}`}
+      style={styles.itemPressable}
     >
-      <View className="h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: iconBg }}>
-        <Icon color={iconColor} size={18} strokeWidth={1.5} />
-      </View>
-
-      <View className="flex-1">
-        <View className="flex-row items-start justify-between gap-2">
-          <Text className={`flex-1 text-sm ${!notification.read ? "font-semibold text-foreground" : "font-medium text-foreground"}`} numberOfLines={1}>
-            {notification.title}
-          </Text>
-          <Text className="text-[11px] text-muted-foreground">{timeAgo}</Text>
+      <Surface
+        radius="lg"
+        style={[
+          styles.item,
+          !notification.read && { backgroundColor: colors.primarySoft, borderColor: colors.primary },
+        ]}
+      >
+        <View
+          style={[
+            styles.iconBox,
+            { backgroundColor: appearance.backgroundColor, borderRadius: radius.md },
+          ]}
+        >
+          <Icon color={appearance.color} size={20} strokeWidth={1.75} />
         </View>
-        <Text className="mt-0.5 text-xs leading-4 text-muted-foreground" numberOfLines={2}>
-          {notification.body}
-        </Text>
-      </View>
 
-      {!notification.read ? (
-        <View className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-      ) : null}
-    </AnimatedPressable>
+        <View style={styles.itemContent}>
+          <View style={styles.itemHeader}>
+            <Text token={notification.read ? "bodySm" : "label"} style={styles.itemTitle} numberOfLines={2}>
+              {notification.title}
+            </Text>
+            {!notification.read ? (
+              <View
+                accessibilityLabel="Não lida"
+                style={[styles.unreadDot, { backgroundColor: colors.primaryText }]}
+              />
+            ) : null}
+          </View>
+          <Text token="bodySm" color="muted" numberOfLines={3}>
+            {notification.body}
+          </Text>
+          <Text token="caption" color="muted" style={styles.time}>
+            {formatTimeAgo(notification.createdAt)}
+          </Text>
+        </View>
+      </Surface>
+    </PressScale>
   );
 }
 
 function NotificationSkeleton() {
+  const { colors, radius } = useTheme();
+
   return (
-    <View className="flex-row gap-3 px-4 py-4">
-      <Skeleton className="h-10 w-10 rounded-full" />
-      <View className="flex-1 gap-2">
-        <Skeleton className="h-3.5 w-3/4 rounded-full" />
-        <Skeleton className="h-3 w-full rounded-full" />
-        <Skeleton className="h-3 w-2/3 rounded-full" />
+    <View style={[styles.skeletonItem, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}>
+      <Skeleton width={44} height={44} radius={radius.md} />
+      <View style={styles.skeletonContent}>
+        <Skeleton width="58%" height={14} />
+        <Skeleton height={12} style={styles.skeletonLine} />
+        <Skeleton width="76%" height={12} />
+        <Skeleton width={48} height={10} style={styles.skeletonTime} />
       </View>
     </View>
+  );
+}
+
+function NotificationDetails({ notification, onClose, onOpenAction }: {
+  notification: AppNotification | null;
+  onClose: () => void;
+  onOpenAction: (notification: AppNotification) => void;
+}) {
+  const { colors, radius } = useTheme();
+
+  if (!notification) return null;
+
+  const appearance = getNotificationAppearance(notification.type, colors);
+  const action = getNotificationAction(notification);
+  const Icon = appearance.icon;
+
+  return (
+    <BottomSheet visible title="Detalhes da notificação" onClose={onClose}>
+      <View style={styles.detailsContent}>
+        <View
+          style={[
+            styles.detailsIcon,
+            { backgroundColor: appearance.backgroundColor, borderRadius: radius.lg },
+          ]}
+        >
+          <Icon color={appearance.color} size={28} strokeWidth={1.75} />
+        </View>
+
+        <Text token="title" accessibilityRole="header">
+          {notification.title}
+        </Text>
+        <Text token="caption" color="muted" style={styles.detailsDate}>
+          {formatNotificationDate(notification.createdAt)}
+        </Text>
+
+        <Surface alt radius="lg" style={styles.messageBox}>
+          <Text token="body" style={styles.messageText}>
+            {notification.body}
+          </Text>
+        </Surface>
+
+        <View style={styles.detailsActions}>
+          <Button label="Fechar" variant="secondary" fullWidth onPress={onClose} />
+          {action ? (
+            <Button
+              label={action.label}
+              fullWidth
+              onPress={() => onOpenAction(notification)}
+            />
+          ) : null}
+        </View>
+      </View>
+    </BottomSheet>
   );
 }
 
 export default function NotificationsScreen() {
   useScreenLog();
   const router = useRouter();
+  const { colors } = useTheme();
   const isAuthenticated = useIsAuthenticated();
-
   const { data, isLoading, refetch, isRefetching } = useNotifications();
   const { mutate: markRead } = useMarkRead();
   const { mutate: markAllRead, isPending: markingAll } = useMarkAllRead();
+  const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
 
   const notifications = data?.notifications ?? [];
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   const handlePress = (notification: AppNotification) => {
-    if (!notification.read) {
-      markRead(notification.id);
-    }
+    if (!notification.read) markRead(notification.id);
 
-    switch (notification.type) {
-      case "ORDER_PAID":
-      case "ORDER_CANCELED":
-      case "REFUND_COMPLETED":
-      case "REFUND_FAILED":
-        router.push("/(tabs)/tickets");
-        break;
-      case "TICKET_TRANSFERRED_IN":
-        router.push("/(tabs)/tickets");
-        break;
-      case "TICKET_TRANSFERRED_OUT":
-        router.push("/(tabs)/tickets");
-        break;
-      case "EVENT_UPDATE":
-        if (notification.metadata?.eventId) {
-          router.push(`/event/${notification.metadata.eventId}`);
-        }
-        break;
-    }
+    setSelectedNotification(notification);
   };
 
-  if (!isAuthenticated) {
-    return (
-      <Screen edges={["top", "left", "right"]}>
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
-            <Bell color={colors.mutedForeground} size={28} strokeWidth={1.5} />
-          </View>
-          <Text className="font-bold text-base text-foreground">Faça login para ver notificações</Text>
-          <Text className="mt-2 text-center text-sm text-muted-foreground">
-            Suas notificações de eventos e compras aparecerão aqui.
-          </Text>
-          <FormButton className="mt-6 w-full" label="Entrar" onPress={() => router.push("/login-modal")} />
-        </View>
-      </Screen>
-    );
-  }
+  const handleOpenAction = (notification: AppNotification) => {
+    const action = getNotificationAction(notification);
+    if (!action) return;
+
+    setSelectedNotification(null);
+    router.push(action.route);
+  };
 
   return (
-    <Screen edges={["top", "left", "right"]}>
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 pb-3 pt-4">
-        <View>
-          <Text className="font-bold text-lg text-foreground">Notificações</Text>
-          {unreadCount > 0 ? (
-            <Text className="text-xs text-muted-foreground">{unreadCount} não lida{unreadCount > 1 ? "s" : ""}</Text>
-          ) : null}
+    <Screen edges={["left", "right"]}>
+      <StatusBar style="auto" />
+      <TopBar
+        title="Notificações"
+        variant="detail"
+        onBack={() => {
+          if (router.canGoBack()) {
+            router.back();
+            return;
+          }
+          router.replace("/(tabs)/profile");
+        }}
+        actions={isAuthenticated && unreadCount > 0 ? [{
+          icon: CheckCheck,
+          label: markingAll ? "Marcando notificações como lidas" : "Marcar todas como lidas",
+          onPress: () => markAllRead(),
+        }] : []}
+      />
+
+      {!isAuthenticated ? (
+        <View style={styles.centeredState}>
+          <EmptyState
+            icon={Bell}
+            title="Faça login para ver notificações"
+            description="Suas notificações de eventos e compras aparecerão aqui."
+          />
+          <View style={styles.loginButton}>
+            <Button label="Entrar" fullWidth onPress={() => router.push("/login-modal")} />
+          </View>
         </View>
-        {unreadCount > 0 ? (
-          <AnimatedPressable onPress={() => markAllRead()} disabled={markingAll}>
-            <Text className="font-medium text-xs text-primary">Marcar todas como lidas</Text>
-          </AnimatedPressable>
-        ) : null}
-      </View>
-
-      {/* Divider */}
-      <View className="h-px bg-border" />
-
-      {isLoading ? (
-        <View>
+      ) : isLoading ? (
+        <View accessibilityLabel="Carregando notificações" style={styles.skeletonList}>
           <NotificationSkeleton />
           <NotificationSkeleton />
           <NotificationSkeleton />
           <NotificationSkeleton />
         </View>
       ) : notifications.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-6">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-secondary">
-            <CheckCircle2 color={colors.mutedForeground} size={28} strokeWidth={1.5} />
-          </View>
-          <Text className="font-semibold text-sm text-foreground">Tudo em dia!</Text>
-          <Text className="mt-1 text-center text-sm text-muted-foreground">
-            Você não tem notificações no momento.
-          </Text>
+        <View style={styles.centeredState}>
+          <EmptyState
+            icon={CheckCircle2}
+            title="Tudo em dia!"
+            description="Você não tem notificações no momento."
+          />
         </View>
       ) : (
         <FlatList
           data={notifications}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => (
-            <>
-              <NotificationItem notification={item} onPress={() => handlePress(item)} />
-              {index < notifications.length - 1 ? <View className="mx-4 h-px bg-border/50" /> : null}
-            </>
-          )}
+          renderItem={({ item }) => <NotificationItem notification={item} onPress={() => handlePress(item)} />}
           onRefresh={refetch}
           refreshing={isRefetching}
+          progressViewOffset={8}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 32 }}
+          contentContainerStyle={styles.listContent}
+          style={{ backgroundColor: colors.background }}
         />
       )}
+
+      <NotificationDetails
+        notification={selectedNotification}
+        onClose={() => setSelectedNotification(null)}
+        onOpenAction={handleOpenAction}
+      />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  listContent: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, gap: 10 },
+  itemPressable: { width: "100%" },
+  item: { flexDirection: "row", gap: 12, padding: 14 },
+  iconBox: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  itemContent: { flex: 1 },
+  itemHeader: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  itemTitle: { flex: 1 },
+  unreadDot: { width: 8, height: 8, borderRadius: 999, marginTop: 6 },
+  time: { marginTop: 8, letterSpacing: 0 },
+  skeletonList: { paddingHorizontal: 16, paddingTop: 16, gap: 10 },
+  skeletonItem: { flexDirection: "row", gap: 12, padding: 14, borderWidth: 1 },
+  skeletonContent: { flex: 1 },
+  skeletonLine: { marginTop: 10, marginBottom: 7 },
+  skeletonTime: { marginTop: 10 },
+  centeredState: { flex: 1, justifyContent: "center", paddingBottom: 48 },
+  loginButton: { paddingHorizontal: 24, marginTop: -20 },
+  detailsContent: { paddingHorizontal: 20, paddingTop: 12, gap: 8 },
+  detailsIcon: { width: 56, height: 56, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  detailsDate: { letterSpacing: 0, textTransform: "none" },
+  messageBox: { marginTop: 12, padding: 16 },
+  messageText: { lineHeight: 24 },
+  detailsActions: { gap: 10, marginTop: 16 },
+});

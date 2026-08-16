@@ -25,7 +25,9 @@ export function usePushNotifications() {
 
     pushTokenService.register().then((token) => {
       tokenRef.current = token;
-    }).catch(() => {});
+    }).catch((err) => {
+      console.warn("[push] register failed:", err);
+    });
 
     listenerRef.current = Notifications.addNotificationResponseReceivedListener(
       (response) => {

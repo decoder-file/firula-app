@@ -2,7 +2,7 @@
   "expo": {
     "name": "Firula",
     "slug": "firula",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon-firula.png",
     "userInterfaceStyle": "light",
@@ -20,6 +20,7 @@
         "backgroundColor": "#00C853"
       },
       "bundleIdentifier": "com.firulaapp.firula-app",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Precisamos da camera para voce tirar e atualizar sua foto de perfil.",
         "NSPhotoLibraryUsageDescription": "Precisamos da sua galeria para voce escolher uma foto de perfil.",

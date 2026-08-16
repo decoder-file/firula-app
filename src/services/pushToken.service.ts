@@ -9,7 +9,10 @@ const getProjectId = () =>
 
 export const pushTokenService = {
   register: async (): Promise<string | null> => {
-    if (!Device.isDevice) return null;
+    if (!Device.isDevice) {
+      console.warn("[push] register skipped: not a physical device");
+      return null;
+    }
 
     const { status: existing } = await Notifications.getPermissionsAsync();
     const finalStatus =
@@ -17,12 +20,23 @@ export const pushTokenService = {
         ? existing
         : (await Notifications.requestPermissionsAsync()).status;
 
-    if (finalStatus !== "granted") return null;
+    if (finalStatus !== "granted") {
+      console.warn(`[push] register skipped: permission status is "${finalStatus}"`);
+      return null;
+    }
 
     const projectId = getProjectId();
-    const { data: token } = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
+    let token: string;
+    try {
+      token = (
+        await Notifications.getExpoPushTokenAsync(
+          projectId ? { projectId } : undefined,
+        )
+      ).data;
+    } catch (err) {
+      console.warn("[push] getExpoPushTokenAsync failed:", err);
+      throw err;
+    }
 
     await apiClient.post("/public/customer/push-token", {
       token,

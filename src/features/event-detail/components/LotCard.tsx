@@ -1,9 +1,10 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { Minus, Plus, XCircle } from 'lucide-react-native';
+import { CalendarDays, Minus, Plus, XCircle } from 'lucide-react-native';
 
 import { PressScale, Text } from '@/design-system';
 import type { TicketLot } from '@/features/event-detail/types';
+import { formatPassportDates } from '@/utils/format';
 
 const SCARCITY_THRESHOLD = 10;
 
@@ -24,6 +25,7 @@ export function LotCard({ lot, qty, onAdd, onRemove, colors, radius }: LotCardPr
   const selected = qty > 0;
   const soldPct = lot.total > 0 ? Math.round(((lot.total - lot.available) / lot.total) * 100) : 0;
   const scarce = lot.available <= SCARCITY_THRESHOLD;
+  const passportDates = formatPassportDates(lot.passportValidDates);
 
   return (
     <View
@@ -42,8 +44,8 @@ export function LotCard({ lot, qty, onAdd, onRemove, colors, radius }: LotCardPr
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
             <Text token="subtitle" style={{ fontWeight: '800' }}>{lot.name}</Text>
             {lot.popular ? (
-              <View style={{ backgroundColor: '#3ED97F', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
-                <Text token="caption" style={{ color: '#0A2E1A', fontSize: 10, letterSpacing: 0.3 }}>POPULAR</Text>
+              <View style={{ backgroundColor: colors.primary, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                <Text token="caption" style={{ color: colors.onPrimary, fontSize: 10, letterSpacing: 0.3 }}>POPULAR</Text>
               </View>
             ) : null}
           </View>
@@ -53,6 +55,27 @@ export function LotCard({ lot, qty, onAdd, onRemove, colors, radius }: LotCardPr
           {lot.priceCents === 0 ? 'Grátis' : formatBRL(lot.priceCents)}
         </Text>
       </View>
+
+      {passportDates.length > 0 ? (
+        <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 10, marginTop: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <CalendarDays size={14} color={colors.text} strokeWidth={2} />
+            <Text token="caption" style={{ textTransform: 'none', letterSpacing: 0, fontWeight: '800', fontSize: 12 }}>
+              Dias e horários válidos
+            </Text>
+          </View>
+          {passportDates.map((formatted) => (
+            <Text
+              key={formatted}
+              token="caption"
+              color="muted"
+              style={{ textTransform: 'none', letterSpacing: 0, fontSize: 12, lineHeight: 18 }}
+            >
+              {formatted}
+            </Text>
+          ))}
+        </View>
+      ) : null}
 
       {lot.soldOut ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>

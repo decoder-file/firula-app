@@ -65,6 +65,7 @@ export const mapEventToExploreItem = (event: PlatformEvent): ExploreEvent => {
     title: event.name,
     city: `${event.location.city}, ${event.location.state}`,
     dateLabel: formatDateLabel(event.startsAt),
+    price: '',
     attendeesLabel: event.organization.tradeName,
     hot: isEventHappeningNow(event.startsAt),
     image: imageUrl ? { uri: imageUrl } : FALLBACK_EVENT_IMAGE,

@@ -29,6 +29,7 @@ export const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
   status: toAppTicketStatus(ticket.status),
   facial: false,
   image: ticket.event.coverUrl ? { uri: ticket.event.coverUrl } : undefined,
+  passportValidDates: ticket.ticketLot.type === "PASSPORT" ? ticket.ticketLot.passportValidDates : undefined,
 });
 
 export const useTicketsRouteProps = (): TicketsScreenProps => {
@@ -62,6 +63,13 @@ export const useTicketsRouteProps = (): TicketsScreenProps => {
     renderQr: (value, size) =>
       React.createElement(QRCode, { value, size }),
     onExplore: () => router.push("/(tabs)/explore"),
+    onBack: () => {
+      if (router.canGoBack()) {
+        router.back();
+        return;
+      }
+      router.replace("/(tabs)/profile");
+    },
     onAddToWallet: handleAddToWallet,
     isAddingToWallet: addToWallet.isPending,
   };

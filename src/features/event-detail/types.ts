@@ -9,6 +9,8 @@ export interface TicketLot {
   total: number;
   popular?: boolean;
   soldOut?: boolean;
+  /** Datas/horários válidos, presente quando este lote é um ingresso passaporte. */
+  passportValidDates?: string[];
 }
 
 export interface Organizer {
@@ -43,6 +45,8 @@ export interface EventDetail {
   social?: SocialProof;
   lotDeadlineText?: string;
   showParticipants?: boolean;
+  /** Cor de destaque customizada do evento (hex #RRGGBB), definida pelo dono da plataforma. */
+  accentColor?: string | null;
 }
 
 export interface EventDetailScreenProps {

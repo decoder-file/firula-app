@@ -10,6 +10,7 @@ import {
   type AdminEventDetail,
   type AdminEventTicketLot,
 } from '@/services/events.service';
+import { stripHtml } from '@/utils/stripHtml';
 
 import type { EventDetail, EventDetailScreenProps, TicketLot } from '@/features/event-detail/types';
 
@@ -55,6 +56,7 @@ const mapLot = (lot: AdminEventTicketLot): TicketLot => {
     total: lot.quantity,
     soldOut: !isAdminLotAvailable(lot),
     popular: lot.quantity > 0 && lot.quantitySold / lot.quantity >= 0.6,
+    passportValidDates: lot.type === "PASSPORT" ? lot.passportValidDates : undefined,
   };
 };
 
@@ -94,7 +96,7 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     timeLabel: formatTimeLabel(event.startsAt),
     venueName: `${event.location.address}, ${event.location.addressNumber}`,
     address: `${event.location.neighborhood}, ${event.location.city} - ${event.location.state}`,
-    about: event.description || 'Sem descrição disponível para este evento.',
+    about: stripHtml(event.description) || 'Sem descrição disponível para este evento.',
     organizer: {
       slug: event.organization.slug,
       name: event.organization.tradeName,
@@ -105,20 +107,15 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     lotDeadlineText: getLotDeadlineText(event.ticketLots),
     showParticipants: event.settings?.showParticipantsOnEventPage !== false,
     lots: event.ticketLots.map(mapLot),
+    accentColor: event.settings?.ticketPageAccentColor,
   };
 };
 
-const buildCheckoutUrl = (eventSlug: string, selection: Record<string, number>) => {
-  const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL;
-  if (!websiteUrl) return null;
-
-  const ticketsParam = Object.entries(selection)
+const buildTicketsParam = (selection: Record<string, number>) =>
+  Object.entries(selection)
     .filter(([, qty]) => qty > 0)
     .map(([lotId, qty]) => `${lotId}:${qty}`)
     .join(',');
-
-  return `${websiteUrl}/eventos/${eventSlug}?tickets=${ticketsParam}&checkout=1`;
-};
 
 const buildEventUrl = (eventSlug: string) => {
   const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL;
@@ -162,7 +159,7 @@ const buildCalendarUrls = (event: AdminEventDetail): string[] => {
   const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
   const toGoogleDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
-  const detailsValue = encodeURIComponent(event.description || 'Evento Firula');
+  const detailsValue = encodeURIComponent(stripHtml(event.description) || 'Evento Firula');
   const location = encodeURIComponent(
     `${event.location.address}, ${event.location.addressNumber}, ${event.location.city}, ${event.location.state}`,
   );
@@ -208,11 +205,23 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
       if (isFavoritePending) return;
       toggleFavorite({ eventId: event.id, isFavorited });
     },
-    onCheckout: async (selection: Record<string, number>) => {
+    onCheckout: (selection: Record<string, number>) => {
       if (!event) return;
-      const checkoutUrl = buildCheckoutUrl(event.slug, selection);
-      if (!checkoutUrl) return;
-      await Linking.openURL(checkoutUrl);
+      const ticketsParam = buildTicketsParam(selection);
+
+      if (!isAuthenticated) {
+        // O tickets param tem ":" e "," (ex.: "lotId:2,lotId:1"), que confundem o
+        // parser de rota do expo-router se forem embutidos crus numa string de path —
+        // precisa codificar antes de virar querystring do redirectTo.
+        const checkoutPath = `/checkout/${event.slug}?tickets=${encodeURIComponent(ticketsParam)}`;
+        router.push(`/login-modal?redirectTo=${encodeURIComponent(checkoutPath)}`);
+        return;
+      }
+
+      router.push({
+        pathname: "/checkout/[slug]",
+        params: { slug: event.slug, tickets: ticketsParam },
+      } as never);
     },
     onShare: async () => {
       if (!event) return;

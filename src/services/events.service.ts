@@ -71,6 +71,8 @@ export interface AdminEventTicketLot {
   salesStart: string;
   salesEnd: string;
   active: boolean;
+  /** Datas/horários válidos, presente quando `type === "PASSPORT"`. */
+  passportValidDates?: string[];
 }
 
 export interface AdminEventDetail {
@@ -114,6 +116,9 @@ export interface AdminEventDetail {
     limitPerCpf: boolean;
     maxTicketsPerCpf: number;
     showParticipantsOnEventPage?: boolean;
+    ticketPageAccentColor?: string | null;
+    /** Se os dados de cada participante são exigidos antes do pagamento ou podem ser preenchidos depois. */
+    attendeeDataStrategy?: "REQUIRED_BEFORE_PAYMENT" | "OPTIONAL_AFTER_PAYMENT";
   };
   ticketLots: AdminEventTicketLot[];
   sports: Array<{ name: string; slug: string }>;
@@ -123,6 +128,18 @@ export interface AdminEventDetail {
     label: string;
     type: string;
     required: boolean;
+    options?: Array<{ id: string; label: string; value: string; sortOrder: number }>;
+    /** Lotes aos quais o campo se aplica. Vazio = campo global (vale pra qualquer ingresso). */
+    ticketLotIds: string[];
+  }>;
+  eventTerms: Array<{
+    id: string;
+    title: string;
+    description: string;
+    required: boolean;
+    status: string;
+    ticketLotId: string | null;
+    currentVersion: { fileUrl: string | null } | null;
   }>;
 }
 

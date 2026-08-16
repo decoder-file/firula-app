@@ -2,9 +2,8 @@ import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ticket } from "lucide-react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button, Skeleton, Text, useTheme } from "@/design-system";
+import { Button, Skeleton, Text, TopBar, useTheme } from "@/design-system";
 import { QrModal } from "@/features/tickets/components/QrModal";
 import { TicketBilhete } from "@/features/tickets/components/TicketBilhete";
 import { TABS, type TabKey } from "@/features/tickets/constants";
@@ -23,11 +22,11 @@ export function TicketsScreen({
   isLoading = false,
   renderQr,
   onExplore,
+  onBack,
   onAddToWallet,
   isAddingToWallet = false,
 }: TicketsScreenProps) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<TabKey>("active");
   const [qrTicket, setQrTicket] = useState<AppTicket | null>(null);
 
@@ -55,16 +54,8 @@ export function TicketsScreen({
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="auto" />
 
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          paddingHorizontal: 20,
-          paddingTop: insets.top + 8,
-        }}
-      >
-        <Text token="titleLg" style={{ fontSize: 24 }}>
-          Meus ingressos
-        </Text>
+      <TopBar title="Meus ingressos" variant="detail" onBack={onBack} />
+      <View style={{ backgroundColor: colors.surface, paddingHorizontal: 20, paddingBottom: 12 }}>
         <View style={[styles.segment, { backgroundColor: colors.surfaceAlt }]}>
           {TABS.map((t) => {
             const on = t.id === tab;
@@ -142,7 +133,7 @@ export function TicketsScreen({
             >
               {emptyCopy[tab].body}
             </Text>
-            <Button label="Explorar eventos" onPress={onExplore ?? (() => {})} />
+            <Button label="Explorar eventos" variant="tonal" onPress={onExplore ?? (() => {})} />
           </View>
         )}
       </ScrollView>

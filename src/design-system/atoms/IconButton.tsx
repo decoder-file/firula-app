@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '../foundation/ThemeProvider';
 import type { Palette } from '../foundation/colors';
@@ -23,6 +23,8 @@ export interface IconButtonProps {
   variant?: IconButtonVariant;
   /** Ponto de notificação no canto superior direito. */
   badge?: boolean;
+  /** Troca o ícone por um spinner e bloqueia o toque — mesma semântica do `loading` do Button. */
+  loading?: boolean;
   disabled?: boolean;
   testID?: string;
 }
@@ -46,11 +48,13 @@ export function IconButton({
   onPress,
   variant = 'ghost',
   badge = false,
+  loading = false,
   disabled = false,
   testID,
 }: IconButtonProps) {
   const { colors, iconStrokeWidth } = useTheme();
   const v = resolveVariant(variant, colors);
+  const isDisabled = disabled || loading;
 
   const container: ViewStyle = {
     width: 48,
@@ -59,7 +63,7 @@ export function IconButton({
     backgroundColor: v.bg,
     borderWidth: v.border ? 1 : 0,
     borderColor: v.border,
-    opacity: disabled ? 0.45 : 1,
+    opacity: isDisabled ? 0.45 : 1,
     alignItems: 'center',
     justifyContent: 'center',
   };
@@ -67,15 +71,21 @@ export function IconButton({
   return (
     <PressScale
       onPress={onPress}
-      disabled={disabled}
+      disabled={isDisabled}
       style={container}
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
-      <Icon size={22} color={v.fg} strokeWidth={iconStrokeWidth} />
-      {badge ? <View style={[styles.badge, { borderColor: v.bg === 'transparent' ? colors.background : v.bg, backgroundColor: colors.error }]} /> : null}
+      {loading ? (
+        <ActivityIndicator size="small" color={v.fg} />
+      ) : (
+        <Icon size={22} color={v.fg} strokeWidth={iconStrokeWidth} />
+      )}
+      {badge && !loading ? (
+        <View style={[styles.badge, { borderColor: v.bg === 'transparent' ? colors.background : v.bg, backgroundColor: colors.error }]} />
+      ) : null}
     </PressScale>
   );
 }
