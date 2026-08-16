@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Timer } from "lucide-react-native";
 
 import { PressScale, Text, useTheme } from "@/design-system";
@@ -13,6 +14,7 @@ export function CheckoutHeader({
   timerLabel?: string;
 }) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
@@ -22,7 +24,8 @@ export function CheckoutHeader({
         justifyContent: "space-between",
         gap: 12,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingTop: insets.top + 12,
+        paddingBottom: 12,
         backgroundColor: colors.surface,
         borderBottomWidth: 1,
         borderBottomColor: colors.border,

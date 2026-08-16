@@ -67,7 +67,7 @@ function CheckoutContent() {
   }
 
   return (
-    <Screen edges={["top", "left", "right"]}>
+    <Screen edges={["left", "right"]}>
       <StatusBar style="dark" />
       <CheckoutHeader
         title={checkout.step === "pix" ? "Pagar com Pix" : "Finalizar compra"}
