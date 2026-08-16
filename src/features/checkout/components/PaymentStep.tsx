@@ -2,15 +2,15 @@ import { useEffect } from "react";
 import { View } from "react-native";
 import { ChevronLeft, CreditCard, QrCode } from "lucide-react-native";
 
-import { PressScale, RadioGroup, Text, useTheme } from "@/design-system";
+import { PressScale, Text, useTheme } from "@/design-system";
 import { CardStep } from "@/features/checkout/components/CardStep";
 import { PixStep } from "@/features/checkout/components/PixStep";
 import type { PaymentMethod } from "@/features/checkout/types";
 import type { UseCheckoutReturn } from "@/features/checkout/useCheckout";
 
-const METHOD_LABELS: Record<PaymentMethod, string> = {
-  PIX: "Pix — aprovação imediata",
-  CARD: "Cartão de crédito",
+const METHOD_META: Record<PaymentMethod, { label: string; icon: typeof QrCode }> = {
+  PIX: { label: "Pix", icon: QrCode },
+  CARD: { label: "Cartão", icon: CreditCard },
 };
 
 export function PaymentStep({ checkout }: { checkout: UseCheckoutReturn }) {
@@ -43,10 +43,10 @@ export function PaymentStep({ checkout }: { checkout: UseCheckoutReturn }) {
     return (
       <View style={{ gap: 20 }}>
         <Text token="titleLg">Como você quer pagar?</Text>
-        <RadioGroup<PaymentMethod>
+        <PaymentMethodSegmentedControl
+          methods={availableMethods}
           value={availableMethods[0]}
           onChange={setPaymentMethod}
-          options={availableMethods.map((method) => ({ value: method, label: METHOD_LABELS[method] }))}
         />
       </View>
     );
@@ -62,11 +62,6 @@ export function PaymentStep({ checkout }: { checkout: UseCheckoutReturn }) {
           style={{ flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start" }}
         >
           <ChevronLeft size={14} color={colors.primaryText} strokeWidth={2} />
-          {paymentMethod === "PIX" ? (
-            <QrCode size={14} color={colors.primaryText} strokeWidth={2} />
-          ) : (
-            <CreditCard size={14} color={colors.primaryText} strokeWidth={2} />
-          )}
           <Text token="caption" color="primary" style={{ fontWeight: "700", textTransform: "none", letterSpacing: 0 }}>
             Trocar forma de pagamento
           </Text>
@@ -74,6 +69,65 @@ export function PaymentStep({ checkout }: { checkout: UseCheckoutReturn }) {
       ) : null}
 
       {paymentMethod === "PIX" ? <PixStep checkout={checkout} /> : <CardStep checkout={checkout} />}
+    </View>
+  );
+}
+
+function PaymentMethodSegmentedControl({
+  methods,
+  value,
+  onChange,
+}: {
+  methods: PaymentMethod[];
+  value: PaymentMethod;
+  onChange: (method: PaymentMethod) => void;
+}) {
+  const { colors, radius } = useTheme();
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        backgroundColor: colors.surfaceAlt,
+        borderRadius: radius.lg,
+        padding: 4,
+        gap: 4,
+      }}
+    >
+      {methods.map((method) => {
+        const active = method === value;
+        const { label, icon: Icon } = METHOD_META[method];
+
+        return (
+          <PressScale
+            key={method}
+            onPress={() => onChange(method)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={label}
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              paddingVertical: 12,
+              borderRadius: radius.md,
+              backgroundColor: active ? colors.surface : "transparent",
+              shadowColor: "#000",
+              shadowOpacity: active ? 0.08 : 0,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: active ? 1 : 0,
+            }}
+          >
+            <Icon size={17} color={active ? colors.primaryText : colors.textMuted} strokeWidth={2} />
+            <Text token="label" style={{ color: active ? colors.text : colors.textMuted }}>
+              {label}
+            </Text>
+          </PressScale>
+        );
+      })}
     </View>
   );
 }
