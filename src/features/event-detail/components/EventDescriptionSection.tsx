@@ -3,8 +3,12 @@ import { View } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 
 import { PressScale, Text } from '@/design-system';
+import { RichText } from '@/components/RichText';
 
-const COLLAPSED_LINES = 6;
+// RN não tem um equivalente confiável de "line-clamp" pra conteúdo rico (parágrafos,
+// listas, títulos misturados) — a aproximação prática é limitar a altura do container
+// renderizado. ~6 linhas de texto corrido (lineHeight 22) quando recolhido.
+const COLLAPSED_HEIGHT = 136;
 
 interface EventDescriptionSectionProps {
   description: string;
@@ -29,14 +33,9 @@ export function EventDescriptionSection({ description, colors, radius }: EventDe
       <Text token="subtitle" style={{ fontWeight: '800', marginBottom: 10 }}>
         Descrição do evento
       </Text>
-      <Text
-        token="body"
-        color="muted"
-        style={{ lineHeight: 22 }}
-        numberOfLines={expanded ? undefined : COLLAPSED_LINES}
-      >
-        {description}
-      </Text>
+      <View style={!expanded ? { maxHeight: COLLAPSED_HEIGHT, overflow: 'hidden' } : undefined}>
+        <RichText html={description} />
+      </View>
       <PressScale
         onPress={() => setExpanded((prev) => !prev)}
         accessibilityRole="button"

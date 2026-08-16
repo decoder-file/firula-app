@@ -96,7 +96,9 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     timeLabel: formatTimeLabel(event.startsAt),
     venueName: `${event.location.address}, ${event.location.addressNumber}`,
     address: `${event.location.neighborhood}, ${event.location.city} - ${event.location.state}`,
-    about: stripHtml(event.description) || 'Sem descrição disponível para este evento.',
+    about: stripHtml(event.description).trim()
+      ? event.description
+      : 'Sem descrição disponível para este evento.',
     organizer: {
       slug: event.organization.slug,
       name: event.organization.tradeName,
