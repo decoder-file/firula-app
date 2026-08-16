@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ScrollView, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { ArrowLeft } from "lucide-react-native";
 
 import { AuthGate } from "@/components/AuthGate";
@@ -56,6 +57,7 @@ function CheckoutContent() {
 
   return (
     <Screen edges={["top", "left", "right"]}>
+      <StatusBar style="dark" />
       <View
         style={{
           flexDirection: "row",
