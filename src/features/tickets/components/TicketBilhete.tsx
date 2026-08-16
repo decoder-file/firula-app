@@ -20,8 +20,11 @@ export function TicketBilhete({
 }) {
   const { colors } = useTheme();
   const active = ticket.status === "active";
+  const expired = ticket.status === "expired";
   const headerBg = active ? colors.text : colors.textMuted;
-  const accent = active ? colors.primary : colors.border;
+  const accent = active ? colors.primary : expired ? colors.warning : colors.border;
+  const badgeBg = active ? "rgba(62,217,127,0.16)" : expired ? "rgba(251,191,96,0.2)" : "rgba(255,255,255,0.18)";
+  const badgeText = active ? "#3ED97F" : expired ? "#FBBF60" : "#fff";
   const passportDates = formatPassportDates(ticket.passportValidDates);
 
   return (
@@ -67,9 +70,7 @@ export function TicketBilhete({
           </View>
           <View
             style={{
-              backgroundColor: active
-                ? "rgba(62,217,127,0.16)"
-                : "rgba(255,255,255,0.18)",
+              backgroundColor: badgeBg,
               borderRadius: 999,
               paddingHorizontal: 10,
               paddingVertical: 4,
@@ -78,7 +79,7 @@ export function TicketBilhete({
             <Text
               token="caption"
               style={{
-                color: active ? "#3ED97F" : "#fff",
+                color: badgeText,
                 textTransform: "none",
                 letterSpacing: 0,
                 fontSize: 10.5,

@@ -30,10 +30,13 @@ export function TicketsScreen({
   const [tab, setTab] = useState<TabKey>("active");
   const [qrTicket, setQrTicket] = useState<AppTicket | null>(null);
 
-  const list = useMemo(
-    () => tickets.filter((t) => (tab === "all" ? true : t.status === tab)),
-    [tickets, tab],
-  );
+  const list = useMemo(() => {
+    if (tab === "all") return tickets;
+    // "Histórico" junta ingressos usados (check-in feito) e ingressos de eventos que já
+    // passaram sem uso — nos dois casos não fazem mais sentido na aba de ativos.
+    if (tab === "used") return tickets.filter((t) => t.status === "used" || t.status === "expired");
+    return tickets.filter((t) => t.status === tab);
+  }, [tickets, tab]);
 
   const emptyCopy: Record<TabKey, { title: string; body: string }> = {
     active: {
@@ -41,8 +44,8 @@ export function TicketsScreen({
       body: "Seus ingressos válidos aparecem aqui com QR Code para entrada.",
     },
     used: {
-      title: "Nenhum ingresso usado",
-      body: "Depois que você participar de um evento, ele aparece aqui.",
+      title: "Nenhum ingresso no histórico",
+      body: "Ingressos usados ou de eventos já encerrados aparecem aqui.",
     },
     all: {
       title: "Você ainda não tem ingressos",

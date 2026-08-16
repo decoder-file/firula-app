@@ -19,6 +19,8 @@ export interface CustomerTicketEvent {
   id: string;
   name: string;
   startsAt: string;
+  /** Fim do evento — presente em eventos de múltiplos dias. */
+  endsAt?: string | null;
   coverUrl?: string;
   organization: CustomerTicketEventOrganization;
   location: CustomerTicketEventLocation;

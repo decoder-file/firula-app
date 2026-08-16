@@ -9,8 +9,24 @@ import { isApiError } from "@/api/errors";
 import type { CustomerTicket } from "@/services/tickets.service";
 import type { AppTicket, TicketStatus, TicketsScreenProps } from "@/features/tickets/types";
 
-const toAppTicketStatus = (status: string): TicketStatus =>
-  status === "VALID" ? "active" : "used";
+// Para passaporte, o ingresso só vale nas datas específicas do lote — a última delas
+// é o marco real de "encerrado", não o startsAt/endsAt do evento (que cobre o período
+// inteiro, dias que esse passaporte específico pode nem contemplar). Para os demais
+// tipos, um evento de múltiplos dias só termina de fato no endsAt, não no startsAt.
+const getTicketReferenceEndDate = (ticket: CustomerTicket): Date => {
+  if (ticket.ticketLot.type === "PASSPORT" && ticket.ticketLot.passportValidDates?.length) {
+    const times = ticket.ticketLot.passportValidDates
+      .map((date) => new Date(date).getTime())
+      .filter((time) => Number.isFinite(time));
+    if (times.length > 0) return new Date(Math.max(...times));
+  }
+  return new Date(ticket.event.endsAt ?? ticket.event.startsAt);
+};
+
+const toAppTicketStatus = (ticket: CustomerTicket): TicketStatus => {
+  if (ticket.status !== "VALID") return "used";
+  return new Date() > getTicketReferenceEndDate(ticket) ? "expired" : "active";
+};
 
 const formatTicketDate = (isoDate: string) =>
   new Date(isoDate).toLocaleDateString("pt-BR", {
@@ -26,7 +42,7 @@ export const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
   dateLabel: formatTicketDate(ticket.event.startsAt),
   city: `${ticket.event.location.city}/${ticket.event.location.state}`,
   code: `FIRULA-${ticket.id.slice(0, 8).toUpperCase()}`,
-  status: toAppTicketStatus(ticket.status),
+  status: toAppTicketStatus(ticket),
   facial: false,
   image: ticket.event.coverUrl ? { uri: ticket.event.coverUrl } : undefined,
   passportValidDates: ticket.ticketLot.type === "PASSPORT" ? ticket.ticketLot.passportValidDates : undefined,

@@ -1,6 +1,6 @@
 import type { ImageSourcePropType } from "react-native";
 
-export type TicketStatus = "active" | "used";
+export type TicketStatus = "active" | "used" | "expired";
 
 export interface AppTicket {
   id: string;
