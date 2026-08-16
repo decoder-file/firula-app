@@ -1,4 +1,5 @@
-import { View } from "react-native";
+import { useRef } from "react";
+import { Keyboard, TextInput, View } from "react-native";
 
 import { Button, RadioGroup, Text, TextField } from "@/design-system";
 import { formatCardExpiry, formatCardNumber, formatCep } from "@/utils/mask";
@@ -9,6 +10,17 @@ export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
   const { quote, isSubmitting, goBack } = checkout;
 
   const flow = quote?.card?.flow ?? "TRANSPARENT";
+
+  const holderNameRef = useRef<TextInput>(null);
+  const expiryRef = useRef<TextInput>(null);
+  const cvvRef = useRef<TextInput>(null);
+  const cepRef = useRef<TextInput>(null);
+  const streetRef = useRef<TextInput>(null);
+  const numberRef = useRef<TextInput>(null);
+  const complementRef = useRef<TextInput>(null);
+  const neighborhoodRef = useRef<TextInput>(null);
+  const cityRef = useRef<TextInput>(null);
+  const stateRef = useRef<TextInput>(null);
 
   if (flow === "REDIRECT") {
     return <CardRedirectView checkout={checkout} />;
@@ -30,31 +42,42 @@ export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
           onChangeText={checkout.setCardNumber}
           keyboardType="number-pad"
           maxLength={19}
+          returnKeyType="next"
+          onSubmitEditing={() => holderNameRef.current?.focus()}
         />
         <TextField
+          ref={holderNameRef}
           label="Nome impresso no cartão"
           value={checkout.cardHolderName}
           onChangeText={(value) => checkout.setCardHolderName(value.toUpperCase())}
           autoCapitalize="characters"
+          returnKeyType="next"
+          onSubmitEditing={() => expiryRef.current?.focus()}
         />
         <View style={{ flexDirection: "row", gap: 12 }}>
           <View style={{ flex: 1 }}>
             <TextField
+              ref={expiryRef}
               label="Validade (MM/AA)"
               value={formatCardExpiry(checkout.cardExpiry)}
               onChangeText={checkout.setCardExpiry}
               keyboardType="number-pad"
               maxLength={5}
+              returnKeyType="next"
+              onSubmitEditing={() => cvvRef.current?.focus()}
             />
           </View>
           <View style={{ flex: 1 }}>
             <TextField
+              ref={cvvRef}
               label="CVV"
               value={checkout.cardCvv}
               onChangeText={(value) => checkout.setCardCvv(value.replace(/\D/g, "").slice(0, 4))}
               keyboardType="number-pad"
               maxLength={4}
               secureTextEntry
+              returnKeyType="next"
+              onSubmitEditing={() => cepRef.current?.focus()}
             />
           </View>
         </View>
@@ -65,6 +88,7 @@ export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
           Endereço de cobrança
         </Text>
         <TextField
+          ref={cepRef}
           label="CEP"
           value={formatCep(checkout.billingCep)}
           onChangeText={checkout.setBillingCep}
@@ -72,28 +96,69 @@ export function CardStep({ checkout }: { checkout: UseCheckoutReturn }) {
           maxLength={9}
           helper={checkout.isLookingUpCep ? "Buscando endereço…" : undefined}
           error={checkout.cepError ?? undefined}
+          returnKeyType="next"
+          onSubmitEditing={() => streetRef.current?.focus()}
         />
-        <TextField label="Rua" value={checkout.billingStreet} onChangeText={checkout.setBillingStreet} />
+        <TextField
+          ref={streetRef}
+          label="Rua"
+          value={checkout.billingStreet}
+          onChangeText={checkout.setBillingStreet}
+          returnKeyType="next"
+          onSubmitEditing={() => numberRef.current?.focus()}
+        />
         <View style={{ flexDirection: "row", gap: 12 }}>
           <View style={{ flex: 1 }}>
-            <TextField label="Número" value={checkout.billingNumber} onChangeText={checkout.setBillingNumber} keyboardType="number-pad" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <TextField label="Complemento" value={checkout.billingComplement} onChangeText={checkout.setBillingComplement} />
-          </View>
-        </View>
-        <TextField label="Bairro" value={checkout.billingNeighborhood} onChangeText={checkout.setBillingNeighborhood} />
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 2 }}>
-            <TextField label="Cidade" value={checkout.billingCity} onChangeText={checkout.setBillingCity} />
+            <TextField
+              ref={numberRef}
+              label="Número"
+              value={checkout.billingNumber}
+              onChangeText={checkout.setBillingNumber}
+              keyboardType="number-pad"
+              returnKeyType="next"
+              onSubmitEditing={() => complementRef.current?.focus()}
+            />
           </View>
           <View style={{ flex: 1 }}>
             <TextField
+              ref={complementRef}
+              label="Complemento"
+              value={checkout.billingComplement}
+              onChangeText={checkout.setBillingComplement}
+              returnKeyType="next"
+              onSubmitEditing={() => neighborhoodRef.current?.focus()}
+            />
+          </View>
+        </View>
+        <TextField
+          ref={neighborhoodRef}
+          label="Bairro"
+          value={checkout.billingNeighborhood}
+          onChangeText={checkout.setBillingNeighborhood}
+          returnKeyType="next"
+          onSubmitEditing={() => cityRef.current?.focus()}
+        />
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flex: 2 }}>
+            <TextField
+              ref={cityRef}
+              label="Cidade"
+              value={checkout.billingCity}
+              onChangeText={checkout.setBillingCity}
+              returnKeyType="next"
+              onSubmitEditing={() => stateRef.current?.focus()}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <TextField
+              ref={stateRef}
               label="UF"
               value={checkout.billingState}
               onChangeText={(value) => checkout.setBillingState(value.toUpperCase().slice(0, 2))}
               autoCapitalize="characters"
               maxLength={2}
+              returnKeyType="done"
+              onSubmitEditing={() => Keyboard.dismiss()}
             />
           </View>
         </View>

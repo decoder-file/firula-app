@@ -8,7 +8,7 @@
  *   <TextField label="Senha" value={pw} onChangeText={setPw} secureTextEntry />
  */
 
-import React, { useState } from 'react';
+import React, { forwardRef, useState } from 'react';
 import {
   StyleSheet,
   TextInput,
@@ -32,7 +32,7 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   disabled?: boolean;
 }
 
-export function TextField({
+export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField({
   label,
   value,
   onChangeText,
@@ -42,7 +42,7 @@ export function TextField({
   disabled = false,
   secureTextEntry,
   ...inputProps
-}: TextFieldProps) {
+}, ref) {
   const { colors, radius, iconStrokeWidth, typography } = useTheme();
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(!!secureTextEntry);
@@ -71,6 +71,7 @@ export function TextField({
       >
         {Leading ? <Leading size={20} color={colors.textMuted} strokeWidth={iconStrokeWidth} /> : null}
         <TextInput
+          ref={ref}
           {...inputProps}
           value={value}
           onChangeText={onChangeText}
@@ -115,7 +116,7 @@ export function TextField({
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   field: {
