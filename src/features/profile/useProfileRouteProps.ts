@@ -67,7 +67,7 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   const shareProfile = async () => {
     if (!publicUrl) {
       show({ message: "Defina seu username para compartilhar o perfil.", variant: "error" });
-      router.push("/profile-edit");
+      router.push("/profile-edit/public-profile");
       return;
     }
 
@@ -100,11 +100,15 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
           onPress: async () => {
             try {
               const response = await deleteAccountMutation.mutateAsync();
-              tokenStorage.clear();
-              clearUser();
-              queryClient.clear();
-              Alert.alert("Conta desativada", response.message);
-              router.replace("/login");
+              Alert.alert("Conta desativada", response.message, [{
+                text: "OK",
+                onPress: () => {
+                  tokenStorage.clear();
+                  clearUser();
+                  queryClient.clear();
+                  router.replace("/login");
+                },
+              }]);
             } catch (error) {
               const message = isApiError(error)
                 ? error.message
@@ -155,9 +159,6 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
       case "edit-public":
         openProtectedRoute("/profile-edit/public-profile");
         break;
-      case "edit-profile":
-        openProtectedRoute("/profile-edit");
-        break;
       case "delete-account":
         handleDeleteAccount();
         break;
@@ -199,7 +200,7 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
       profileQuery.refetch();
       ticketsQuery.refetch();
     },
-    onEditProfile: () => openProtectedRoute("/profile-edit"),
+    onEditProfile: () => openProtectedRoute("/profile-edit/personal"),
     onShareProfile: shareProfile,
     onOpenEvent: (event) => router.push(`/event/${event.slug ?? event.id}` as never),
     onExploreEvents: () => router.push("/(tabs)/explore"),
