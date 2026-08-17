@@ -29,11 +29,15 @@ interface Action {
 export interface TopBarProps {
   title: string;
   variant?: 'root' | 'detail' | 'transparent';
+  /** Centraliza o título na largura total da barra, útil em perfis mobile. */
+  centeredTitle?: boolean;
+  /** Usa uma tipografia mais compacta sem alterar a altura/área de toque da barra. */
+  compactTitle?: boolean;
   onBack?: () => void;
   actions?: Action[];
 }
 
-export function TopBar({ title, variant = 'root', onBack, actions = [] }: TopBarProps) {
+export function TopBar({ title, variant = 'root', centeredTitle = false, compactTitle = false, onBack, actions = [] }: TopBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const transparent = variant === 'transparent';
@@ -47,9 +51,23 @@ export function TopBar({ title, variant = 'root', onBack, actions = [] }: TopBar
         borderBottomColor: colors.border,
       }}
     >
-      <View style={styles.bar}>
+      <View style={[styles.bar, centeredTitle ? styles.centeredBar : null]}>
         {variant === 'root' ? (
-          <Text token="titleLg" style={{ flex: 1 }} accessibilityRole="header">{title}</Text>
+          centeredTitle ? (
+            <>
+              <View style={styles.centerSide} />
+              <Text
+                token={compactTitle ? "label" : "titleLg"}
+                style={styles.rootCenteredTitle}
+                numberOfLines={1}
+                accessibilityRole="header"
+              >
+                {title}
+              </Text>
+            </>
+          ) : (
+            <Text token={compactTitle ? "label" : "titleLg"} style={{ flex: 1 }} numberOfLines={1} accessibilityRole="header">{title}</Text>
+          )
         ) : (
           <>
             <IconButton icon={ArrowLeft} accessibilityLabel="Voltar" onPress={onBack ?? (() => {})} variant={transparent ? 'outlined' : 'ghost'} />
@@ -60,7 +78,7 @@ export function TopBar({ title, variant = 'root', onBack, actions = [] }: TopBar
             )}
           </>
         )}
-        <View style={[styles.actions, variant === 'detail' && actions.length === 0 ? styles.detailSpacer : null]}>
+        <View style={[styles.actions, centeredTitle ? styles.centerActions : null, variant === 'detail' && actions.length === 0 ? styles.detailSpacer : null]}>
           {actions.slice(0, 2).map((a, i) => (
             <IconButton key={i} icon={a.icon} accessibilityLabel={a.label} onPress={a.onPress} badge={a.badge} variant={transparent ? 'outlined' : 'ghost'} />
           ))}
@@ -74,5 +92,9 @@ const styles = StyleSheet.create({
   bar: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingLeft: 16 },
   centerTitle: { flex: 1, textAlign: 'center' },
   actions: { flexDirection: 'row' },
+  centeredBar: { paddingHorizontal: 8 },
+  centerSide: { width: 48 },
+  centerActions: { width: 48, justifyContent: 'flex-end' },
+  rootCenteredTitle: { flex: 1, textAlign: 'center', fontSize: 15 },
   detailSpacer: { width: 48 },
 });

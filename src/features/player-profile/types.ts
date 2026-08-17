@@ -31,9 +31,11 @@ export interface PlayerProfileScreenProps {
   handle: string;
   photoUrl: string | null;
   initials: string;
+  bio: string | null;
   city: string | null;
   instagramUrl: string | null;
   instagramHandle: string | null;
+  xHandle: string | null;
 
   followersCount: number;
   followingCount: number;
@@ -51,6 +53,7 @@ export interface PlayerProfileScreenProps {
 
   onBack: () => void;
   onOpenInstagram: () => void;
+  onOpenX: () => void;
   onToggleFollow: () => void;
   onUnfollow: () => void;
   onRemoveFollower: () => void;
