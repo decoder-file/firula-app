@@ -1,12 +1,9 @@
 import React from "react";
-import { ChevronLeft, Image as ImageIcon } from "lucide-react-native";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { Camera, Info } from "lucide-react-native";
 
-import { Avatar } from "@/components/Avatar";
-import { Screen } from "@/components/Screen";
-import { Skeleton } from "@/components/Skeleton";
-import { FormButton } from "@/components/ui/FormButton";
-import { IconButton } from "@/components/ui/IconButton";
+import { Avatar, Button, Skeleton, Text, TopBar, useTheme } from "@/design-system";
 import type { ProfileEditPhotoScreenProps } from "@/features/profile-edit-photo/types";
 
 export function ProfileEditPhotoScreen({
@@ -20,63 +17,86 @@ export function ProfileEditPhotoScreen({
   onChangePhoto,
   onSaveAvatar,
 }: ProfileEditPhotoScreenProps) {
+  const { colors, radius } = useTheme();
+
   return (
-    <Screen edges={["top", "left", "right"]}>
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 28 }}>
-        <View className="px-4 pb-8 pt-4">
-          <IconButton
-            accessibilityLabel="Voltar"
-            className="mb-6"
-            icon={<ChevronLeft color="#141821" size={20} strokeWidth={1.75} />}
-            onPress={onBack}
-          />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style="auto" />
+      <TopBar title="Foto de perfil" variant="detail" onBack={onBack} />
 
-          <Text className="font-bold text-[28px] text-foreground">Foto de perfil</Text>
-          <Text className="mt-2 text-sm leading-5 text-muted-foreground">
-            Escolha uma foto para aparecer no seu perfil.
-          </Text>
-        </View>
-
+      <ScrollView contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false}>
         {isLoading ? (
-          <View className="items-center gap-3 rounded-[28px] bg-card p-5 mx-4">
-            <Skeleton className="h-[88px] w-[88px] rounded-full" />
-            <Skeleton className="h-3 w-40 rounded-full" />
-            <Skeleton className="mt-1 h-12 w-full rounded-2xl" />
+          <View
+            style={{
+              alignItems: "center",
+              gap: 12,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: radius.xl,
+              padding: 20,
+            }}
+          >
+            <Skeleton width={88} height={88} radius={999} />
+            <Skeleton width={140} height={12} />
+            <Skeleton width="100%" height={48} radius={radius.md} style={{ marginTop: 4 }} />
+            <Skeleton width="100%" height={48} radius={radius.md} />
           </View>
         ) : (
-          <View className="items-center gap-3 rounded-[28px] bg-card p-5 mx-4">
-            <Avatar name={name || "Perfil"} size={88} uri={avatarPreview || undefined} />
-            <Text className="text-xs text-muted-foreground">Pré-visualização da foto</Text>
-            <FormButton
-              className="mt-1 bg-secondary"
-              disabled={isPickingImage}
-              isLoading={isPickingImage}
+          <View
+            style={{
+              alignItems: "center",
+              gap: 14,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: radius.xl,
+              padding: 20,
+            }}
+          >
+            <Avatar name={name || "Perfil"} size="xl" source={avatarPreview ? { uri: avatarPreview } : undefined} />
+            <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>
+              Pré-visualização da foto
+            </Text>
+
+            <Button
               label="Trocar foto"
-              loadingLabel="Abrindo..."
+              icon={Camera}
+              variant="secondary"
+              fullWidth
+              loading={isPickingImage}
+              disabled={isPickingImage}
               onPress={onChangePhoto}
-              textClassName="text-foreground"
             />
 
-            <FormButton
-              className="mt-1"
-              disabled={isSavingAvatar || !canSaveAvatar}
-              isLoading={isSavingAvatar}
+            <Button
               label="Salvar foto"
-              loadingLabel="Salvando foto..."
+              variant="primary"
+              fullWidth
+              loading={isSavingAvatar}
+              disabled={isSavingAvatar || !canSaveAvatar}
               onPress={onSaveAvatar}
             />
 
-            <View className="w-full rounded-2xl bg-secondary/40 px-4 py-3">
-              <View className="flex-row items-center gap-2">
-                <ImageIcon color="#727985" size={16} strokeWidth={1.75} />
-                <Text className="text-xs text-muted-foreground">
-                  A foto é selecionada pela galeria ou câmera.
-                </Text>
-              </View>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 8,
+                width: "100%",
+                backgroundColor: colors.surfaceAlt,
+                borderRadius: radius.md,
+                padding: 12,
+                marginTop: 2,
+              }}
+            >
+              <Info size={15} color={colors.textMuted} strokeWidth={2} style={{ marginTop: 1 }} />
+              <Text token="caption" color="muted" style={{ flex: 1, textTransform: "none", letterSpacing: 0, lineHeight: 16 }}>
+                A foto é selecionada pela galeria ou câmera.
+              </Text>
             </View>
           </View>
         )}
       </ScrollView>
-    </Screen>
+    </View>
   );
 }
