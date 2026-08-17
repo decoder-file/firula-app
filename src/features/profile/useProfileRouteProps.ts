@@ -2,10 +2,15 @@ import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { isApiError } from "@/api/errors";
+import { tokenStorage } from "@/api/tokenStorage";
 import { useAuthUser, useIsAuthenticated, useLogout, useMe } from "@/hooks/useAuth";
 import { useMyTickets } from "@/hooks/useTickets";
+import { profileService } from "@/services/profile.service";
 import { pushTokenService } from "@/services/pushToken.service";
+import { useAuthStore } from "@/stores/authStore";
 import type { ProfileScreenProps } from "@/features/profile/types";
 
 const formatMemberSince = (createdAt?: string): string => {
@@ -28,11 +33,14 @@ const getLevelFromTickets = (totalTickets: number): string => {
 
 export const useProfileRouteProps = (): ProfileScreenProps => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const isAuthenticated = useIsAuthenticated();
   const { data: me } = useMe();
   const authUser = useAuthUser();
   const { data: tickets } = useMyTickets();
   const logout = useLogout();
+  const clearUser = useAuthStore((state) => state.clearUser);
+  const deleteAccountMutation = useMutation({ mutationFn: profileService.deleteAccount });
   const displayName = authUser?.name || me?.name || "Atleta";
   const displayPhotoUrl = authUser?.photoUrl || me?.profile?.photoUrl || null;
 
@@ -47,6 +55,35 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
     }
 
     router.push(path as never);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Excluir conta",
+      "Tem certeza que deseja excluir sua conta? Essa ação desativa sua conta e encerra sua sessão no aplicativo.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const response = await deleteAccountMutation.mutateAsync();
+              tokenStorage.clear();
+              clearUser();
+              queryClient.clear();
+              Alert.alert("Conta desativada", response.message);
+              router.replace("/login");
+            } catch (error) {
+              const message = isApiError(error)
+                ? error.message
+                : "Não foi possível excluir a conta agora. Tente novamente.";
+              Alert.alert("Erro", message);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handleNavigate = (key: string) => {
@@ -74,6 +111,21 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
         break;
       case "help":
         router.push("/help");
+        break;
+      case "edit-photo":
+        openProtectedRoute("/profile-edit/photo");
+        break;
+      case "edit-personal":
+        openProtectedRoute("/profile-edit/personal");
+        break;
+      case "edit-address":
+        openProtectedRoute("/profile-edit/address");
+        break;
+      case "edit-public":
+        openProtectedRoute("/profile-edit/public-profile");
+        break;
+      case "delete-account":
+        handleDeleteAccount();
         break;
       default:
         break;
@@ -106,9 +158,9 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
     level: getLevelFromTickets(totalTickets),
     isAuthenticated,
     onLogin: () => router.push("/login-modal"),
-    onEditProfile: () => router.push("/profile-edit"),
     onNavigate: handleNavigate,
     onLogout: handleLogout,
     loggingOut: logout.isPending,
+    isDeletingAccount: deleteAccountMutation.isPending,
   };
 };

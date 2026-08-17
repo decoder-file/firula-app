@@ -9,10 +9,10 @@ export interface ProfileScreenProps {
   level?: string;
   isAuthenticated?: boolean;
   onLogin?: () => void;
-  onEditProfile?: () => void;
   onNavigate?: (key: string) => void;
   onLogout?: () => void;
   loggingOut?: boolean;
+  isDeletingAccount?: boolean;
 }
 
 export interface MenuEntry {

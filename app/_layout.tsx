@@ -20,7 +20,6 @@ export default function RootLayout() {
             <Stack.Screen name="login-modal" options={{ presentation: "modal" }} />
             <Stack.Screen name="search" />
             <Stack.Screen name="register" />
-            <Stack.Screen name="profile-edit" />
           </Stack>
           <OfflineBanner />
         </SnackbarProvider>
