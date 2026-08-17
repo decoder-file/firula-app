@@ -71,6 +71,7 @@ export function ProfileScreen({
         onClose={() => setMenuOpen(false)}
         header={isAuthenticated ? { name, subtitle: email, photoUrl } : undefined}
         items={drawerItems}
+        side="right"
       />
     </View>
   );
