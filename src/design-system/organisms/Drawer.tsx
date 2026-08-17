@@ -34,16 +34,19 @@ export interface DrawerProps {
   onClose: () => void;
   header?: { name: string; subtitle?: string; photoUrl?: string | null };
   items: DrawerItem[];
+  /** Lado da tela de onde a gaveta desliza. @default 'left' */
+  side?: 'left' | 'right';
 }
 
-export function Drawer({ open, onClose, header, items }: DrawerProps) {
+export function Drawer({ open, onClose, header, items, side = 'left' }: DrawerProps) {
   const { colors, radius, iconStrokeWidth, elevation } = useTheme();
   const insets = useSafeAreaInsets();
-  const x = useSharedValue(-320);
+  const closedX = side === 'right' ? 320 : -320;
+  const x = useSharedValue(closedX);
 
   useEffect(() => {
-    x.value = withTiming(open ? 0 : -320, { duration: 260 });
-  }, [open]);
+    x.value = withTiming(open ? 0 : closedX, { duration: 260 });
+  }, [open, closedX]);
 
   const panel = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
@@ -52,7 +55,13 @@ export function Drawer({ open, onClose, header, items }: DrawerProps) {
       <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} onPress={onClose} accessibilityLabel="Fechar menu" />
       <Animated.View
         accessibilityViewIsModal
-        style={[styles.panel, elevation[2], panel, { backgroundColor: colors.surface, paddingTop: insets.top + 12 }]}
+        style={[
+          styles.panel,
+          side === 'right' ? styles.panelRight : styles.panelLeft,
+          elevation[2],
+          panel,
+          { backgroundColor: colors.surface, paddingTop: insets.top + 12 },
+        ]}
       >
         {header ? (
           <>
@@ -102,7 +111,9 @@ export function Drawer({ open, onClose, header, items }: DrawerProps) {
 }
 
 const styles = StyleSheet.create({
-  panel: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 300, paddingHorizontal: 12, paddingBottom: 20 },
+  panel: { position: 'absolute', top: 0, bottom: 0, width: 300, paddingHorizontal: 12, paddingBottom: 20 },
+  panelLeft: { left: 0 },
+  panelRight: { right: 0 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, paddingBottom: 4 },
   item: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12 },
 });

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { AlertCircle, LogOut, Menu, Pencil, UserRound } from "lucide-react-native";
+import { AlertCircle, LogOut, Menu, Pencil, Trash2, UserRound } from "lucide-react-native";
 import { Drawer, EmptyState, TopBar, useTheme } from "@/design-system";
 import type { DrawerItem } from "@/design-system";
 import { PROFILE_MENU } from "@/features/profile/constants";
@@ -17,13 +17,33 @@ export function ProfileScreen(props: ProfileScreenProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [followSheet, setFollowSheet] = useState<{ open: boolean; tab: FollowTab }>({ open: false, tab: "followers" });
   const authenticated = props.status !== "guest";
+  const isDeletingAccount = props.isDeletingAccount ?? false;
   const visibleMenu = authenticated ? PROFILE_MENU : PROFILE_MENU.filter((item) => PUBLIC_MENU_KEYS.has(item.key));
   const drawerItems: DrawerItem[] = [
     authenticated
       ? { key: "edit-profile", label: "Editar perfil", icon: Pencil, onPress: props.onEditProfile }
       : { key: "login", label: "Entrar ou criar conta", icon: UserRound, onPress: props.onLogin },
     ...visibleMenu.map((item) => ({ key: item.key, label: item.label, icon: item.icon, onPress: () => props.onNavigate(item.key) })),
-    ...(authenticated ? [{ key: "logout", label: props.loggingOut ? "Saindo…" : "Sair da conta", icon: LogOut, danger: true, dividerBefore: true, onPress: props.onLogout }] : []),
+    ...(authenticated
+      ? [{
+        key: "delete-account",
+        label: isDeletingAccount ? "Excluindo conta…" : "Excluir conta",
+        icon: Trash2,
+        danger: true,
+        dividerBefore: true,
+        onPress: () => {
+          if (!isDeletingAccount) props.onNavigate("delete-account");
+        },
+      }, {
+        key: "logout",
+        label: props.loggingOut ? "Saindo…" : "Sair da conta",
+        icon: LogOut,
+        danger: true,
+        onPress: () => {
+          if (!props.loggingOut) props.onLogout();
+        },
+      }]
+      : []),
   ];
 
   return (

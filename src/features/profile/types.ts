@@ -26,6 +26,7 @@ export interface ProfileScreenProps {
   eventsLoading: boolean;
   email: string;
   loggingOut?: boolean;
+  isDeletingAccount?: boolean;
   onLogin: () => void;
   onRetry: () => void;
   onEditProfile: () => void;
