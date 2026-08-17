@@ -17,6 +17,8 @@ export interface CustomerTicketEventLocation {
 
 export interface CustomerTicketEvent {
   id: string;
+  /** Slug público usado pela rota de detalhes do evento. */
+  slug?: string | null;
   name: string;
   startsAt: string;
   /** Fim do evento — presente em eventos de múltiplos dias. */

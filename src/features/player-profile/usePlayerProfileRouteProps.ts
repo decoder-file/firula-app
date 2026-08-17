@@ -24,7 +24,7 @@ function getInitials(name: string): string {
 }
 
 function formatEventDateLabel(isoDate: string): string {
-  return new Date(isoDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return new Date(isoDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
 function buildInstagramUrl(handle: string): string {
@@ -67,6 +67,8 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
 
   const instagramHandle = profile?.socialLinks?.instagram ?? null;
   const instagramUrl = instagramHandle ? buildInstagramUrl(instagramHandle) : null;
+  const xHandle = profile?.socialLinks?.x ?? null;
+  const xUrl = xHandle ? (xHandle.startsWith("http") ? xHandle : `https://x.com/${xHandle.replace(/^@/, "")}`) : null;
 
   const city =
     profile?.location && (profile.location.city || profile.location.state)
@@ -94,9 +96,11 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
     handle: `@${username}`,
     photoUrl: profile?.photoUrl ?? null,
     initials: getInitials(profile?.name ?? username),
+    bio: profile?.bio ?? null,
     city,
     instagramUrl,
     instagramHandle,
+    xHandle,
 
     followersCount: profile?.followersCount ?? 0,
     followingCount: profile?.followingCount ?? 0,
@@ -117,6 +121,11 @@ export function usePlayerProfileRouteProps(): PlayerProfileScreenProps {
       if (!instagramUrl) return;
       const canOpen = await Linking.canOpenURL(instagramUrl);
       if (canOpen) await Linking.openURL(instagramUrl);
+    },
+    onOpenX: async () => {
+      if (!xUrl) return;
+      const canOpen = await Linking.canOpenURL(xUrl);
+      if (canOpen) await Linking.openURL(xUrl);
     },
     onToggleFollow: () => {
       if (!requireAuth()) return;
