@@ -25,12 +25,14 @@ export interface DrawerItem {
   onPress: () => void;
   /** Renderiza um Divider acima do item. */
   dividerBefore?: boolean;
+  /** Estiliza o item como ação destrutiva (ex.: sair da conta). */
+  danger?: boolean;
 }
 
 export interface DrawerProps {
   open: boolean;
   onClose: () => void;
-  header?: { name: string; subtitle?: string };
+  header?: { name: string; subtitle?: string; photoUrl?: string | null };
   items: DrawerItem[];
 }
 
@@ -55,10 +57,10 @@ export function Drawer({ open, onClose, header, items }: DrawerProps) {
         {header ? (
           <>
             <View style={styles.header}>
-              <Avatar name={header.name} size="lg" />
+              <Avatar name={header.name} size="lg" source={header.photoUrl ? { uri: header.photoUrl } : undefined} />
               <View style={{ flex: 1 }}>
                 <Text token="subtitle" style={{ fontWeight: '700' }} numberOfLines={1}>{header.name}</Text>
-                {header.subtitle ? <Text token="bodySm" color="muted">{header.subtitle}</Text> : null}
+                {header.subtitle ? <Text token="bodySm" color="muted" numberOfLines={1}>{header.subtitle}</Text> : null}
               </View>
             </View>
             <View style={{ marginVertical: 8 }}><Divider /></View>
@@ -77,8 +79,18 @@ export function Drawer({ open, onClose, header, items }: DrawerProps) {
                 { borderRadius: radius.md, backgroundColor: item.active ? colors.primarySoft : 'transparent' },
               ]}
             >
-              <item.icon size={22} color={item.active ? colors.primaryText : colors.text} strokeWidth={iconStrokeWidth} />
-              <Text token="body" style={{ fontWeight: item.active ? '700' : '500', color: item.active ? colors.primaryText : colors.text }}>
+              <item.icon
+                size={22}
+                color={item.danger ? colors.error : item.active ? colors.primaryText : colors.text}
+                strokeWidth={iconStrokeWidth}
+              />
+              <Text
+                token="body"
+                style={{
+                  fontWeight: item.active ? '700' : '500',
+                  color: item.danger ? colors.error : item.active ? colors.primaryText : colors.text,
+                }}
+              >
                 {item.label}
               </Text>
             </Pressable>

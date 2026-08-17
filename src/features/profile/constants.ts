@@ -2,14 +2,13 @@ import {
   Bell,
   CircleHelp,
   FileText,
-  ScanFace,
   Settings,
   Shield,
   Star,
   Ticket,
 } from "lucide-react-native";
 
-import type { Achievement, MenuEntry } from "@/features/profile/types";
+import type { MenuEntry } from "@/features/profile/types";
 
 export const PROFILE_MENU: MenuEntry[] = [
   {
@@ -60,13 +59,4 @@ export const PROFILE_MENU: MenuEntry[] = [
     label: "Ajuda",
     subtitle: "Central de suporte",
   },
-];
-
-export const PROFILE_ACHIEVEMENTS: Achievement[] = [
-  { icon: "🏅", label: "Primeiro evento", unlocked: true },
-  { icon: "🥉", label: "5 eventos", unlocked: true },
-  { icon: "🥈", label: "10 eventos", unlocked: true },
-  { icon: "🔒", label: "Facial ID", unlocked: true },
-  { icon: "🥇", label: "25 eventos", unlocked: false },
-  { icon: "🏆", label: "50 eventos", unlocked: false },
 ];

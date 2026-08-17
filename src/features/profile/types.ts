@@ -21,9 +21,3 @@ export interface MenuEntry {
   subtitle: string;
   key: string;
 }
-
-export interface Achievement {
-  icon: string;
-  label: string;
-  unlocked: boolean;
-}
