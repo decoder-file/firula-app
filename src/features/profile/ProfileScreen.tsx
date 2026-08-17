@@ -188,7 +188,7 @@ export function ProfileScreen({
               opacity: 0.7,
             }}
           >
-            Firula · versão 1.0.5
+            Firula · versão 1.0.6
           </Text>
         </View>
       </ScrollView>

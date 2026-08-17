@@ -21,7 +21,7 @@ import { tokenStorage } from "@/api/tokenStorage";
 import { profileService } from "@/services/profile.service";
 import { useAuthStore } from "@/stores/authStore";
 
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.0.6";
 
 const THEME_OPTIONS: { label: string; value: ThemeMode; Icon: typeof Sun }[] = [
   { label: "Sistema", value: "system", Icon: Monitor },

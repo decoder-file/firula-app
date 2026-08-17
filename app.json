@@ -2,7 +2,7 @@
   "expo": {
     "name": "Firula",
     "slug": "firula",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon-firula.png",
     "userInterfaceStyle": "light",
