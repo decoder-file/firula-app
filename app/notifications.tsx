@@ -11,6 +11,7 @@ import {
   Info,
   RefreshCw,
   ShoppingBag,
+  UserPlus,
   XCircle,
 } from "lucide-react-native";
 import { FlatList, StyleSheet, View } from "react-native";
@@ -55,6 +56,8 @@ function getNotificationAppearance(type: AppNotification["type"], colors: Palett
       return { icon: ArrowUpFromLine, color: colors.warning, backgroundColor: colors.warningSoft };
     case "EVENT_UPDATE":
       return { icon: Info, color: colors.warning, backgroundColor: colors.warningSoft };
+    case "NEW_FOLLOWER":
+      return { icon: UserPlus, color: colors.primaryText, backgroundColor: colors.primarySoft };
     default:
       return { icon: Bell, color: colors.textMuted, backgroundColor: colors.surfaceAlt };
   }
@@ -93,6 +96,10 @@ function getNotificationAction(notification: AppNotification) {
     case "EVENT_UPDATE":
       return notification.metadata?.eventId
         ? { label: "Ver evento", route: `/event/${notification.metadata.eventId}` as const }
+        : null;
+    case "NEW_FOLLOWER":
+      return notification.metadata?.screen
+        ? { label: "Ver perfil", route: notification.metadata.screen as never }
         : null;
     default:
       return null;

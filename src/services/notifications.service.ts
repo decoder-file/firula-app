@@ -9,7 +9,8 @@ export interface AppNotification {
     | "REFUND_FAILED"
     | "TICKET_TRANSFERRED_IN"
     | "TICKET_TRANSFERRED_OUT"
-    | "EVENT_UPDATE";
+    | "EVENT_UPDATE"
+    | "NEW_FOLLOWER";
   title: string;
   body: string;
   read: boolean;
