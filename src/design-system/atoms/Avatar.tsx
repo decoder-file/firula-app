@@ -21,27 +21,30 @@ const DIM: Record<AvatarSize, number> = { sm: 32, md: 44, lg: 56, xl: 72 };
 const FONT: Record<AvatarSize, number> = { sm: 13, md: 16, lg: 20, xl: 26 };
 
 /** Paleta tonal estável por nome (mesma pessoa → mesma cor). */
-function toneFor(name: string, c: Palette): { bg: string; fg: string } {
+function toneFor(name: string | null | undefined, c: Palette): { bg: string; fg: string } {
   const tones = [
     { bg: c.primarySoft, fg: c.primaryText },
     { bg: c.infoSoft, fg: c.info },
     { bg: c.warningSoft, fg: c.warning },
     { bg: c.errorSoft, fg: c.error },
   ];
+  const safeName = name ?? '';
   let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < safeName.length; i++) h = (h * 31 + safeName.charCodeAt(i)) >>> 0;
   return tones[h % tones.length];
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
+function initials(name: string | null | undefined): string {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
   const a = parts[0]?.[0] ?? '';
   const b = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (a + b).toUpperCase();
 }
 
 export interface AvatarProps {
-  name: string;
+  /** Alguns perfis (ex: cliente sem nome preenchido) chegam sem nome — o componente cai pra iniciais "?". */
+  name?: string | null;
   source?: ImageSourcePropType | null;
   size?: AvatarSize;
   status?: 'online' | 'offline';
@@ -53,7 +56,7 @@ export function Avatar({ name, source, size = 'md', status }: AvatarProps) {
   const tone = toneFor(name, colors);
 
   return (
-    <View style={{ width: dim, height: dim }} accessibilityLabel={`Foto de ${name}`}>
+    <View style={{ width: dim, height: dim }} accessibilityLabel={`Foto de ${name ?? 'usuário'}`}>
       {source ? (
         <Image source={source} style={{ width: dim, height: dim, borderRadius: 999 }} />
       ) : (

@@ -96,7 +96,9 @@ export function FollowListSheet({
     const q = query.trim().toLowerCase();
     if (!q) return items;
     return items.filter(
-      (person) => person.name.toLowerCase().includes(q) || (person.username?.toLowerCase().includes(q) ?? false),
+      (person) =>
+        (person.name?.toLowerCase().includes(q) ?? false) ||
+        (person.username?.toLowerCase().includes(q) ?? false),
     );
   }, [items, query]);
 
@@ -165,53 +167,57 @@ export function FollowListSheet({
           <EmptyState icon={Users} variant="noResults" title="Ninguém encontrado" />
         ) : (
           <>
-            {filtered.map((person) => (
-              <View key={person.identityId} style={styles.personRow}>
-                <PressScale
-                  onPress={() => person.username && onOpenPerson(person)}
-                  disabled={!person.username}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Abrir perfil de ${person.name}`}
-                  style={styles.personInfo}
-                >
-                  <Avatar name={person.name} size="md" source={person.photoUrl ? { uri: person.photoUrl } : null} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text token="bodySm" style={{ fontWeight: "700" }} numberOfLines={1}>
-                      {person.name}
-                    </Text>
-                    {person.username ? (
-                      <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, marginTop: 1 }} numberOfLines={1}>
-                        @{person.username}
-                      </Text>
-                    ) : null}
-                  </View>
-                </PressScale>
-                {person.username ? (
+            {filtered.map((person) => {
+              const displayName = person.name || "Atleta";
+
+              return (
+                <View key={person.identityId} style={styles.personRow}>
                   <PressScale
-                    onPress={() => handleToggleFollow(person)}
-                    disabled={toggleFollow.isPending}
+                    onPress={() => person.username && onOpenPerson(person)}
+                    disabled={!person.username}
                     accessibilityRole="button"
-                    accessibilityLabel={person.isFollowing ? `Deixar de seguir ${person.name}` : `Seguir ${person.name}`}
-                    style={[
-                      styles.followBtn,
-                      {
-                        borderRadius: radius.md - 3,
-                        backgroundColor: person.isFollowing ? colors.surface : colors.primary,
-                        borderColor: person.isFollowing ? colors.border : colors.primary,
-                      },
-                    ]}
+                    accessibilityLabel={`Abrir perfil de ${displayName}`}
+                    style={styles.personInfo}
                   >
-                    <Text
-                      token="caption"
-                      style={{ fontWeight: "700", textTransform: "none", letterSpacing: 0 }}
-                      color={person.isFollowing ? "default" : "onPrimary"}
-                    >
-                      {person.isFollowing ? "Seguindo" : "Seguir"}
-                    </Text>
+                    <Avatar name={person.name} size="md" source={person.photoUrl ? { uri: person.photoUrl } : null} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text token="bodySm" style={{ fontWeight: "700" }} numberOfLines={1}>
+                        {displayName}
+                      </Text>
+                      {person.username ? (
+                        <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, marginTop: 1 }} numberOfLines={1}>
+                          @{person.username}
+                        </Text>
+                      ) : null}
+                    </View>
                   </PressScale>
-                ) : null}
-              </View>
-            ))}
+                  {person.username ? (
+                    <PressScale
+                      onPress={() => handleToggleFollow(person)}
+                      disabled={toggleFollow.isPending}
+                      accessibilityRole="button"
+                      accessibilityLabel={person.isFollowing ? `Deixar de seguir ${displayName}` : `Seguir ${displayName}`}
+                      style={[
+                        styles.followBtn,
+                        {
+                          borderRadius: radius.md - 3,
+                          backgroundColor: person.isFollowing ? colors.surface : colors.primary,
+                          borderColor: person.isFollowing ? colors.border : colors.primary,
+                        },
+                      ]}
+                    >
+                      <Text
+                        token="caption"
+                        style={{ fontWeight: "700", textTransform: "none", letterSpacing: 0 }}
+                        color={person.isFollowing ? "default" : "onPrimary"}
+                      >
+                        {person.isFollowing ? "Seguindo" : "Seguir"}
+                      </Text>
+                    </PressScale>
+                  ) : null}
+                </View>
+              );
+            })}
             {canLoadMore && !query ? (
               <PressScale
                 onPress={handleLoadMore}

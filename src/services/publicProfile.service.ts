@@ -57,7 +57,7 @@ export interface ReportActionResult {
 export interface PublicProfileFollower {
   identityId: string;
   username: string | null;
-  name: string;
+  name: string | null;
   photoUrl: string | null;
   followedAt: string;
   isFollowing: boolean;
@@ -74,7 +74,7 @@ export interface PublicProfileFollowingPerson {
   type: "CUSTOMER";
   identityId: string;
   username: string | null;
-  name: string;
+  name: string | null;
   photoUrl: string | null;
   followedAt: string;
   isFollowing: boolean;

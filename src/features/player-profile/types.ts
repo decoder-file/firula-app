@@ -11,7 +11,7 @@ export interface AttendedEvent {
 export interface FollowPerson {
   identityId: string;
   username: string | null;
-  name: string;
+  name: string | null;
   photoUrl: string | null;
   isFollowing: boolean;
 }
