@@ -24,6 +24,9 @@ export const useFollowOrganizer = (slug: string) => {
       isFollowing ? organizerService.unfollow(slug) : organizerService.follow(slug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizer.detail(slug) });
+      // Seguir/deixar de seguir uma organização também muda o followingCount
+      // de quem está logado, exibido no perfil e no FollowListSheet.
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.all });
     },
   });
 };
@@ -52,7 +55,7 @@ export const useToggleFollowOrganizationBySlug = () => {
       isFollowing ? organizerService.unfollow(orgSlug) : organizerService.follow(orgSlug),
     onSuccess: (_result, { orgSlug }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizer.detail(orgSlug) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.all });
     },
   });
 };

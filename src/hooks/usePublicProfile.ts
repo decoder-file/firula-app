@@ -23,11 +23,13 @@ export const useFollowPublicProfile = (username: string) => {
   return useMutation({
     mutationFn: (isFollowing: boolean) =>
       isFollowing ? publicProfileService.unfollow(username) : publicProfileService.follow(username),
+    // Invalida toda a família publicProfile (não só o perfil de `username`):
+    // seguir/deixar de seguir também muda o followingCount de QUEM está
+    // logado, e essa mutation não sabe qual é o username de quem está
+    // logado — mais simples e seguro invalidar tudo do que tentar acertar
+    // manualmente cada perfil afetado.
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.all });
     },
   });
 };
@@ -42,11 +44,8 @@ export const useToggleFollowByUsername = () => {
   return useMutation({
     mutationFn: ({ username, isFollowing }: { username: string; isFollowing: boolean }) =>
       isFollowing ? publicProfileService.unfollow(username) : publicProfileService.follow(username),
-    onSuccess: (_result, { username }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.all });
     },
   });
 };
@@ -56,10 +55,7 @@ export const useRemoveFollower = (username: string) => {
   return useMutation({
     mutationFn: () => publicProfileService.removeFollower(username),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.all });
     },
   });
 };
@@ -70,10 +66,7 @@ export const useToggleBlock = (username: string) => {
     mutationFn: (isBlocked: boolean) =>
       isBlocked ? publicProfileService.unblock(username) : publicProfileService.block(username),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.all });
     },
   });
 };
