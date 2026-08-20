@@ -70,9 +70,16 @@ export const queryKeys = {
     all: ["publicProfile"] as const,
     detail: (username: string) => [...queryKeys.publicProfile.all, "detail", username] as const,
     followStatus: (username: string) => [...queryKeys.publicProfile.all, "follow-status", username] as const,
+    // Prefixos sem skip/take: usados pra invalidar TODAS as páginas/perfis em
+    // cache de uma vez quando um follow/unfollow acontece em qualquer lugar
+    // do app — a lista de seguidores/seguindo de um perfil pode conter
+    // qualquer pessoa, então não dá pra saber de antemão qual username
+    // invalidar.
+    followersAll: () => [...queryKeys.publicProfile.all, "followers"] as const,
     followers: (username: string, skip: number, take: number) =>
-      [...queryKeys.publicProfile.all, "followers", username, skip, take] as const,
+      [...queryKeys.publicProfile.followersAll(), username, skip, take] as const,
+    followingAll: () => [...queryKeys.publicProfile.all, "following"] as const,
     following: (username: string, skip: number, take: number) =>
-      [...queryKeys.publicProfile.all, "following", username, skip, take] as const,
+      [...queryKeys.publicProfile.followingAll(), username, skip, take] as const,
   },
 } as const;

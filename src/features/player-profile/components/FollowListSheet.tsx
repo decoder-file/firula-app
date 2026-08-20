@@ -1,12 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
-import { Users } from "lucide-react-native";
+import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from "react-native";
+import { Building2, Users } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
 import { Avatar, BottomSheet, EmptyState, PressScale, SearchBar, Text, useTheme } from "@/design-system";
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import { usePublicProfileFollowers, usePublicProfileFollowing, useToggleFollowByUsername } from "@/hooks/usePublicProfile";
+import { useToggleFollowOrganizationBySlug } from "@/hooks/useOrganizer";
 import type { FollowPerson, FollowTab } from "@/features/player-profile/types";
+import type { PublicProfileFollowingOrganization } from "@/services/publicProfile.service";
+
+type FollowOrgItem = PublicProfileFollowingOrganization & { isFollowing: boolean };
 
 const TAKE = 20;
 
@@ -35,11 +39,13 @@ export function FollowListSheet({
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();
   const toggleFollow = useToggleFollowByUsername();
+  const toggleFollowOrg = useToggleFollowOrganizationBySlug();
 
   const [tab, setTab] = useState<FollowTab>(initialTab);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<FollowPerson[]>([]);
+  const [orgItems, setOrgItems] = useState<FollowOrgItem[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -47,6 +53,7 @@ export function FollowListSheet({
       setQuery("");
       setPage(1);
       setItems([]);
+      setOrgItems([]);
     }
   }, [visible, initialTab]);
 
@@ -86,6 +93,15 @@ export function FollowListSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followersQuery.data, followingQuery.data, tab, page]);
 
+  // Organizações seguidas não são paginadas junto com as pessoas (o backend
+  // devolve uma lista pequena e fixa), então ficam num estado à parte,
+  // atualizado direto quando a query "following" muda.
+  useEffect(() => {
+    const raw = followingQuery.data?.followingOrganizations;
+    if (!raw) return;
+    setOrgItems(raw.map((org) => ({ ...org, isFollowing: true })));
+  }, [followingQuery.data]);
+
   const canLoadMore = typeof total === "number" && items.length < total;
   const handleLoadMore = () => {
     if (!canLoadMore || activeQuery.isFetching) return;
@@ -102,7 +118,15 @@ export function FollowListSheet({
     );
   }, [items, query]);
 
+  const filteredOrgs = useMemo(() => {
+    if (tab !== "following") return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return orgItems;
+    return orgItems.filter((org) => org.name.toLowerCase().includes(q));
+  }, [orgItems, query, tab]);
+
   const isFirstLoad = activeQuery.isPending && page === 1;
+  const hasResults = filtered.length > 0 || filteredOrgs.length > 0;
 
   const handleToggleFollow = (person: FollowPerson) => {
     if (!person.username) return;
@@ -121,6 +145,25 @@ export function FollowListSheet({
             previous.map((item) =>
               item.identityId === person.identityId ? { ...item, isFollowing: !item.isFollowing } : item,
             ),
+          );
+        },
+      },
+    );
+  };
+
+  const handleToggleFollowOrg = (org: FollowOrgItem) => {
+    if (!isAuthenticated) {
+      onClose();
+      router.push(`/login-modal?redirectTo=/player/${username}` as never);
+      return;
+    }
+
+    toggleFollowOrg.mutate(
+      { orgSlug: org.slug, isFollowing: org.isFollowing },
+      {
+        onSuccess: () => {
+          setOrgItems((previous) =>
+            previous.map((item) => (item.slug === org.slug ? { ...item, isFollowing: !item.isFollowing } : item)),
           );
         },
       },
@@ -163,10 +206,73 @@ export function FollowListSheet({
           <View style={{ paddingVertical: 32, alignItems: "center" }}>
             <ActivityIndicator color={colors.primary} />
           </View>
-        ) : filtered.length === 0 ? (
+        ) : !hasResults ? (
           <EmptyState icon={Users} variant="noResults" title="Ninguém encontrado" />
         ) : (
           <>
+            {filteredOrgs.length > 0 ? (
+              <Text
+                token="label"
+                color="muted"
+                style={{ fontSize: 12, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, textTransform: "none", letterSpacing: 0 }}
+              >
+                Organizações
+              </Text>
+            ) : null}
+            {filteredOrgs.map((org) => (
+              <View key={org.slug} style={styles.personRow}>
+                <PressScale
+                  onPress={() => router.push(`/organizer/${org.slug}` as never)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir organização ${org.name}`}
+                  style={styles.personInfo}
+                >
+                  {org.logoUrl ? (
+                    <Image source={{ uri: org.logoUrl }} style={[styles.orgLogo, { borderRadius: radius.md - 3 }]} />
+                  ) : (
+                    <View
+                      style={[
+                        styles.orgLogo,
+                        styles.orgLogoFallback,
+                        { backgroundColor: colors.surfaceAlt, borderRadius: radius.md - 3 },
+                      ]}
+                    >
+                      <Building2 size={19} color={colors.textMuted} strokeWidth={1.75} />
+                    </View>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text token="bodySm" style={{ fontWeight: "700" }} numberOfLines={1}>
+                      {org.name}
+                    </Text>
+                    <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, marginTop: 1 }} numberOfLines={1}>
+                      Organização
+                    </Text>
+                  </View>
+                </PressScale>
+                <PressScale
+                  onPress={() => handleToggleFollowOrg(org)}
+                  disabled={toggleFollowOrg.isPending}
+                  accessibilityRole="button"
+                  accessibilityLabel={org.isFollowing ? `Deixar de seguir ${org.name}` : `Seguir ${org.name}`}
+                  style={[
+                    styles.followBtn,
+                    {
+                      borderRadius: radius.md - 3,
+                      backgroundColor: org.isFollowing ? colors.surface : colors.primary,
+                      borderColor: org.isFollowing ? colors.border : colors.primary,
+                    },
+                  ]}
+                >
+                  <Text
+                    token="caption"
+                    style={{ fontWeight: "700", textTransform: "none", letterSpacing: 0 }}
+                    color={org.isFollowing ? "default" : "onPrimary"}
+                  >
+                    {org.isFollowing ? "Seguindo" : "Seguir"}
+                  </Text>
+                </PressScale>
+              </View>
+            ))}
             {filtered.map((person) => {
               const displayName = person.name || "Atleta";
 
@@ -247,4 +353,6 @@ const styles = StyleSheet.create({
   personRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingVertical: 9 },
   personInfo: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minWidth: 0 },
   followBtn: { height: 32, paddingHorizontal: 14, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  orgLogo: { width: 44, height: 44 },
+  orgLogoFallback: { alignItems: "center", justifyContent: "center" },
 });

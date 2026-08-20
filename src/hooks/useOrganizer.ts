@@ -40,6 +40,24 @@ export const useFavoriteOrganizer = (slug: string) => {
 };
 
 /**
+ * Igual a useFollowOrganizer, mas não fica preso a um único slug — pensado
+ * pra alternar seguir/deixar de seguir em cada linha de uma lista com várias
+ * organizações diferentes (ex.: aba "Seguindo" do FollowListSheet), mesmo
+ * espírito de useToggleFollowByUsername em usePublicProfile.ts.
+ */
+export const useToggleFollowOrganizationBySlug = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orgSlug, isFollowing }: { orgSlug: string; isFollowing: boolean }) =>
+      isFollowing ? organizerService.unfollow(orgSlug) : organizerService.follow(orgSlug),
+    onSuccess: (_result, { orgSlug }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizer.detail(orgSlug) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
+    },
+  });
+};
+
+/**
  * Igual a useFavoriteOrganizer, mas não fica preso a um único slug — pensado
  * pra alternar favoritar/desfavoritar em cada linha de uma lista com várias
  * organizações diferentes (ex.: tela de Favoritos), mesmo espírito de

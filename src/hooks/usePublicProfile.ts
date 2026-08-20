@@ -26,6 +26,8 @@ export const useFollowPublicProfile = (username: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
     },
   });
 };
@@ -43,6 +45,8 @@ export const useToggleFollowByUsername = () => {
     onSuccess: (_result, { username }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
     },
   });
 };
@@ -54,6 +58,8 @@ export const useRemoveFollower = (username: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
     },
   });
 };
@@ -66,6 +72,8 @@ export const useToggleBlock = (username: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.detail(username) });
       queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followStatus(username) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followersAll() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.publicProfile.followingAll() });
     },
   });
 };
