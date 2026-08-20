@@ -18,7 +18,6 @@ export function usePushNotifications() {
   const router = useRouter();
   const user = useAuthStore((s) => s.customer);
   const tokenRef = useRef<string | null>(null);
-  const listenerRef = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -28,22 +27,28 @@ export function usePushNotifications() {
     }).catch((err) => {
       console.warn("[push] register failed:", err);
     });
+  }, [user]);
 
-    listenerRef.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const screen = response.notification.request.content.data?.screen as
-          | string
-          | undefined;
-        if (screen) {
-          router.push(screen as never);
-        }
-      },
-    );
+  // useLastNotificationResponse cobre os 3 casos de toque numa push
+  // (foreground, background e cold start) com uma única fonte — diferente de
+  // addNotificationResponseReceivedListener sozinho, que não é confiável no
+  // cold start: o app pode ser aberto pelo toque antes desse hook (que só
+  // monta depois da splash/checagem de auth) registrar o listener, e o
+  // evento já teria disparado e se perdido. Esse hook busca o valor guardado
+  // nativamente, então funciona mesmo com esse atraso.
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
-    return () => {
-      listenerRef.current?.remove();
-    };
-  }, [user, router]);
+  useEffect(() => {
+    const screen = lastNotificationResponse?.notification.request.content.data?.screen as
+      | string
+      | undefined;
+    if (!screen) return;
+
+    router.push(screen as never);
+    // Evita reabrir a mesma tela se este efeito rodar de novo (ex: hot
+    // reload, remount) sem que uma nova notificação tenha chegado.
+    Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+  }, [lastNotificationResponse, router]);
 
   return { tokenRef };
 }
