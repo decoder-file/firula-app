@@ -10,7 +10,10 @@ import { tokenStorage } from "./tokenStorage";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
-const TIMEOUT_MS = 15_000;
+// QA is noticeably slower than prod, so it gets a much longer timeout to
+// avoid spurious TimeoutErrors during manual testing.
+const IS_QA = BASE_URL?.toLowerCase().includes("qa") ?? false;
+const TIMEOUT_MS = IS_QA ? 120_000 : 15_000;
 
 // Sentinel header used to mark refresh-token requests and break retry loops.
 const RETRY_HEADER = "x-retry-after-refresh";
