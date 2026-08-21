@@ -26,7 +26,8 @@
         "NSPhotoLibraryUsageDescription": "Precisamos da sua galeria para voce escolher uma foto de perfil.",
         "NSPhotoLibraryAddUsageDescription": "Precisamos acessar a galeria para salvar e usar sua foto de perfil."
       },
-      "appleTeamId": "G58V8BP6VH"
+      "appleTeamId": "G58V8BP6VH",
+      "associatedDomains": ["applinks:firula.com.br"]
     },
     "android": {
       "splash": {
@@ -43,7 +44,20 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.firulaapp"
+      "package": "com.firulaapp",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "firula.com.br"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
