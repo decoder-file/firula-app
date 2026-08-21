@@ -23,6 +23,8 @@ export interface PurchaseQuoteInstallment {
 }
 
 export interface PurchaseQuote {
+  /** Devolvido no `purchase` final pra travar o preço no valor calculado aqui (30min de TTL). */
+  quoteId: string;
   event: { id: string; name: string };
   items: PurchaseQuoteItem[];
   grossAmountCents: number;
@@ -101,6 +103,8 @@ export interface CreatePurchasePayload {
   couponCode?: string;
   /** Ausente só quando o pedido é gratuito (`isFree`). */
   payment?: PurchasePaymentInput;
+  /** `quoteId` do último quote bem-sucedido — trava o preço se ainda válido. */
+  quoteId?: string;
 }
 
 export interface CreatedTicket {

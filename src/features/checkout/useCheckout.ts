@@ -421,8 +421,11 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
       ticketLots: ticketLotsPayload,
       attendees: buildAttendeesPayload(),
       ...(couponCode ? { couponCode } : {}),
+      // Trava o preço no valor do quote vigente (30min de TTL) — se ele já tiver
+      // expirado quando a compra for confirmada, o backend recalcula ao vivo.
+      ...(quote?.quoteId ? { quoteId: quote.quoteId } : {}),
     }),
-    [buyerName, buyerPhone, buyerCpf, buyerEmail, ticketLotsPayload, buildAttendeesPayload, couponCode],
+    [buyerName, buyerPhone, buyerCpf, buyerEmail, ticketLotsPayload, buildAttendeesPayload, couponCode, quote?.quoteId],
   );
 
   const handlePurchaseError = useCallback(
