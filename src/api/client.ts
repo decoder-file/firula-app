@@ -123,6 +123,21 @@ apiClient.interceptors.request.use(
 // só existe UMA chamada de /auth/refresh em voo por vez; qualquer chamada
 // concorrente reaproveita a mesma promise em vez de disparar a sua própria.
 type RefreshSessionResponse = { accessToken: string; refreshToken?: string; expiresIn: string };
+type MaybeWrappedRefreshResponse = RefreshSessionResponse | { success: boolean; data: RefreshSessionResponse };
+
+// /auth/refresh às vezes vem envelopado ({success, data: {...}}, igual outros
+// endpoints de auth — ver unwrapLoginResponse em auth.service.ts) e às vezes
+// vem achatado, dependendo do ambiente/versão do backend. Sem isso, um envelope
+// inesperado silenciosamente grava accessToken/refreshToken como undefined —
+// toda request depois vira "Bearer undefined", cai em 401 de novo, dispara
+// outro refresh, e o app fica preso num loop de refresh nunca resolvendo.
+function unwrapRefreshResponse(payload: MaybeWrappedRefreshResponse): RefreshSessionResponse {
+  const wrapped = payload as { success: boolean; data: RefreshSessionResponse };
+  if (wrapped?.data?.accessToken) {
+    return wrapped.data;
+  }
+  return payload as RefreshSessionResponse;
+}
 
 let inFlightRefresh: Promise<RefreshSessionResponse> | null = null;
 
@@ -132,12 +147,13 @@ export function refreshSession(refreshToken: string): Promise<RefreshSessionResp
   }
 
   inFlightRefresh = apiClient
-    .post<RefreshSessionResponse>(
+    .post<MaybeWrappedRefreshResponse>(
       "/auth/refresh",
       { refreshToken },
       { headers: { [RETRY_HEADER]: "1" } },
     )
-    .then(({ data }) => {
+    .then(({ data: rawData }) => {
+      const data = unwrapRefreshResponse(rawData);
       tokenStorage.setAccessToken(data.accessToken);
       if (data.refreshToken) {
         tokenStorage.setRefreshToken(data.refreshToken);
@@ -189,6 +205,13 @@ apiClient.interceptors.response.use(
         try {
           const refreshData = await refreshSession(refreshToken);
 
+          // Marca a retentativa como "já passou pelo refresh" — sem isso, se
+          // ela mesma voltar com outro 401 (ex: token de admin batendo numa
+          // rota que exige escopo de customer — renovar não resolve isso),
+          // o interceptor entra aqui de novo, renova de novo, tenta de novo,
+          // pra sempre. Com a marca, essa segunda falha só propaga o erro
+          // normalmente em vez de repetir o ciclo.
+          originalConfig.headers[RETRY_HEADER] = "1";
           originalConfig.headers.Authorization = `Bearer ${refreshData.accessToken}`;
           return apiClient.request(originalConfig);
         } catch {

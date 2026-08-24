@@ -348,6 +348,16 @@ describe("authService.refreshToken", () => {
 
     expect(mock.history.post.filter((r) => r.url === "/auth/refresh")).toHaveLength(2);
   });
+
+  it("unwraps a {success, data} envelope (some backend builds/environments wrap this endpoint, others don't — regression: an unhandled envelope silently stored accessToken as undefined and looped refreshing forever)", async () => {
+    mock.onPost("/auth/refresh").reply(200, { success: true, data: REFRESH_RESPONSE });
+
+    const result = await authService.refreshToken("refresh-token-xyz");
+
+    expect(result.accessToken).toBe("new-access-token-abc");
+    expect(tokenStorage.getAccessToken()).toBe("new-access-token-abc");
+    expect(tokenStorage.getRefreshToken()).toBe("rotated-refresh-token-def");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -489,6 +499,26 @@ describe("apiClient 401 refresh interceptor", () => {
 
     expect(tokenStorage.getAccessToken()).toBeNull();
     expect(tokenStorage.getRefreshToken()).toBeNull();
+  });
+
+  it("does not loop forever when the retried request 401s again after a successful refresh (regression: e.g. an admin-scoped token hitting a customer-only route — refreshing can never fix that)", async () => {
+    tokenStorage.setAccessToken("admin-scoped-token");
+    tokenStorage.setRefreshToken("stored-refresh-token");
+
+    // Toda tentativa de /auth/me falha com 401 — mesmo depois do refresh
+    // (simula uma rota que exige um escopo que esse token nunca vai ter).
+    mock.onGet("/auth/me").reply(401, {
+      success: false,
+      error: { code: "UNAUTHORIZED", message: "Você precisa estar logado para continuar." },
+    });
+    mock.onPost("/auth/refresh").reply(200, REFRESH_RESPONSE);
+
+    await expectToThrow(authService.getMe());
+
+    // Só UMA renovação — a segunda falha (na request já retentada) não deve
+    // disparar outro ciclo de refresh.
+    expect(mock.history.post.filter((r) => r.url === "/auth/refresh")).toHaveLength(1);
+    expect(mock.history.get.filter((r) => r.url === "/auth/me")).toHaveLength(2);
   });
 
   it("shares one refresh across several requests that 401 around the same time, instead of logging the user out (regression: reuse-detection revocation)", async () => {
