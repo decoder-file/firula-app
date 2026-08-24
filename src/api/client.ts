@@ -112,6 +112,46 @@ apiClient.interceptors.request.use(
 );
 
 // ---------------------------------------------------------------------------
+// Refresh de sessão — single-flight
+// ---------------------------------------------------------------------------
+// Refresh tokens são de uso único: se duas chamadas concorrentes tentarem
+// renovar ao mesmo tempo (ex: o bootstrap de cold-start em AppProviders e o
+// interceptor de 401 abaixo, ou vários requests que expiraram juntos logo
+// após o login), a segunda chegaria no backend com um refresh token que a
+// primeira já consumiu, disparando a detecção de reuso do backend — que
+// revoga a sessão inteira e desloga o usuário à toa. Esse guard garante que
+// só existe UMA chamada de /auth/refresh em voo por vez; qualquer chamada
+// concorrente reaproveita a mesma promise em vez de disparar a sua própria.
+type RefreshSessionResponse = { accessToken: string; refreshToken?: string; expiresIn: string };
+
+let inFlightRefresh: Promise<RefreshSessionResponse> | null = null;
+
+export function refreshSession(refreshToken: string): Promise<RefreshSessionResponse> {
+  if (inFlightRefresh) {
+    return inFlightRefresh;
+  }
+
+  inFlightRefresh = apiClient
+    .post<RefreshSessionResponse>(
+      "/auth/refresh",
+      { refreshToken },
+      { headers: { [RETRY_HEADER]: "1" } },
+    )
+    .then(({ data }) => {
+      tokenStorage.setAccessToken(data.accessToken);
+      if (data.refreshToken) {
+        tokenStorage.setRefreshToken(data.refreshToken);
+      }
+      return data;
+    })
+    .finally(() => {
+      inFlightRefresh = null;
+    });
+
+  return inFlightRefresh;
+}
+
+// ---------------------------------------------------------------------------
 // Response interceptor — normalize errors + automatic token refresh on 401
 // ---------------------------------------------------------------------------
 apiClient.interceptors.response.use(
@@ -147,20 +187,8 @@ apiClient.interceptors.response.use(
         !originalConfig.headers?.[RETRY_HEADER]
       ) {
         try {
-          const { data: refreshData } = await apiClient.post<{
-            accessToken: string;
-            refreshToken?: string;
-            expiresIn: string;
-          }>(
-            "/auth/refresh",
-            { refreshToken },
-            { headers: { [RETRY_HEADER]: "1" } },
-          );
+          const refreshData = await refreshSession(refreshToken);
 
-          tokenStorage.setAccessToken(refreshData.accessToken);
-          if (refreshData.refreshToken) {
-            tokenStorage.setRefreshToken(refreshData.refreshToken);
-          }
           originalConfig.headers.Authorization = `Bearer ${refreshData.accessToken}`;
           return apiClient.request(originalConfig);
         } catch {

@@ -490,4 +490,43 @@ describe("apiClient 401 refresh interceptor", () => {
     expect(tokenStorage.getAccessToken()).toBeNull();
     expect(tokenStorage.getRefreshToken()).toBeNull();
   });
+
+  it("shares one refresh across several requests that 401 around the same time, instead of logging the user out (regression: reuse-detection revocation)", async () => {
+    // Reproduz o cenário real: várias telas montadas ao mesmo tempo (ex: logo
+    // após o login, quando o app refaz o fetch de tudo que está ativo) batem
+    // 401 quase simultaneamente. Antes da correção, cada uma disparava seu
+    // próprio POST /auth/refresh com o mesmo refresh token (de uso único) —
+    // o backend revogava a sessão inteira na segunda tentativa, e a request
+    // perdedora dessa corrida deslogava o usuário mesmo a sessão sendo válida.
+    tokenStorage.setAccessToken("expired-token");
+    tokenStorage.setRefreshToken("stored-refresh-token");
+
+    // Só a PRIMEIRA chamada real deveria acontecer — se o bug voltar (cada
+    // 401 disparando seu próprio refresh), essa segunda resposta simularia
+    // exatamente a revogação por reuso que o backend faria.
+    let refreshCalls = 0;
+    mock.onPost("/auth/refresh").reply(() => {
+      refreshCalls += 1;
+      if (refreshCalls > 1) {
+        return [401, { success: false, error: { code: "INVALID_REFRESH_TOKEN", message: "Refresh token already used" } }];
+      }
+      return [200, REFRESH_RESPONSE];
+    });
+    mock.onGet("/auth/me").replyOnce(401, {
+      success: false,
+      error: { code: "UNAUTHORIZED", message: "Token expired" },
+    });
+    mock.onGet("/auth/me").replyOnce(401, {
+      success: false,
+      error: { code: "UNAUTHORIZED", message: "Token expired" },
+    });
+    mock.onGet("/auth/me").reply(200, ME_RESPONSE);
+
+    const [first, second] = await Promise.all([authService.getMe(), authService.getMe()]);
+
+    expect(first).toEqual(ME_RESPONSE);
+    expect(second).toEqual(ME_RESPONSE);
+    expect(mock.history.post.filter((r) => r.url === "/auth/refresh")).toHaveLength(1);
+    expect(tokenStorage.getAccessToken()).toBe("new-access-token-abc");
+  });
 });

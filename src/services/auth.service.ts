@@ -1,4 +1,4 @@
-import { apiClient } from "@/api/client";
+import { apiClient, refreshSession } from "@/api/client";
 import { tokenStorage } from "@/api/tokenStorage";
 
 // ---------------------------------------------------------------------------
@@ -132,12 +132,6 @@ export interface VerifyLoginCodePayload {
 // Service
 // ---------------------------------------------------------------------------
 
-// Single-flight guard: the app-launch bootstrap and the 401 retry interceptor
-// can both try to refresh at nearly the same time. Refresh tokens are
-// single-use — a concurrent duplicate call would trigger reuse-detection on
-// the backend and revoke the whole session, reintroducing the logout bug.
-let inFlightRefresh: Promise<RefreshTokenResponse> | null = null;
-
 export const authService = {
   /**
    * POST /public/auth/customer/request-code
@@ -205,32 +199,13 @@ export const authService = {
   /**
    * POST /auth/refresh
    * Updates the access token (and rotated refresh token, when provided) in
-   * tokenStorage on success. Concurrent calls share the same in-flight
-   * request — see `inFlightRefresh` above.
+   * tokenStorage on success. Delegates to the single-flight guard in
+   * src/api/client.ts, shared with the 401 retry interceptor — see the
+   * comment there for why a shared guard matters (refresh tokens are
+   * single-use; a concurrent duplicate call revokes the whole session).
    */
-  refreshToken: async (refreshToken: string): Promise<RefreshTokenResponse> => {
-    if (inFlightRefresh) {
-      return inFlightRefresh;
-    }
-
-    inFlightRefresh = (async () => {
-      const { data } = await apiClient.post<RefreshTokenResponse>(
-        "/auth/refresh",
-        { refreshToken },
-      );
-      tokenStorage.setAccessToken(data.accessToken);
-      if (data.refreshToken) {
-        tokenStorage.setRefreshToken(data.refreshToken);
-      }
-      return data;
-    })();
-
-    try {
-      return await inFlightRefresh;
-    } finally {
-      inFlightRefresh = null;
-    }
-  },
+  refreshToken: (refreshToken: string): Promise<RefreshTokenResponse> =>
+    refreshSession(refreshToken),
 
   /**
    * POST /auth/logout
