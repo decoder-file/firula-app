@@ -17,11 +17,9 @@ import {
   ChevronLeft,
   Clock,
   Heart,
+  Globe,
   MapPin,
-  RotateCcw,
-  ShieldCheck,
   Share2,
-  Smartphone,
   Star,
   Zap,
 } from "lucide-react-native";
@@ -31,18 +29,30 @@ import { Screen } from "@/components/Screen";
 import { Skeleton } from "@/components/Skeleton";
 import { PressScale, Text, ThemeProvider, useTheme } from "@/design-system";
 import { EventDescriptionSection } from "@/features/event-detail/components/EventDescriptionSection";
+import {
+  EventProgramSection,
+  EventScheduleModal,
+  EventTermsSection,
+} from "@/features/event-detail/components/EventExtras";
 import { FactItem } from "@/features/event-detail/components/FactItem";
 import { LotCard } from "@/features/event-detail/components/LotCard";
 import { RoundButton } from "@/features/event-detail/components/RoundButton";
 import { ParticipantsSection } from "@/features/event-detail/components/ParticipantsSection";
 import { SpeakersSection } from "@/features/event-detail/components/SpeakersSection";
-import { TrustItem } from "@/features/event-detail/components/TrustItem";
+import { SponsorsCarousel } from "@/features/event-detail/components/SponsorsCarousel";
 import type { EventDetailScreenProps } from "@/features/event-detail/types";
 import { getEventAccentColors } from "@/utils/eventTheme";
 
 // Abaixo desse offset de scroll, a imagem de capa (dark) já saiu praticamente toda de
 // trás da status bar — troca pra ícones escuros pra não ficar branco sobre branco.
 const HERO_SCROLL_THRESHOLD = 260;
+
+const getInitialsForDisplay = (name: string) => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "CP";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+};
 
 function formatBRL(cents: number) {
   return (
@@ -78,6 +88,7 @@ function EventDetailScreenContent({
   onOpenMap,
   onAddToCalendar,
   onOpenOrganizer,
+  onOpenOrganizerWebsite,
   onFollowOrganizer,
   onCheckout,
 }: EventDetailScreenProps) {
@@ -85,6 +96,8 @@ function EventDetailScreenContent({
   const insets = useSafeAreaInsets();
   const [qty, setQty] = useState<Record<string, number>>({});
   const [statusBarStyle, setStatusBarStyle] = useState<"light" | "dark">("light");
+  const [scheduleVisible, setScheduleVisible] = useState(false);
+  const [activeSupporterId, setActiveSupporterId] = useState<string | null>(null);
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const shouldBeDark = e.nativeEvent.contentOffset.y > HERO_SCROLL_THRESHOLD;
@@ -197,16 +210,16 @@ function EventDetailScreenContent({
         <View style={{ height: 340 }}>
           <Image
             source={event.image}
-            style={StyleSheet.absoluteFillObject as any}
-            resizeMode="cover"
+            style={[StyleSheet.absoluteFillObject as any, styles.heroImage]}
+            resizeMode="contain"
           />
           <View style={[StyleSheet.absoluteFillObject, styles.heroScrim]} />
 
           <View
             style={{ position: "absolute", left: 20, right: 20, bottom: 18 }}
           >
-            <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-              {event.hot ? (
+            {event.hot ? (
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
                 <View
                   style={[styles.pill, { backgroundColor: colors.primary }]}
                 >
@@ -219,23 +232,17 @@ function EventDetailScreenContent({
                     Alta procura
                   </Text>
                 </View>
-              ) : null}
-              <View
-                style={[
-                  styles.pill,
-                  { backgroundColor: "rgba(255,255,255,0.9)" },
-                ]}
-              >
-                <Text
-                  token="caption"
-                  style={[styles.pillTxt, { color: "#141821" }]}
-                >
-                  {event.category}
-                </Text>
               </View>
-            </View>
+            ) : null}
           </View>
         </View>
+
+        {event.sponsors && event.sponsors.length > 0 ? (
+          <SponsorsCarousel
+            sponsors={event.sponsors}
+            backgroundColor={event.sponsorsBackgroundColor}
+          />
+        ) : null}
 
         <View style={{ paddingHorizontal: 20, paddingTop: 18 }}>
           <Text token="titleLg" style={styles.pageTitle}>
@@ -282,8 +289,8 @@ function EventDetailScreenContent({
               }
               title={event.dateLabel}
               subtitle={event.timeLabel}
-              actionLabel="Lembrar"
-              onAction={onAddToCalendar}
+              actionLabel={event.daySchedules?.length ? "Ver datas" : "Lembrar"}
+              onAction={event.daySchedules?.length ? () => setScheduleVisible(true) : onAddToCalendar}
               colors={colors}
             />
             <FactItem
@@ -299,61 +306,86 @@ function EventDetailScreenContent({
               actionLabel="Mapa"
               onAction={onOpenMap}
               colors={colors}
+              contained
             />
           </View>
 
           {event.organizer ? (
-            <PressScale
-              onPress={onOpenOrganizer}
-              disabled={!onOpenOrganizer}
-              accessibilityRole="button"
-              accessibilityLabel={`Ver perfil de ${event.organizer.name}`}
-              style={[styles.orgCard, { backgroundColor: colors.background }]}
-            >
-              <View
-                style={[styles.orgAvatar, { backgroundColor: colors.text }]}
+            <View style={[styles.orgCard, { backgroundColor: colors.background }]}>
+              <PressScale
+                onPress={onOpenOrganizer}
+                disabled={!onOpenOrganizer}
+                accessibilityRole="button"
+                accessibilityLabel={`Ver perfil de ${event.organizer.name}`}
+                style={styles.organizerMainRow}
               >
-                <Text
-                  token="subtitle"
-                  style={{ color: colors.primary, fontWeight: "800" }}
-                >
-                  {event.organizer.initials}
-                </Text>
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
-                >
-                  <Text token="body" style={{ fontWeight: "700" }}>
-                    {event.organizer.name}
-                  </Text>
-                  {event.organizer.verified ? (
-                    <BadgeCheck
-                      size={15}
-                      color={colors.primary}
-                      fill={colors.primarySoft}
-                    />
-                  ) : null}
+                <View style={[styles.orgAvatar, { backgroundColor: colors.text }]}>
+                  {event.organizer.logoUrl ? (
+                    <Image source={{ uri: event.organizer.logoUrl }} resizeMode="cover" style={styles.orgLogo} />
+                  ) : (
+                    <Text token="subtitle" style={{ color: colors.primary, fontWeight: "800" }}>
+                      {event.organizer.initials}
+                    </Text>
+                  )}
                 </View>
-                <Text
-                  token="caption"
-                  color="muted"
-                  style={{ textTransform: "none", letterSpacing: 0 }}
-                >
-                  Organizador
-                  {event.organizer.eventsCount != null
-                    ? ` · ${event.organizer.eventsCount} eventos realizados`
-                    : ""}
-                </Text>
-              </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    <Text token="body" style={{ fontWeight: "700" }}>
+                      {event.organizer.name}
+                    </Text>
+                    {event.organizer.verified ? (
+                      <BadgeCheck size={15} color={colors.primary} fill={colors.primarySoft} />
+                    ) : null}
+                  </View>
+                  <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>
+                    Organizador
+                    {event.organizer.eventsCount != null
+                      ? ` · ${event.organizer.eventsCount} eventos realizados`
+                      : ""}
+                  </Text>
+                </View>
+                <ArrowRight size={18} color={colors.textMuted} />
+              </PressScale>
               {/* <PressScale onPress={onFollowOrganizer ?? (() => {})} accessibilityRole="button" accessibilityLabel="Seguir organizador"
                 style={[styles.followBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text token="label" style={{ fontSize: 12.5 }}>Seguir</Text>
               </PressScale> */}
-            </PressScale>
+              {event.coProducer && event.primaryOrganizer !== "CO_PRODUCER" ? (
+                <View style={[styles.coProducerRow, { borderTopColor: colors.border }]}>
+                  <View style={[styles.coProducerAvatar, { backgroundColor: colors.primarySoft }]}>
+                    {event.coProducer.logoUrl ? (
+                      <Image source={{ uri: event.coProducer.logoUrl }} resizeMode="cover" style={styles.orgLogo} />
+                    ) : (
+                      <Text token="label" color="primary">{getInitialsForDisplay(event.coProducer.name)}</Text>
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text token="caption" color="muted" style={styles.coProducerLabel}>Em coprodução com</Text>
+                    <Text token="bodySm" style={{ fontWeight: "700" }}>{event.coProducer.name}</Text>
+                  </View>
+                </View>
+              ) : null}
+
+              {event.organizer.websiteUrl ? (
+                <PressScale
+                  onPress={onOpenOrganizerWebsite}
+                  disabled={!onOpenOrganizerWebsite}
+                  accessibilityRole="link"
+                  accessibilityLabel={event.organizer.websiteLabel || "Visitar site"}
+                  style={[styles.organizerWebsiteButton, { borderColor: colors.primary }]}
+                >
+                  <Globe size={17} color={colors.primaryText} />
+                  <Text token="label" color="primary">
+                    {event.organizer.websiteLabel?.trim() || "Visitar site"}
+                  </Text>
+                </PressScale>
+              ) : null}
+            </View>
           ) : null}
 
           <EventDescriptionSection description={event.about} colors={colors} radius={radius} />
+
+          {event.schedule ? <EventProgramSection schedule={event.schedule} colors={colors} radius={radius} /> : null}
 
           {event.speakers && event.speakers.length > 0 ? (
             <SpeakersSection speakers={event.speakers} colors={colors} radius={radius} />
@@ -394,40 +426,69 @@ function EventDetailScreenContent({
             ))}
           </View>
 
-          <View style={styles.trustRow}>
-            <TrustItem
-              icon={
-                <ShieldCheck
-                  size={16}
-                  color={colors.primaryText}
-                  strokeWidth={1.75}
-                />
-              }
-              label="Compra 100% segura"
-            />
-            <TrustItem
-              icon={
-                <RotateCcw
-                  size={16}
-                  color={colors.primaryText}
-                  strokeWidth={1.75}
-                />
-              }
-              label="Reembolso até 7 dias"
-            />
-            <TrustItem
-              icon={
-                <Smartphone
-                  size={16}
-                  color={colors.primaryText}
-                  strokeWidth={1.75}
-                />
-              }
-              label="Ingresso no app"
-            />
-          </View>
         </View>
+
+        {event.terms && event.terms.length > 0 ? (
+          <View style={styles.bottomSectionContent}>
+            <EventTermsSection terms={event.terms} colors={colors} radius={radius} />
+          </View>
+        ) : null}
+
+        {event.supporters && event.supporters.length > 0 ? (
+          <View
+            style={[
+              styles.supportersSection,
+              {
+                backgroundColor: colors.surface,
+                borderTopColor: colors.border,
+              },
+            ]}
+          >
+            <Text token="caption" color="muted" style={styles.supportersTitle}>
+              Apoio
+            </Text>
+            <ScrollView
+              accessibilityLabel="Logos de apoiadores do evento"
+              accessibilityRole="summary"
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.supportersRow}
+            >
+              {event.supporters.map((supporter) => (
+                <Pressable
+                  key={supporter.id}
+                  accessibilityRole="image"
+                  accessibilityLabel={supporter.name}
+                  onHoverIn={() => setActiveSupporterId(supporter.id)}
+                  onHoverOut={() => setActiveSupporterId(null)}
+                  onPressIn={() => setActiveSupporterId(supporter.id)}
+                  onPressOut={() => setActiveSupporterId(null)}
+                  style={[
+                    styles.supporterLogoContainer,
+                    activeSupporterId === supporter.id
+                      ? null
+                      : styles.supporterLogoMonochrome,
+                  ]}
+                >
+                  <Image
+                    source={{ uri: supporter.logoUrl }}
+                    resizeMode="contain"
+                    style={styles.supporterLogo}
+                  />
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
       </ScrollView>
+
+      <EventScheduleModal
+        visible={scheduleVisible}
+        days={event.daySchedules ?? []}
+        onClose={() => setScheduleVisible(false)}
+        colors={colors}
+        radius={radius}
+      />
 
       <View
         style={[
@@ -537,6 +598,43 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   heroScrim: { backgroundColor: "transparent" },
+  heroImage: {
+    alignSelf: "center",
+  },
+  supportersSection: {
+    borderTopWidth: 1,
+    paddingBottom: 20,
+    paddingTop: 24,
+  },
+  supportersTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.9,
+    marginBottom: 16,
+    textAlign: "center",
+    textTransform: "uppercase",
+  },
+  supportersRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexGrow: 1,
+    gap: 8,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  supporterLogoContainer: {
+    alignItems: "center",
+    height: 44,
+    justifyContent: "center",
+    width: 88,
+  },
+  supporterLogo: {
+    height: "100%",
+    width: "100%",
+  },
+  supporterLogoMonochrome: {
+    filter: [{ grayscale: 1 }],
+  },
   pill: {
     flexDirection: "row",
     alignItems: "center",
@@ -568,20 +666,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   orgCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
     borderRadius: 16,
     padding: 12,
     marginBottom: 20,
   },
+  organizerMainRow: { alignItems: "center", flexDirection: "row", gap: 12 },
   orgAvatar: {
     width: 42,
     height: 42,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
+  orgLogo: { height: "100%", width: "100%" },
+  coProducerRow: { alignItems: "center", borderTopWidth: 1, flexDirection: "row", gap: 10, marginTop: 12, paddingTop: 12, width: "100%" },
+  coProducerAvatar: { alignItems: "center", borderRadius: 999, height: 34, justifyContent: "center", overflow: "hidden", width: 34 },
+  coProducerLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 0.5, textTransform: "uppercase" },
+  organizerWebsiteButton: { alignItems: "center", borderRadius: 999, borderWidth: 1, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 12, minHeight: 44, paddingHorizontal: 16 },
   followBtn: {
     borderWidth: 1,
     borderRadius: 10,
@@ -598,13 +700,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  trustRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 14,
-    marginTop: 22,
-    marginBottom: 8,
-  },
+  bottomSectionContent: { paddingHorizontal: 20 },
   ctaBar: {
     position: "absolute",
     left: 0,

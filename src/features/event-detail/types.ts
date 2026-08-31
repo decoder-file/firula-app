@@ -19,6 +19,24 @@ export interface Organizer {
   initials: string;
   verified?: boolean;
   eventsCount?: number;
+  logoUrl?: string | null;
+  websiteUrl?: string | null;
+  websiteLabel?: string | null;
+}
+
+export interface EventDaySchedule {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface EventTerm {
+  id: string;
+  title: string;
+  description?: string | null;
+  fileUrl?: string | null;
+  bodyHtml?: string | null;
+  displayMode?: "MODAL" | "INLINE" | null;
 }
 
 export interface SocialProof {
@@ -38,6 +56,18 @@ export interface FeaturedPerson {
   instagram?: string | null;
 }
 
+export interface Sponsor {
+  id: string;
+  name: string;
+  logoUrl: string;
+}
+
+export interface Supporter {
+  id: string;
+  name: string;
+  logoUrl: string;
+}
+
 export interface EventDetail {
   id: string;
   title: string;
@@ -55,6 +85,14 @@ export interface EventDetail {
   lotDeadlineText?: string;
   showParticipants?: boolean;
   speakers?: FeaturedPerson[];
+  sponsors?: Sponsor[];
+  sponsorsBackgroundColor?: string | null;
+  supporters?: Supporter[];
+  coProducer?: { name: string; logoUrl?: string | null };
+  primaryOrganizer?: "ORGANIZATION" | "CO_PRODUCER" | null;
+  daySchedules?: EventDaySchedule[];
+  schedule?: { title: string; description?: string | null; pdfUrl: string };
+  terms?: EventTerm[];
   /** Cor de destaque customizada do evento (hex #RRGGBB), definida pelo dono da plataforma. */
   accentColor?: string | null;
 }
@@ -70,6 +108,7 @@ export interface EventDetailScreenProps {
   onOpenMap?: () => void;
   onAddToCalendar?: () => void;
   onOpenOrganizer?: () => void;
+  onOpenOrganizerWebsite?: () => void;
   onFollowOrganizer?: () => void;
   onCheckout?: (selection: Record<string, number>, totalCents: number) => void;
 }

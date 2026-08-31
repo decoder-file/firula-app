@@ -86,6 +86,14 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     imageUrl: null,
   });
 
+  const fallbackEnd = new Date(new Date(event.startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString();
+  const daySchedules = (event.daySchedules ?? [])
+    .filter((schedule) => schedule.id && schedule.startsAt && schedule.endsAt);
+  const coProducerIsPrimary = event.primaryOrganizer === "CO_PRODUCER" && Boolean(event.coProducerName);
+  const organizerName = coProducerIsPrimary ? event.coProducerName as string : event.organization.tradeName;
+  const locationName = event.location.name?.trim();
+  const streetAddress = `${event.location.address}, ${event.location.addressNumber}`;
+
   return {
     id: event.id,
     title: event.name,
@@ -94,16 +102,26 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
     hot: event.soldCount > 80,
     dateLabel: formatDateLabel(event.startsAt),
     timeLabel: formatTimeLabel(event.startsAt),
-    venueName: `${event.location.address}, ${event.location.addressNumber}`,
-    address: `${event.location.neighborhood}, ${event.location.city} - ${event.location.state}`,
+    venueName: locationName || streetAddress,
+    address: [
+      locationName ? streetAddress : null,
+      event.location.addressComplement,
+      event.location.neighborhood,
+      `${event.location.city} - ${event.location.state}`,
+    ]
+      .filter(Boolean)
+      .join(", "),
     about: stripHtml(event.description).trim()
       ? event.description
       : 'Sem descrição disponível para este evento.',
     organizer: {
       slug: event.organization.slug,
-      name: event.organization.tradeName,
-      initials: getInitials(event.organization.tradeName),
+      name: organizerName,
+      initials: getInitials(organizerName),
       verified: true,
+      logoUrl: coProducerIsPrimary ? event.coProducerLogoUrl : event.organization.logoUrl,
+      websiteUrl: event.websiteUrl || event.organization.website,
+      websiteLabel: event.websiteLabel,
     },
     social: event.soldCount > 0 ? { count: event.soldCount } : undefined,
     lotDeadlineText: getLotDeadlineText(event.ticketLots),
@@ -119,6 +137,49 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
         shortDescription: person.shortDescription,
         description: person.description,
         instagram: person.instagram,
+      })),
+    sponsors: (event.sponsors ?? [])
+      .filter((sponsor) => sponsor.id && sponsor.name && sponsor.logoUrl)
+      .map((sponsor) => ({
+        id: sponsor.id,
+        name: sponsor.name,
+        logoUrl: sponsor.logoUrl as string,
+      })),
+    sponsorsBackgroundColor: event.settings?.sponsorsBackgroundColor,
+    supporters: (event.supporters ?? [])
+      .filter((supporter) => supporter.id && supporter.name && supporter.logoUrl)
+      .map((supporter) => ({
+        id: supporter.id,
+        name: supporter.name,
+        logoUrl: supporter.logoUrl as string,
+      })),
+    coProducer: event.coProducerName
+      ? { name: event.coProducerName, logoUrl: event.coProducerLogoUrl }
+      : undefined,
+    primaryOrganizer: event.primaryOrganizer,
+    daySchedules: daySchedules.length > 0
+      ? daySchedules
+      : [{ id: "event-day-1", startsAt: event.startsAt, endsAt: event.endsAt || fallbackEnd }],
+    schedule: event.schedulePdfUrl
+      ? {
+          title: event.scheduleTitle?.trim() || "Programação do evento",
+          description: event.scheduleDescription,
+          pdfUrl: event.schedulePdfUrl,
+        }
+      : undefined,
+    terms: (event.eventTerms ?? [])
+      .filter(
+        (term) =>
+          term.status !== "INACTIVE" &&
+          Boolean(term.currentVersion?.fileUrl || term.currentVersion?.bodyHtml),
+      )
+      .map((term) => ({
+        id: term.id,
+        title: term.title || term.id,
+        description: term.description,
+        fileUrl: term.currentVersion?.fileUrl,
+        bodyHtml: term.currentVersion?.bodyHtml,
+        displayMode: term.displayMode,
       })),
     accentColor: event.settings?.ticketPageAccentColor,
   };
@@ -260,6 +321,18 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
     onOpenOrganizer: () => {
       if (!event?.organization.slug) return;
       router.push(`/organizer/${encodeURIComponent(event.organization.slug)}`);
+    },
+    onOpenOrganizerWebsite: async () => {
+      const websiteUrl = event?.websiteUrl || event?.organization.website;
+      if (!websiteUrl) return;
+
+      const normalizedUrl = /^https?:\/\//i.test(websiteUrl)
+        ? websiteUrl
+        : `https://${websiteUrl}`;
+      const opened = await openFirstSupportedUrl([normalizedUrl]);
+      if (!opened) {
+        Alert.alert('Não foi possível abrir o site', 'Verifique o endereço e tente novamente.');
+      }
     },
   };
 };

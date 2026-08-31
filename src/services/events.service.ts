@@ -22,6 +22,7 @@ export interface PlatformEvent {
   name: string;
   slug: string | null;
   startsAt: string;
+  endsAt?: string | null;
   status: string;
   isFeatured: boolean;
   isTrending: boolean;
@@ -30,6 +31,8 @@ export interface PlatformEvent {
   isFreeEvent?: boolean;
   hasTicketLots?: boolean;
   coverUrl: string | null;
+  websiteUrl?: string | null;
+  websiteLabel?: string | null;
   imageUrl?: string | null;
   organization: PlatformEventOrganization;
   location: PlatformEventLocation;
@@ -81,10 +84,13 @@ export interface AdminEventDetail {
   slug: string;
   description: string;
   startsAt: string;
+  endsAt?: string | null;
   totalCapacity: number;
   soldCount: number;
   status: string;
   coverUrl: string | null;
+  websiteUrl?: string | null;
+  websiteLabel?: string | null;
   organization: {
     id: string;
     tradeName: string;
@@ -96,8 +102,10 @@ export interface AdminEventDetail {
     description: string | null;
     website: string | null;
     instagram: string | null;
+    logoUrl?: string | null;
   };
   location: {
+    name?: string | null;
     city: string;
     state: string;
     address: string;
@@ -117,6 +125,7 @@ export interface AdminEventDetail {
     maxTicketsPerCpf: number;
     showParticipantsOnEventPage?: boolean;
     ticketPageAccentColor?: string | null;
+    sponsorsBackgroundColor?: string | null;
     /** Se os dados de cada participante são exigidos antes do pagamento ou podem ser preenchidos depois. */
     attendeeDataStrategy?: "REQUIRED_BEFORE_PAYMENT" | "OPTIONAL_AFTER_PAYMENT";
   };
@@ -139,7 +148,8 @@ export interface AdminEventDetail {
     required: boolean;
     status: string;
     ticketLotId: string | null;
-    currentVersion: { fileUrl: string | null } | null;
+    displayMode?: "MODAL" | "INLINE" | null;
+    currentVersion: { fileUrl: string | null; bodyHtml?: string | null } | null;
   }>;
   featuredPeople: Array<{
     id: string;
@@ -149,6 +159,29 @@ export interface AdminEventDetail {
     description: string | null;
     instagram: string | null;
     position: number;
+  }>;
+  sponsors: Array<{
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    position: number;
+  }>;
+  supporters?: Array<{
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    position: number;
+  }>;
+  coProducerName?: string | null;
+  coProducerLogoUrl?: string | null;
+  primaryOrganizer?: "ORGANIZATION" | "CO_PRODUCER" | null;
+  scheduleTitle?: string | null;
+  scheduleDescription?: string | null;
+  schedulePdfUrl?: string | null;
+  daySchedules?: Array<{
+    id: string;
+    startsAt: string;
+    endsAt: string;
   }>;
 }
 
