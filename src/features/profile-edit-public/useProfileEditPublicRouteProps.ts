@@ -5,16 +5,23 @@ import { Alert } from "react-native";
 
 import { isApiError } from "@/api/errors";
 import { queryKeys } from "@/hooks/queryKeys";
+import { useIsCustomerScoped } from "@/hooks/useAuth";
 import { profileService } from "@/services/profile.service";
 import type { ProfileEditPublicScreenProps } from "@/features/profile-edit-public/types";
 
 export const useProfileEditPublicRouteProps = (): ProfileEditPublicScreenProps => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isCustomerScoped = useIsCustomerScoped();
 
+  // Só alcançável hoje pelo menu de perfil (já bloqueado pra sessão não-cliente),
+  // mas o gate fica aqui também como defesa — sem ele, uma sessão de
+  // admin/organizador que chegasse aqui de outra forma entraria em loop de
+  // refresh tentando /public/customer/profile/complete.
   const { data: profile, isPending: isLoading } = useQuery({
     queryKey: queryKeys.profile.customer(),
     queryFn: profileService.getCompleteProfile,
+    enabled: isCustomerScoped,
   });
 
   const updatePublicSettingsMutation = useMutation({ mutationFn: profileService.updatePublicSettings });

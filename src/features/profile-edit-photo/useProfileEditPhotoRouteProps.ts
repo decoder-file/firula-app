@@ -6,16 +6,19 @@ import { Alert } from "react-native";
 
 import { isApiError } from "@/api/errors";
 import { queryKeys } from "@/hooks/queryKeys";
+import { useIsCustomerScoped } from "@/hooks/useAuth";
 import { profileService } from "@/services/profile.service";
 import type { ProfileEditPhotoScreenProps } from "@/features/profile-edit-photo/types";
 
 export const useProfileEditPhotoRouteProps = (): ProfileEditPhotoScreenProps => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isCustomerScoped = useIsCustomerScoped();
 
   const { data: profile, isPending: isLoading } = useQuery({
     queryKey: queryKeys.profile.customer(),
     queryFn: profileService.getCompleteProfile,
+    enabled: isCustomerScoped,
   });
 
   const requestAvatarUploadMutation = useMutation({ mutationFn: profileService.requestAvatarUpload });

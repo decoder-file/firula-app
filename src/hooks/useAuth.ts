@@ -8,11 +8,13 @@ import type {
   RegisterPayload,
   VerifyLoginCodePayload,
 } from "@/services/auth.service";
-import { selectIsAuthenticated, useAuthStore } from "@/stores/authStore";
+import { selectIsAuthenticated, selectIsCustomerScoped, useAuthStore } from "@/stores/authStore";
 import { usersService } from "@/services/users.service";
 import { queryKeys } from "./queryKeys";
 
 export const useIsAuthenticated = () => useAuthStore(selectIsAuthenticated);
+
+export const useIsCustomerScoped = () => useAuthStore(selectIsCustomerScoped);
 
 export const useAuthUser = () => useAuthStore((state) => state.customer);
 

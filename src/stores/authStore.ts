@@ -44,3 +44,9 @@ export const useAuthStore = create<AuthStore>()(
 
 export const selectIsAuthenticated = (state: AuthStore): boolean =>
   state.customer !== null;
+
+// Sessões de admin/organizador (scope "admin") não têm acesso às rotas
+// /public/customer/* — usado pra não disparar polling (ex: notificações) que
+// vai sempre 401 nesse tipo de sessão, gastando refresh de token à toa.
+export const selectIsCustomerScoped = (state: AuthStore): boolean =>
+  state.customer?.scope === "customer";

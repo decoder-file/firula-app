@@ -5,6 +5,7 @@ import { Alert } from "react-native";
 
 import { isApiError } from "@/api/errors";
 import { queryKeys } from "@/hooks/queryKeys";
+import { useIsCustomerScoped } from "@/hooks/useAuth";
 import { profileService } from "@/services/profile.service";
 import { formatCpf, formatPhone, onlyDigits } from "@/utils/mask";
 import type { ProfileEditPersonalScreenProps } from "@/features/profile-edit-personal/types";
@@ -12,10 +13,12 @@ import type { ProfileEditPersonalScreenProps } from "@/features/profile-edit-per
 export const useProfileEditPersonalRouteProps = (): ProfileEditPersonalScreenProps => {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isCustomerScoped = useIsCustomerScoped();
 
   const { data: profile, isPending: isLoading } = useQuery({
     queryKey: queryKeys.profile.customer(),
     queryFn: profileService.getCompleteProfile,
+    enabled: isCustomerScoped,
   });
 
   const updatePersonalMutation = useMutation({ mutationFn: profileService.updatePersonal });

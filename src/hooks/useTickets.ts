@@ -3,16 +3,24 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ticketsService } from "@/services/tickets.service";
 import type { PurchaseTicketPayload } from "@/services/tickets.service";
+import { useIsCustomerScoped } from "./useAuth";
 import { queryKeys } from "./queryKeys";
 
-export const useMyTickets = () =>
-  useQuery({
+// /public/customer/tickets só aceita sessão com scope "customer" — sem esse
+// gate, uma sessão de admin/organizador (que também passa por essa tela)
+// ficaria em loop de 401 tentando renovar um token que nunca vai servir.
+export const useMyTickets = () => {
+  const isCustomerScoped = useIsCustomerScoped();
+  return useQuery({
     queryKey: queryKeys.tickets.mine(),
     queryFn: ticketsService.getMyTickets,
+    enabled: isCustomerScoped,
   });
+};
 
-export const useTicket = (id: string) =>
-  useQuery({
+export const useTicket = (id: string) => {
+  const isCustomerScoped = useIsCustomerScoped();
+  return useQuery({
     queryKey: queryKeys.tickets.detail(id),
     queryFn: async () => {
       const tickets = await ticketsService.getMyTickets();
@@ -24,8 +32,9 @@ export const useTicket = (id: string) =>
 
       return ticket;
     },
-    enabled: Boolean(id),
+    enabled: isCustomerScoped && Boolean(id),
   });
+};
 
 export const useAddToWallet = () =>
   useMutation({

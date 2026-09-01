@@ -8,7 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "@/design-system";
 import { isApiError } from "@/api/errors";
 import { tokenStorage } from "@/api/tokenStorage";
-import { useAuthUser, useIsAuthenticated, useLogout, useMe } from "@/hooks/useAuth";
+import { useAuthUser, useIsCustomerScoped, useLogout, useMe } from "@/hooks/useAuth";
 import { queryKeys } from "@/hooks/queryKeys";
 import { useMyTickets } from "@/hooks/useTickets";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
@@ -24,10 +24,15 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   const router = useRouter();
   const { show } = useSnackbar();
   const queryClient = useQueryClient();
-  const isAuthenticated = useIsAuthenticated();
+  // Esta tela é inteiramente sobre o perfil de CLIENTE (bio, seguidores,
+  // ingressos) — uma sessão de admin/organizador não tem esse perfil, então é
+  // tratada como "guest" aqui, igual a alguém deslogado. Sem esse gate, o
+  // profileQuery chamaria /public/customer/profile/complete (só aceita scope
+  // "customer") e entraria num loop de refresh que nunca resolve o 401.
+  const isCustomerScoped = useIsCustomerScoped();
   const authUser = useAuthUser();
   const { data: me } = useMe();
-  const profileQuery = useQuery({ queryKey: queryKeys.profile.customer(), queryFn: profileService.getCompleteProfile, enabled: isAuthenticated });
+  const profileQuery = useQuery({ queryKey: queryKeys.profile.customer(), queryFn: profileService.getCompleteProfile, enabled: isCustomerScoped });
   const ticketsQuery = useMyTickets();
   const logout = useLogout();
   const clearUser = useAuthStore((state) => state.clearUser);
@@ -80,7 +85,7 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   };
 
   const openProtectedRoute = (path: string) => {
-    if (!isAuthenticated) {
+    if (!isCustomerScoped) {
       router.push("/login-modal");
       return;
     }
@@ -179,7 +184,7 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
   };
 
   return {
-    status: !isAuthenticated ? "guest" : profileQuery.isPending ? "loading" : profileQuery.isError ? "error" : "ready",
+    status: !isCustomerScoped ? "guest" : profileQuery.isPending ? "loading" : profileQuery.isError ? "error" : "ready",
     name,
     username,
     photoUrl: complete?.personal.photoUrl || authUser?.photoUrl || null,
