@@ -27,7 +27,8 @@
         "NSPhotoLibraryAddUsageDescription": "Precisamos acessar a galeria para salvar e usar sua foto de perfil."
       },
       "appleTeamId": "G58V8BP6VH",
-      "associatedDomains": ["applinks:firula.com.br"]
+      "associatedDomains": ["applinks:firula.com.br"],
+      "appStoreUrl": "https://apps.apple.com/br/app/firula/id6741049144"
     },
     "android": {
       "splash": {
@@ -45,6 +46,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.firulaapp",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.firulaapp",
       "intentFilters": [
         {
           "action": "VIEW",

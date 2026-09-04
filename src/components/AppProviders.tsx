@@ -21,6 +21,8 @@ import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
 import { tokenStorage } from "@/api/tokenStorage";
 import { authService } from "@/services/auth.service";
 import { appConfigService } from "@/services/appConfig.service";
+import { ensureFirstLaunchRecorded } from "@/services/appRating.service";
+import { checkAndMaybeShowRatingPrompt } from "@/features/app-rating/RateAppModal";
 import { AppProvider } from "@/contexts/AppContext";
 import { useAuthStore } from "@/stores/authStore";
 import { isNetworkError, isServerError } from "@/api/errors";
@@ -187,6 +189,14 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
     const timer = setTimeout(() => setShowSplash(false), SPLASH_MIN_DURATION);
     return () => clearTimeout(timer);
   }, [loaded]);
+
+  // Caminho "tempo de uso" do gate de avaliação (o outro caminho, "tarefa
+  // importante", roda em SuccessStep após uma compra) — só depois que o app
+  // realmente terminou de abrir, nunca competindo com splash/login.
+  useEffect(() => {
+    if (!loaded || showSplash || !authCheckDone || !forceUpdateCheckDone) return;
+    ensureFirstLaunchRecorded().then(checkAndMaybeShowRatingPrompt);
+  }, [loaded, showSplash, authCheckDone, forceUpdateCheckDone]);
 
   if (!loaded || showSplash || !authCheckDone || !forceUpdateCheckDone) {
     return <FirulaSplashScreen />;

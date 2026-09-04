@@ -8,6 +8,7 @@ import { ThemeProvider, SnackbarProvider } from '@/design-system';
 
 import { AppProviders } from "@/components/AppProviders";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { RateAppModal } from "@/features/app-rating/RateAppModal";
 
 export default function RootLayout() {
   return (
@@ -22,6 +23,7 @@ export default function RootLayout() {
             <Stack.Screen name="register" />
           </Stack>
           <OfflineBanner />
+          <RateAppModal />
         </SnackbarProvider>
       </AppProviders>
     </ThemeProvider>

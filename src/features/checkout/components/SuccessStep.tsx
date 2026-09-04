@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Image, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Check, ChevronRight, ScanFace, Wallet } from "lucide-react-native";
@@ -8,6 +8,8 @@ import { formatCurrencyFromCents } from "@/utils/format";
 import { resolvePlatformEventImageUrl } from "@/services/events.service";
 import { useAddToWallet } from "@/hooks/useTickets";
 import type { UseCheckoutReturn } from "@/features/checkout/useCheckout";
+import { checkAndMaybeShowRatingPrompt } from "@/features/app-rating/RateAppModal";
+import { recordMeaningfulAction } from "@/services/appRating.service";
 
 const DARK_BG = "#141821";
 
@@ -15,6 +17,16 @@ export function SuccessStep({ checkout }: { checkout: UseCheckoutReturn }) {
   const router = useRouter();
   const { event, successOrderId, successTotalCents, successTickets, buyerEmail } = checkout;
   const addToWallet = useAddToWallet();
+
+  // Compra concluída é a "tarefa importante" que sinaliza satisfação real —
+  // ver appRating.service.ts. O atraso evita competir com a animação de
+  // entrada desta tela.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      recordMeaningfulAction().then(checkAndMaybeShowRatingPrompt);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const lotCounts = useMemo(() => {
     const counts = new Map<string, number>();
