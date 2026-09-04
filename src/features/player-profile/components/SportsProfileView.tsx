@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Rect } from "react-native-svg";
 
 import { Button, EmptyState, PressScale, Skeleton, Text, useTheme } from "@/design-system";
+import { PhotoLightbox } from "@/features/player-profile/components/PhotoLightbox";
 import type { AttendedEvent } from "@/features/player-profile/types";
 
 interface SportsProfileViewProps {
@@ -68,13 +69,16 @@ export function SportsProfileView({
   const contentWidth = Math.min(width, 720);
   const [visibleCount, setVisibleCount] = useState(INITIAL_EVENTS);
   const visibleEvents = useMemo(() => events.slice(0, visibleCount), [events, visibleCount]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const Header = (
     <>
       <View style={styles.identityRow}>
         <View style={styles.avatarWrap}>
           {photoUrl ? (
-            <Image source={{ uri: photoUrl }} style={styles.profileAvatar} resizeMode="cover" />
+            <PressScale onPress={() => setLightboxOpen(true)} accessibilityRole="button" accessibilityLabel="Ver foto do perfil ampliada">
+              <Image source={{ uri: photoUrl }} style={styles.profileAvatar} resizeMode="cover" />
+            </PressScale>
           ) : (
             <LinearGradient colors={["#35D879", "#12A653"]} style={styles.profileAvatarFallback}>
               <Text token="titleLg" style={styles.avatarInitials}>{profileInitials(name)}</Text>
@@ -152,6 +156,7 @@ export function SportsProfileView({
   );
 
   return (
+    <>
     <FlatList
       style={{ backgroundColor: colors.surface }}
       data={eventsLoading ? [] : visibleEvents}
@@ -212,6 +217,8 @@ export function SportsProfileView({
         />
       ) : null}
     />
+    <PhotoLightbox photoUrl={lightboxOpen ? photoUrl : null} onClose={() => setLightboxOpen(false)} />
+    </>
   );
 }
 
