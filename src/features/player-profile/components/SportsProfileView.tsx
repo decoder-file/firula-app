@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Image, StyleSheet, useWindowDimensions, View } from "react-native";
 import { FlatList } from "react-native";
-import { AtSign, CalendarDays, Camera, MapPin, Trophy } from "lucide-react-native";
+import { AtSign, CalendarDays, Camera, Check, MapPin, Trophy } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Rect } from "react-native-svg";
 
@@ -31,6 +31,8 @@ interface SportsProfileViewProps {
   primaryActionLabel?: string;
   primaryActionBusy?: boolean;
   onPrimaryAction?: () => void;
+  /** Já segue essa pessoa — troca o botão de "Seguir" (sólido) para um estilo mais discreto. */
+  isFollowing?: boolean;
   onShareProfile: () => void;
   onExploreEvents?: () => void;
   onOpenEvent: (event: AttendedEvent) => void;
@@ -60,6 +62,7 @@ export function SportsProfileView({
   primaryActionLabel,
   primaryActionBusy,
   onPrimaryAction,
+  isFollowing = false,
   onShareProfile,
   onExploreEvents,
   onOpenEvent,
@@ -130,7 +133,17 @@ export function SportsProfileView({
           <View style={styles.action}><Button label="Editar perfil" variant="tonal" size="sm" fullWidth onPress={onEditProfile} /></View>
         ) : null}
         {!isOwnProfile && primaryActionLabel && onPrimaryAction ? (
-          <View style={styles.action}><Button label={primaryActionLabel} loading={primaryActionBusy} size="sm" fullWidth onPress={onPrimaryAction} /></View>
+          <View style={styles.action}>
+            <Button
+              label={primaryActionLabel}
+              variant={isFollowing ? "outline" : "primary"}
+              icon={isFollowing ? Check : undefined}
+              loading={primaryActionBusy}
+              size="sm"
+              fullWidth
+              onPress={onPrimaryAction}
+            />
+          </View>
         ) : null}
         <View style={styles.action}><Button label={isOwnProfile ? "Compartilhar" : "Compartilhar perfil"} variant="tonal" size="sm" fullWidth onPress={onShareProfile} /></View>
       </View>

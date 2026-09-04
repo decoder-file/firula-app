@@ -47,6 +47,7 @@ export function PlayerProfileScreen(props: PlayerProfileScreenProps) {
           eventsLoading={props.status === "loading"}
           isOwnProfile={false}
           primaryActionLabel={props.isFollowing ? "Seguindo" : "Seguir"}
+          isFollowing={props.isFollowing}
           primaryActionBusy={props.isFollowBusy}
           onPrimaryAction={props.onToggleFollow}
           onShareProfile={props.onShareProfile}
