@@ -205,7 +205,7 @@ export const useProfileRouteProps = (): ProfileScreenProps => {
       profileQuery.refetch();
       ticketsQuery.refetch();
     },
-    onEditProfile: () => openProtectedRoute("/profile-edit/personal"),
+    onEditProfile: () => openProtectedRoute("/profile-edit"),
     onShareProfile: shareProfile,
     onOpenEvent: (event) => router.push(`/event/${event.slug ?? event.id}` as never),
     onExploreEvents: () => router.push("/(tabs)/explore"),
