@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { useRouter } from "expo-router";
 import { Home, Search, Ticket, User } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/design-system";
 import { useIsAuthenticated } from "@/hooks/useAuth";
@@ -9,6 +10,12 @@ export default function TabsLayout() {
   const router = useRouter();
   const isAuthenticated = useIsAuthenticated();
   const { colors, scheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  // Com edgeToEdgeEnabled, o app desenha atrás da barra de sistema — no
+  // Android com navegação por 3 botões esse inset é bem maior que nos
+  // aparelhos com gestos, e um paddingBottom fixo cortava a tab bar. 16 é só
+  // o mínimo de respiro em telas sem inset nenhum (ex.: web).
+  const tabBarBottomPadding = Math.max(insets.bottom, 16);
 
   return (
     <Tabs
@@ -20,9 +27,9 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 80,
+          height: 60 + tabBarBottomPadding,
           paddingTop: 10,
-          paddingBottom: 28,
+          paddingBottom: tabBarBottomPadding,
           shadowColor: scheme === "dark" ? "#000000" : colors.text,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: scheme === "dark" ? 0.32 : 0.06,
