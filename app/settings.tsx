@@ -1,10 +1,13 @@
 import React from "react";
 import { Alert, Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
+import * as Linking from "expo-linking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Bell,
   ChevronRight,
   FileText,
   Monitor,
@@ -20,6 +23,7 @@ import { isApiError } from "@/api/errors";
 import { tokenStorage } from "@/api/tokenStorage";
 import { profileService } from "@/services/profile.service";
 import { useAuthStore } from "@/stores/authStore";
+import { useNotificationPermission } from "@/hooks/useNotificationPermission";
 
 const APP_VERSION = "1.0.6";
 
@@ -139,6 +143,11 @@ export default function SettingsScreen() {
               })}
             </View>
           </View>
+        </Section>
+
+        {/* ── Notificações ────────────────────────── */}
+        <Section label="Notificações">
+          <NotificationPermissionRow />
         </Section>
 
         {/* ── Sobre ───────────────────────────────── */}
@@ -283,6 +292,78 @@ function LinkRow({
       <Text token="body" style={{ fontWeight: "600", flex: 1 }}>
         {label}
       </Text>
+      <ChevronRight size={18} color={colors.border} strokeWidth={1.75} />
+    </Pressable>
+  );
+}
+
+function NotificationPermissionRow() {
+  const { colors } = useTheme();
+  const { status, isRequesting, refresh, requestPermission } = useNotificationPermission();
+
+  // A permissão só pode mudar de verdade fora do app (prompt nativo ou tela
+  // de configurações do sistema) — reconfere ao focar a tela pra refletir o
+  // que o usuário decidiu lá, sem precisar reabrir o app.
+  useFocusEffect(
+    React.useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
+
+  const handlePress = () => {
+    if (status === "undetermined") {
+      void requestPermission();
+      return;
+    }
+    // Depois de negada, pedir de novo pelo app não faz o sistema mostrar
+    // nada (nem no Android 13+, nem no iOS) — o único jeito de reverter é o
+    // próprio usuário indo em Configurações.
+    Linking.openSettings();
+  };
+
+  const { statusLabel, statusColor } = (() => {
+    if (status === "loading") return { statusLabel: "Verificando…", statusColor: colors.textMuted };
+    if (status === "granted") return { statusLabel: "Ativadas", statusColor: colors.success };
+    if (status === "denied") return { statusLabel: "Desativadas — toque para ativar nas configurações", statusColor: colors.warning };
+    return { statusLabel: "Toque para ativar", statusColor: colors.textMuted };
+  })();
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      disabled={isRequesting || status === "loading"}
+      accessibilityRole="button"
+      accessibilityLabel="Notificações push"
+      accessibilityHint={statusLabel}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingHorizontal: 16,
+        height: 60,
+        opacity: isRequesting ? 0.6 : 1,
+      }}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: 11,
+          backgroundColor: colors.surfaceAlt,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Bell size={19} color={colors.text} strokeWidth={1.75} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text token="body" style={{ fontWeight: "600" }}>
+          Notificações push
+        </Text>
+        <Text token="bodySm" style={{ color: statusColor, marginTop: 2 }}>
+          {isRequesting ? "Ativando…" : statusLabel}
+        </Text>
+      </View>
       <ChevronRight size={18} color={colors.border} strokeWidth={1.75} />
     </Pressable>
   );

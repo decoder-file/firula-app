@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "582731734815",
+    "project_id": "firula-app",
+    "storage_bucket": "firula-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:582731734815:android:bff1f9fd697157d9115a2a",
+        "android_client_info": {
+          "package_name": "com.firulaapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk-_1Ivse3PQ5iHlP4QYK98P3Z2fK65xM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:582731734815:android:cc70a435cd872b3a115a2a",
+        "android_client_info": {
+          "package_name": "com.firulaapp.firulaapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk-_1Ivse3PQ5iHlP4QYK98P3Z2fK65xM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:582731734815:android:34da76a6e361f69b115a2a",
+        "android_client_info": {
+          "package_name": "firula.com.br"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk-_1Ivse3PQ5iHlP4QYK98P3Z2fK65xM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

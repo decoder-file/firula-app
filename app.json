@@ -46,6 +46,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "package": "com.firulaapp",
+      "googleServicesFile": "./google-services.json",
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.firulaapp",
       "intentFilters": [
         {
