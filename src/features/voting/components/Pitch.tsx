@@ -75,7 +75,7 @@ export function Pitch({ slots, activePositionId, onSlotPress, readOnly = false, 
               onPress={() => onSlotPress?.(position.id)}
               accessibilityRole="button"
               accessibilityLabel={player ? `${position.label}: ${player.name}. Trocar jogador` : `${position.label}: adicionar jogador`}
-              style={({ pressed }) => [styles.slot, pressed && interactive && { transform: [{ scale: 0.94 }] }]}
+              style={styles.slot}
             >
               {player ? (
                 <Animated.View key={player.id} entering={ZoomIn.springify().damping(18)} exiting={ZoomOut} style={[styles.avatarRing, isActive && { borderColor: colors.primary }]}>

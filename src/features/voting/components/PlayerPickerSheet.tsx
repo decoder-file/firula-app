@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { FlatList, StyleSheet, TextInput, View, useWindowDimensions } from "react-native";
 import { Check, Search } from "lucide-react-native";
 
-import { Avatar, BottomSheet, Button, Chip, Text, useTheme } from "@/design-system";
+import { Avatar, BottomSheet, Button, Chip, PressScale, Text, useTheme } from "@/design-system";
 import type { BallotPosition, VotingPlayer } from "@/services/voting.service";
 import type { BallotDraft } from "@/utils/votingBallot";
 
@@ -18,6 +18,7 @@ interface PlayerPickerSheetProps {
 /** Lista de atletas elegíveis para a posição tocada — busca, filtro por escola, A→Z. */
 export function PlayerPickerSheet({ position, positions, draft, onSelect, onClear, onClose }: PlayerPickerSheetProps) {
   const { colors, spacing, radius } = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
   const [search, setSearch] = useState("");
   const [schoolFilter, setSchoolFilter] = useState<string | null>(null);
 
@@ -53,7 +54,7 @@ export function PlayerPickerSheet({ position, positions, draft, onSelect, onClea
 
   return (
     <BottomSheet visible={position !== null} title={position?.label ?? ""} onClose={handleClose}>
-      <View style={{ gap: spacing.s3 }}>
+      <View style={[styles.body, { gap: spacing.s3 }]}>
         <View style={[styles.search, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, borderRadius: radius.md }]}>
           <Search size={16} color={colors.textMuted} />
           <TextInput
@@ -83,9 +84,9 @@ export function PlayerPickerSheet({ position, positions, draft, onSelect, onClea
         <FlatList
           data={players}
           keyExtractor={(player) => player.id}
-          style={{ maxHeight: 380 }}
+          style={{ maxHeight: Math.max(240, Math.round(windowHeight * 0.45)) }}
           keyboardShouldPersistTaps="handled"
-          ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: colors.border }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 1, marginLeft: 64, backgroundColor: colors.border }} />}
           ListEmptyComponent={
             <Text color="muted" style={{ textAlign: "center", paddingVertical: spacing.s6 }}>
               Nenhum jogador disponível para esta posição.
@@ -122,26 +123,30 @@ export function PlayerPickerSheet({ position, positions, draft, onSelect, onClea
 }
 
 function PlayerRow({ player, selected, elsewhere, onPress }: { player: VotingPlayer; selected: boolean; elsewhere?: string; onPress: () => void }) {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, radius } = useTheme();
   return (
-    <Pressable
+    // Estilo estático de propósito: a forma `style={({ pressed }) => …}` perde o layout da linha neste app.
+    <PressScale
       onPress={onPress}
+      scaleTo={0.985}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={`${player.name}, ${player.school.name}${selected ? ", escalado" : ""}`}
-      style={({ pressed }) => [styles.row, { paddingVertical: spacing.s3, backgroundColor: pressed ? colors.surfaceAlt : selected ? colors.primarySoft : "transparent" }]}
+      style={[styles.row, { paddingVertical: spacing.s3, borderRadius: radius.md, backgroundColor: selected ? colors.primarySoft : "transparent" }]}
     >
-      <Avatar name={player.name} source={player.photoUrl ? { uri: player.photoUrl } : null} size="sm" />
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text token="label" numberOfLines={1}>
-          {player.name}
+      <Avatar name={player.name} source={player.photoUrl ? { uri: player.photoUrl } : null} size="md" />
+      <View style={styles.rowText}>
+        <View style={styles.nameLine}>
+          <Text token="label" numberOfLines={1} style={styles.name}>
+            {player.name}
+          </Text>
           {player.jerseyNumber !== null && (
-            <Text token="caption" color="muted">
-              {"  "}#{player.jerseyNumber}
+            <Text token="caption" color="muted" style={styles.jersey}>
+              #{player.jerseyNumber}
             </Text>
           )}
-        </Text>
-        <Text token="caption" color="muted" numberOfLines={1} style={{ textTransform: "none", letterSpacing: 0 }}>
+        </View>
+        <Text token="caption" color="muted" numberOfLines={1} style={styles.school}>
           {player.school.name}
           {elsewhere ? ` · já escalado em ${elsewhere}` : ""}
         </Text>
@@ -152,13 +157,19 @@ function PlayerRow({ player, selected, elsewhere, onPress }: { player: VotingPla
           {selected ? "Escalado" : "Escolher"}
         </Text>
       </View>
-    </Pressable>
+    </PressScale>
   );
 }
 
 const styles = StyleSheet.create({
+  body: { paddingHorizontal: 20 },
   search: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, height: 44, borderWidth: 1 },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 4 },
-  pill: { flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 8 },
+  rowText: { flex: 1, minWidth: 0, gap: 2 },
+  nameLine: { flexDirection: "row", alignItems: "baseline", gap: 6 },
+  name: { flexShrink: 1 },
+  jersey: { textTransform: "none", letterSpacing: 0 },
+  school: { textTransform: "none", letterSpacing: 0 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 4, height: 30, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, flexShrink: 0 },
 });
