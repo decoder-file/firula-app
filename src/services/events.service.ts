@@ -124,6 +124,8 @@ export interface AdminEventDetail {
     limitPerCpf: boolean;
     maxTicketsPerCpf: number;
     showParticipantsOnEventPage?: boolean;
+    /** Organizador optou por esconder lotes esgotados na página do evento. */
+    hideSoldOutLots?: boolean;
     ticketPageAccentColor?: string | null;
     sponsorsBackgroundColor?: string | null;
     /** Se os dados de cada participante são exigidos antes do pagamento ou podem ser preenchidos depois. */

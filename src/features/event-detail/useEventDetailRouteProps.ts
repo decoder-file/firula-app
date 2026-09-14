@@ -10,6 +10,7 @@ import {
   type AdminEventDetail,
   type AdminEventTicketLot,
 } from '@/services/events.service';
+import { selectVisibleLots } from '@/utils/eventLots';
 import { stripHtml } from '@/utils/stripHtml';
 
 import type { EventDetail, EventDetailScreenProps, TicketLot } from '@/features/event-detail/types';
@@ -93,6 +94,8 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
   const organizerName = coProducerIsPrimary ? event.coProducerName as string : event.organization.tradeName;
   const locationName = event.location.name?.trim();
   const streetAddress = `${event.location.address}, ${event.location.addressNumber}`;
+  // O endpoint devolve todos os lotes, inclusive desativados — a página só mostra os vendáveis.
+  const visibleLots = selectVisibleLots(event.ticketLots, event.settings);
 
   return {
     id: event.id,
@@ -124,9 +127,9 @@ const mapEventToDetail = (event: AdminEventDetail): EventDetail => {
       websiteLabel: event.websiteLabel,
     },
     social: event.soldCount > 0 ? { count: event.soldCount } : undefined,
-    lotDeadlineText: getLotDeadlineText(event.ticketLots),
+    lotDeadlineText: getLotDeadlineText(visibleLots),
     showParticipants: event.settings?.showParticipantsOnEventPage !== false,
-    lots: event.ticketLots.map(mapLot),
+    lots: visibleLots.map(mapLot),
     // já vem ordenado por position asc do backend (mapEvent()), sem precisar reordenar aqui.
     speakers: (event.featuredPeople ?? [])
       .filter((person) => person.id && person.name)
