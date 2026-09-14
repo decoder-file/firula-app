@@ -6,6 +6,16 @@
  * events-related query).
  */
 export const queryKeys = {
+  voting: {
+    all: ["voting"] as const,
+    organizationEditions: (organizationSlug: string) => [...queryKeys.voting.all, "organization", organizationSlug] as const,
+    edition: (competitionSlug: string, editionSlug: string, authenticated: boolean) =>
+      [...queryKeys.voting.all, "edition", competitionSlug, editionSlug, authenticated] as const,
+    ballot: (categoryId: string) => [...queryKeys.voting.all, "ballot", categoryId] as const,
+    myVote: (categoryId: string) => [...queryKeys.voting.all, "my-vote", categoryId] as const,
+    share: (shareId: string) => [...queryKeys.voting.all, "share", shareId] as const,
+    results: (categoryId: string) => [...queryKeys.voting.all, "results", categoryId] as const,
+  },
   events: {
     all: ["events"] as const,
     lists: () => [...queryKeys.events.all, "list"] as const,
