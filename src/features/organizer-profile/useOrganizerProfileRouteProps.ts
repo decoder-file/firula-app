@@ -290,6 +290,7 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
     onRetry: () => refetch(),
 
     orgName: organizer?.tradeName ?? "",
+    organizationSlug: slug || null,
     initials: getInitials(organizer?.tradeName ?? slug),
     logoUrl: organizer?.logoUrl ?? null,
     location: organizer ? [organizer.city, organizer.state].filter(Boolean).join(", ") || null : null,

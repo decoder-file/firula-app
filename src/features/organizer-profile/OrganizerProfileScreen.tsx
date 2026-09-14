@@ -25,6 +25,7 @@ import {
 
 import { BottomSheet, Button, Chip, EmptyState, EventCard, IconButton, ListItem, PressScale, Skeleton, TabBar, Text, useTheme } from "@/design-system";
 import { ReviewsSheet } from "@/features/organizer-profile/components/ReviewsSheet";
+import { VotingBanner } from "@/features/voting/components/VotingBanner";
 import type {
   OrganizerContactItem,
   OrganizerCourtItem,
@@ -51,6 +52,7 @@ export function OrganizerProfileScreen({
   status,
   onRetry,
   orgName,
+  organizationSlug,
   initials,
   logoUrl,
   location,
@@ -307,6 +309,11 @@ export function OrganizerProfileScreen({
             />
             <IconButton icon={Star} variant="outlined" accessibilityLabel="Ver avaliações" onPress={onOpenReviews} />
           </View>
+        </View>
+
+        {/* Gancho da votação (Melhores do Ano): visível em qualquer aba, some quando não há edição ativa. */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+          <VotingBanner organizationSlug={organizationSlug} />
         </View>
 
         <TabBar

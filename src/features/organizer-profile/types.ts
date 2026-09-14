@@ -70,6 +70,8 @@ export interface OrganizerProfileScreenProps {
   onRetry: () => void;
 
   orgName: string;
+  /** Slug público da organização — gancho da votação (Melhores do Ano). */
+  organizationSlug: string | null;
   initials: string;
   logoUrl: string | null;
   location: string | null;
