@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { LinearGradient } from "expo-linear-gradient";
 import { Building2, CalendarDays, Heart, HeartOff, MapPin } from "lucide-react-native";
 import { FlatList, Image, StyleSheet, View } from "react-native";
 
@@ -128,48 +127,66 @@ function FavoriteDetails({ item, removing, onClose, onOpenEvent, onRemove }: {
   );
 }
 
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+}
+
 function OrganizationFavoriteRow({ item }: { item: Extract<FavoriteItem, { type: "ORGANIZATION" }> }) {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, radius } = useTheme();
   const { mutate: toggle, isPending } = useToggleFavoriteOrganizationBySlug();
   const { organization } = item;
+  const location = [organization.city, organization.state].filter(Boolean).join(", ");
+  const logoUrl = organization.logoUrl?.trim() || null;
 
   return (
-    <View className="relative">
+    <View>
       <AnimatedPressable
-        className="flex-row items-center gap-3 rounded-2xl bg-card p-3"
+        accessibilityRole="button"
+        accessibilityLabel={`Organização ${organization.name}${location ? `, ${location}` : ""}`}
         onPress={() => router.push(`/organizer/${organization.slug}` as never)}
+        style={[styles.orgRow, { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.lg }]}
       >
-        {organization.logoUrl ? (
-          <Image source={{ uri: organization.logoUrl }} className="h-20 w-20 rounded-xl" resizeMode="cover" />
+        {logoUrl ? (
+          <Image source={{ uri: logoUrl }} style={[styles.orgLogo, { backgroundColor: colors.surfaceAlt }]} resizeMode="cover" />
         ) : (
-          <LinearGradient colors={["#1a3a2a", "#0f2218"]} className="h-20 w-20 items-center justify-center rounded-xl">
-            <Building2 color="#ffffff" size={26} strokeWidth={1.5} />
-          </LinearGradient>
+          <View style={[styles.orgLogo, styles.imageFallback, { backgroundColor: colors.primarySoft }]}>
+            <Text token="subtitle" style={{ color: colors.primaryText }}>
+              {getInitials(organization.name)}
+            </Text>
+          </View>
         )}
-        <View className="flex-1 justify-between py-0.5">
+        <View style={styles.orgContent}>
           <View>
-            <View className="self-start rounded-full border border-primary px-2 py-1">
-              <Text className="font-medium text-[10px] text-primary">Organização</Text>
+            <View style={[styles.orgTag, { borderColor: colors.primary }]}>
+              <Building2 color={colors.primaryText} size={11} strokeWidth={1.75} />
+              <Text token="caption" style={{ color: colors.primaryText, textTransform: "none", letterSpacing: 0 }}>
+                Organização
+              </Text>
             </View>
-            <Text numberOfLines={2} className="mt-1 font-semibold text-sm text-foreground">
+            <Text token="subtitle" numberOfLines={2} style={[styles.orgName, { paddingRight: 36 }]}>
               {organization.name}
             </Text>
           </View>
-          {organization.city ? (
-            <View className="flex-row items-center gap-1.5">
-              <MapPin color="#727985" size={12} strokeWidth={1.5} />
-              <Text numberOfLines={1} className="flex-1 text-xs text-muted-foreground">
-                {[organization.city, organization.state].filter(Boolean).join(", ")}
+          {location ? (
+            <View style={styles.infoRow}>
+              <MapPin color={colors.textMuted} size={13} strokeWidth={1.5} />
+              <Text token="bodySm" color="muted" numberOfLines={1} style={styles.infoText}>
+                {location}
               </Text>
             </View>
           ) : null}
         </View>
       </AnimatedPressable>
       <AnimatedPressable
-        className="absolute right-3 top-3 rounded-full bg-white/90 p-1.5"
+        accessibilityRole="button"
+        accessibilityLabel="Remover organização dos favoritos"
         disabled={isPending}
         onPress={() => toggle({ orgSlug: organization.slug, isFavorited: true })}
+        style={[styles.orgRemove, { backgroundColor: colors.surface, borderColor: colors.border }]}
       >
         <Heart color={colors.primary} fill={colors.primary} size={16} strokeWidth={1.5} />
       </AnimatedPressable>
@@ -316,4 +333,10 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   infoText: { flex: 1 },
   detailsActions: { gap: 10, marginTop: 12 },
+  orgRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderWidth: 1 },
+  orgLogo: { width: 72, height: 72, borderRadius: 12 },
+  orgContent: { flex: 1, minWidth: 0, justifyContent: "space-between", alignSelf: "stretch", paddingVertical: 2 },
+  orgTag: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
+  orgName: { marginTop: 4 },
+  orgRemove: { position: "absolute", right: 12, top: 12, padding: 6, borderRadius: 999, borderWidth: 1 },
 });

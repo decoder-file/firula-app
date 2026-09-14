@@ -56,8 +56,12 @@ function EventCardBase({ event, variant = 'default', onPress }: EventCardProps) 
       <PressScale onPress={onPress} accessibilityRole="button" accessibilityLabel={a11y}
         style={[styles.compact, { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border }]}>
         {event.image
-          ? <Image source={event.image} style={styles.thumb} />
-          : <View style={[styles.thumb, { backgroundColor: fallback }]} />}
+          ? <Image source={event.image} style={[styles.thumb, { backgroundColor: colors.surfaceAlt }]} resizeMode="cover" />
+          : (
+            <View style={[styles.thumb, styles.thumbFallback, { backgroundColor: colors.primarySoft }]}>
+              <CalendarDays size={24} color={colors.primaryText} strokeWidth={1.5} />
+            </View>
+          )}
         <View style={{ flex: 1, minWidth: 0, justifyContent: 'space-between' }}>
           <View>
             <View style={[styles.tagOutline, { borderColor: colors.primary }]}>
@@ -106,6 +110,7 @@ const styles = StyleSheet.create({
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   compact: { flexDirection: 'row', gap: 12, padding: 12 },
   thumb: { width: 72, height: 72, borderRadius: 12 },
+  thumbFallback: { alignItems: 'center', justifyContent: 'center' },
   tagOutline: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 1 },
   tagOverlay: {
     position: 'absolute', left: 12, top: 12,
