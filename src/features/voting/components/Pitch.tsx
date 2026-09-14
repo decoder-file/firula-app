@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
   slot: { alignItems: "center", gap: 3 },
   avatarRing: { borderRadius: 999, borderWidth: 2, borderColor: "rgba(255,255,255,0.9)", shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   empty: { alignItems: "center", justifyContent: "center", borderWidth: 2, borderStyle: "dashed", borderColor: "rgba(255,255,255,0.7)", backgroundColor: "rgba(255,255,255,0.12)" },
-  labelPill: { maxWidth: "100%", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  labelPill: { alignSelf: "center", maxWidth: "100%", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   labelPillFilled: { backgroundColor: "rgba(11,11,11,0.7)" },
-  labelText: { color: "#FFFFFF", letterSpacing: 0.2, textTransform: "none" },
+  labelText: { color: "#FFFFFF", letterSpacing: 0.2, textTransform: "none", textAlign: "center" },
   labelTextCompact: { fontSize: 9, lineHeight: 12 },
-  subLabel: { color: "rgba(255,255,255,0.75)", fontSize: 9, lineHeight: 12 },
+  subLabel: { alignSelf: "center", color: "rgba(255,255,255,0.75)", fontSize: 9, lineHeight: 12, textAlign: "center" },
 });
