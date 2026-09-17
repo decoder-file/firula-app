@@ -3,7 +3,9 @@ import { Alert, Linking, Share } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useSnackbar } from "@/design-system";
-import { isNotFoundError } from "@/api/errors";
+import { isApiError, isNotFoundError } from "@/api/errors";
+import { courtCouponsService } from "@/services/courtCoupons.service";
+import { buildCourtReservationWebPath, buildDayUseWebPath, type AppliedReservationCoupon } from "@/utils/reservationCoupon";
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import {
   useCourtAvailability,
@@ -191,6 +193,9 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [selectedSlots, setSelectedSlots] = useState<OrganizerCourtSlotItem[]>([]);
+  // Cupom da reserva: a prévia vale para a seleção atual (quadra + dia + horários), então
+  // qualquer troca limpa o cupom. O desconto de verdade é aplicado no checkout do site.
+  const [bookingCoupon, setBookingCoupon] = useState<AppliedReservationCoupon | null>(null);
   const activeCourtId = selectedCourtId ?? courtsQuery.data?.[0]?.id ?? null;
   const availabilityQuery = useCourtAvailability(
     activeCourtId ?? "",
@@ -327,17 +332,20 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
     onSelectCourt: (courtId) => {
       setSelectedCourtId(courtId);
       setSelectedSlots([]);
+      setBookingCoupon(null);
     },
     dateOptions,
     selectedDate,
     onSelectDate: (date) => {
       setSelectedDate(date);
       setSelectedSlots([]);
+      setBookingCoupon(null);
     },
     slots,
     isSlotsLoading: availabilityQuery.isPending,
     selectedSlots,
     onToggleSlot: (slot) => {
+      setBookingCoupon(null);
       setSelectedSlots((previous) => {
         const isSelected = previous.some((item) => item.startTime === slot.startTime);
         if (isSelected) return previous.filter((item) => item.startTime !== slot.startTime);
@@ -352,12 +360,36 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
         return next;
       });
     },
+    bookingCoupon,
+    onApplyBookingCoupon: async (code) => {
+      if (!activeCourtId || selectedSlots.length === 0) return "Escolha um horário antes de aplicar o cupom.";
+      try {
+        const result = await courtCouponsService.validate(code, {
+          target: "COURT_RESERVATION",
+          courtId: activeCourtId,
+          date: selectedDate,
+          startTime: selectedSlots[0].startTime,
+          endTime: selectedSlots[selectedSlots.length - 1].endTime,
+        });
+        if (!result.valid) return result.message;
+        setBookingCoupon({ code: result.code, discountCents: result.discountCents, finalAmountCents: result.finalAmountCents });
+        return null;
+      } catch (err) {
+        return isApiError(err) ? err.message : "Não foi possível validar o cupom agora. Tente novamente.";
+      }
+    },
+    onRemoveBookingCoupon: () => setBookingCoupon(null),
     onConfirmBooking: () => {
       if (!activeCourtId || selectedSlots.length === 0) return;
-      const startTime = selectedSlots[0].startTime;
-      const endTime = selectedSlots[selectedSlots.length - 1].endTime;
       openWebPath(
-        `/quadras/${slug}/reservar/${activeCourtId}?date=${selectedDate}&startTime=${startTime}&endTime=${endTime}`,
+        buildCourtReservationWebPath({
+          orgSlug: slug,
+          courtId: activeCourtId,
+          date: selectedDate,
+          startTime: selectedSlots[0].startTime,
+          endTime: selectedSlots[selectedSlots.length - 1].endTime,
+          couponCode: bookingCoupon?.code,
+        }),
       );
     },
 
@@ -396,7 +428,8 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
       if (!storeSlug) return;
       openWebPath(`/lojas/${storeSlug}/produtos/${product.slug}`);
     },
-    onReserveDayUseOffering: () => Alert.alert("Em breve", "A reserva pelo app ainda não está disponível."),
+    // A compra do Day Use acontece no checkout do site (PIX/cartão e cupom de desconto lá).
+    onReserveDayUseOffering: (offering) => openWebPath(buildDayUseWebPath({ orgSlug: slug, dayUseId: offering.id })),
     onOpenContact: (contact) => {
       void Linking.openURL(contact.href);
     },

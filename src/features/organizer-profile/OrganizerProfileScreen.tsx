@@ -25,6 +25,8 @@ import {
 
 import { BottomSheet, Button, Chip, EmptyState, EventCard, IconButton, ListItem, PressScale, Skeleton, TabBar, Text, useTheme } from "@/design-system";
 import { ReviewsSheet } from "@/features/organizer-profile/components/ReviewsSheet";
+import { ReservationCouponField } from "@/features/organizer-profile/components/ReservationCouponField";
+import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
 import { VotingBanner } from "@/features/voting/components/VotingBanner";
 import type {
   OrganizerContactItem,
@@ -85,6 +87,9 @@ export function OrganizerProfileScreen({
   isSlotsLoading,
   selectedSlots,
   onToggleSlot,
+  bookingCoupon,
+  onApplyBookingCoupon,
+  onRemoveBookingCoupon,
   onConfirmBooking,
   onBack,
   onShare,
@@ -370,6 +375,9 @@ export function OrganizerProfileScreen({
               isSlotsLoading={isSlotsLoading}
               selectedSlots={selectedSlots}
               onToggleSlot={onToggleSlot}
+              coupon={bookingCoupon}
+              onApplyCoupon={onApplyBookingCoupon}
+              onRemoveCoupon={onRemoveBookingCoupon}
               onConfirm={onConfirmBooking}
             />
           ) : null}
@@ -568,6 +576,9 @@ function CourtBookingSection({
   isSlotsLoading,
   selectedSlots,
   onToggleSlot,
+  coupon,
+  onApplyCoupon,
+  onRemoveCoupon,
   onConfirm,
 }: {
   courts: OrganizerCourtItem[];
@@ -581,9 +592,13 @@ function CourtBookingSection({
   isSlotsLoading: boolean;
   selectedSlots: OrganizerCourtSlotItem[];
   onToggleSlot: (slot: OrganizerCourtSlotItem) => void;
+  coupon: AppliedReservationCoupon | null;
+  onApplyCoupon: (code: string) => Promise<string | null>;
+  onRemoveCoupon: () => void;
   onConfirm: () => void;
 }) {
   const { colors } = useTheme();
+  const selectedTotalCents = selectedSlots.reduce((sum, item) => sum + item.priceCents, 0);
 
   if (isCourtsLoading) {
     return (
@@ -675,13 +690,25 @@ function CourtBookingSection({
           </View>
 
           {selectedSlots.length > 0 ? (
-            <View style={[styles.selectionSummary, { backgroundColor: colors.primarySoft }]}>
-              <Text token="bodySm" style={{ fontWeight: "700" }}>
-                {selectedSlots[0].startTime} – {selectedSlots[selectedSlots.length - 1].endTime}
-              </Text>
-              <Text token="bodySm" color="primary" style={{ fontWeight: "800" }}>
-                {formatPriceCents(selectedSlots.reduce((sum, item) => sum + item.priceCents, 0))}
-              </Text>
+            <View>
+              <View style={[styles.selectionSummary, { backgroundColor: colors.primarySoft }]}>
+                <Text token="bodySm" style={{ fontWeight: "700" }}>
+                  {selectedSlots[0].startTime} – {selectedSlots[selectedSlots.length - 1].endTime}
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  {coupon ? (
+                    <Text token="caption" color="muted" style={{ textDecorationLine: "line-through", textTransform: "none", letterSpacing: 0 }}>
+                      {formatPriceCents(selectedTotalCents)}
+                    </Text>
+                  ) : null}
+                  <Text token="bodySm" color="primary" style={{ fontWeight: "800" }}>
+                    {coupon ? (coupon.finalAmountCents === 0 ? "Grátis" : formatPriceCents(coupon.finalAmountCents)) : formatPriceCents(selectedTotalCents)}
+                  </Text>
+                </View>
+              </View>
+              {selectedTotalCents > 0 ? (
+                <ReservationCouponField applied={coupon} onApply={onApplyCoupon} onRemove={onRemoveCoupon} formatPrice={formatPriceCents} />
+              ) : null}
             </View>
           ) : null}
         </>

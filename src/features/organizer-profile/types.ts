@@ -1,3 +1,5 @@
+import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
+
 export type OrganizerProfileStatus = "loading" | "not-found" | "error" | "ready";
 
 export type OrganizerTab = "events" | "store" | "dayuse" | "booking";
@@ -113,6 +115,11 @@ export interface OrganizerProfileScreenProps {
   isSlotsLoading: boolean;
   selectedSlots: OrganizerCourtSlotItem[];
   onToggleSlot: (slot: OrganizerCourtSlotItem) => void;
+  /** Cupom de desconto da organização aplicado à seleção atual (prévia). */
+  bookingCoupon: AppliedReservationCoupon | null;
+  /** Valida no servidor; devolve a mensagem de erro ou null quando aplicou. */
+  onApplyBookingCoupon: (code: string) => Promise<string | null>;
+  onRemoveBookingCoupon: () => void;
   onConfirmBooking: () => void;
 
   onBack: () => void;
