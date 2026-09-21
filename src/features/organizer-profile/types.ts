@@ -53,6 +53,7 @@ export interface OrganizerCourtItem {
   id: string;
   name: string;
   requiresApproval: boolean;
+  imageUrl: string | null;
 }
 
 export interface OrganizerCourtSlotItem {

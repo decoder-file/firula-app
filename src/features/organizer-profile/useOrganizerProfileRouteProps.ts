@@ -266,6 +266,7 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
     id: court.id,
     name: court.name,
     requiresApproval: court.requiresApproval,
+    imageUrl: court.imageUrl?.trim() || null,
   }));
 
   const slots: OrganizerCourtSlotItem[] = (availabilityQuery.data ?? []).map((slot) => ({

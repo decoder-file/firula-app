@@ -621,6 +621,7 @@ function CourtBookingSection({
   }
 
   const selectedDateLabel = dateOptions.find((option) => option.iso === selectedDate)?.label ?? "";
+  const selectedCourtImageUrl = courts.find((court) => court.id === selectedCourtId)?.imageUrl ?? null;
 
   return (
     <View>
@@ -632,6 +633,15 @@ function CourtBookingSection({
           <Chip key={court.id} label={court.name} selected={court.id === selectedCourtId} onPress={() => onSelectCourt(court.id)} />
         ))}
       </ScrollView>
+
+      {selectedCourtImageUrl ? (
+        <Image
+          source={{ uri: selectedCourtImageUrl }}
+          resizeMode="cover"
+          accessibilityLabel="Foto da quadra selecionada"
+          style={{ width: "100%", aspectRatio: 16 / 7, borderRadius: 16, marginBottom: 18, backgroundColor: colors.surfaceAlt }}
+        />
+      ) : null}
 
       <Text token="bodySm" style={{ fontWeight: "700" }} color="muted">
         Escolha o dia

@@ -102,6 +102,8 @@ export interface CourtSummary {
   id: string;
   name: string;
   description: string | null;
+  /** Foto da quadra enviada pelo organizador (pode não existir). */
+  imageUrl?: string | null;
   capacity: number | null;
   granularityMin: number;
   requiresApproval: boolean;
