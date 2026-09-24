@@ -6,18 +6,8 @@
     "orientation": "portrait",
     "icon": "./assets/icon-firula.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#00C853"
-    },
     "ios": {
       "supportsTablet": true,
-      "splash": {
-        "image": "./assets/splash/ios/SplashScreen.imageset/LaunchImage@3x.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#00C853"
-      },
       "bundleIdentifier": "com.firulaapp.firula-app",
       "buildNumber": "5",
       "infoPlist": {
@@ -33,11 +23,6 @@
     },
     "android": {
       "versionCode": 103,
-      "splash": {
-        "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#00C853"
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-foreground-firula.png",
         "backgroundColor": "#1FBD58"
@@ -98,7 +83,27 @@
           "androidMode": "default"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
+          "resizeMode": "cover",
+          "backgroundColor": "#00C853",
+          "enableFullScreenImage_legacy": true,
+          "ios": {
+            "image": "./assets/splash/ios/SplashScreen.imageset/LaunchImage@3x.png",
+            "resizeMode": "cover",
+            "backgroundColor": "#00C853"
+          },
+          "android": {
+            "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
+            "resizeMode": "cover",
+            "backgroundColor": "#00C853"
+          }
+        }
+      ],
+      "expo-status-bar"
     ],
     "scheme": "firula-mobile",
     "experiments": {

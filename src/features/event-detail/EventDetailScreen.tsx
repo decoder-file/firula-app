@@ -210,10 +210,10 @@ function EventDetailScreenContent({
         <View style={{ height: 340 }}>
           <Image
             source={event.image}
-            style={[StyleSheet.absoluteFillObject as any, styles.heroImage]}
+            style={[StyleSheet.absoluteFill as any, styles.heroImage]}
             resizeMode="contain"
           />
-          <View style={[StyleSheet.absoluteFillObject, styles.heroScrim]} />
+          <View style={[StyleSheet.absoluteFill, styles.heroScrim]} />
 
           <View
             style={{ position: "absolute", left: 20, right: 20, bottom: 18 }}
