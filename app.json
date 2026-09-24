@@ -31,6 +31,7 @@
       "appStoreUrl": "https://apps.apple.com/br/app/firula/id6741049144"
     },
     "android": {
+      "versionCode": 103,
       "splash": {
         "image": "./assets/splash/android/drawable-xxxhdpi/splash.png",
         "resizeMode": "cover",
@@ -85,6 +86,7 @@
       ],
       "expo-apple-authentication",
       "./plugins/withGoogleSignInPodfile",
+      "./plugins/withAndroidReleaseSigning",
       [
         "expo-notifications",
         {
