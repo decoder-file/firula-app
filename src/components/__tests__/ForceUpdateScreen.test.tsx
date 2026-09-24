@@ -4,8 +4,8 @@ import { Linking } from "react-native";
 import { ForceUpdateScreen } from "@/components/ForceUpdateScreen";
 
 jest.mock("react-native/Libraries/Linking/Linking", () => ({
-  canOpenURL: jest.fn(),
-  openURL: jest.fn(),
+  __esModule: true,
+  default: { canOpenURL: jest.fn(), openURL: jest.fn() },
 }));
 
 describe("ForceUpdateScreen", () => {

@@ -11,3 +11,4 @@ Object.defineProperty(globalThis, "structuredClone", {
   enumerable: false,
   writable: false,
 });
+jest.mock("react-native-worklets", () => require("react-native-worklets/src/mock"));
