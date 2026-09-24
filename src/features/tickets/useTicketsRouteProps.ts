@@ -7,24 +7,11 @@ import { useAddToWallet, useMyTickets } from "@/hooks/useTickets";
 import { isApiError } from "@/api/errors";
 import type { CustomerTicket } from "@/services/tickets.service";
 import type { AppTicket, TicketStatus, TicketsScreenProps } from "@/features/tickets/types";
-
-// Para passaporte, o ingresso só vale nas datas específicas do lote — a última delas
-// é o marco real de "encerrado", não o startsAt/endsAt do evento (que cobre o período
-// inteiro, dias que esse passaporte específico pode nem contemplar). Para os demais
-// tipos, um evento de múltiplos dias só termina de fato no endsAt, não no startsAt.
-const getTicketReferenceEndDate = (ticket: CustomerTicket): Date => {
-  if (ticket.ticketLot.type === "PASSPORT" && ticket.ticketLot.passportValidDates?.length) {
-    const times = ticket.ticketLot.passportValidDates
-      .map((date) => new Date(date).getTime())
-      .filter((time) => Number.isFinite(time));
-    if (times.length > 0) return new Date(Math.max(...times));
-  }
-  return new Date(ticket.event.endsAt ?? ticket.event.startsAt);
-};
+import { isTicketExpired } from "@/utils/ticketExpiry";
 
 const toAppTicketStatus = (ticket: CustomerTicket): TicketStatus => {
   if (ticket.status !== "VALID") return "used";
-  return new Date() > getTicketReferenceEndDate(ticket) ? "expired" : "active";
+  return isTicketExpired(ticket) ? "expired" : "active";
 };
 
 const formatTicketDate = (isoDate: string) =>
