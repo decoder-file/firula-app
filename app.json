@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Precisamos da camera para voce tirar e atualizar sua foto de perfil.",
         "NSPhotoLibraryUsageDescription": "Precisamos da sua galeria para voce escolher uma foto de perfil.",
-        "NSPhotoLibraryAddUsageDescription": "Precisamos acessar a galeria para salvar e usar sua foto de perfil."
+        "NSPhotoLibraryAddUsageDescription": "Precisamos acessar a galeria para salvar e usar sua foto de perfil.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "appleTeamId": "G58V8BP6VH",
       "associatedDomains": [
