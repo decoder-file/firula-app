@@ -76,6 +76,7 @@
       "expo-apple-authentication",
       "./plugins/withGoogleSignInPodfile",
       "./plugins/withAndroidReleaseSigning",
+      "./plugins/withSceneLifecycle",
       [
         "expo-notifications",
         {
