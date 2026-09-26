@@ -45,8 +45,12 @@ export interface OrganizerDayUseOfferingItem {
   id: string;
   name: string;
   description: string;
+  dateLabel: string;
+  timeLabel: string;
+  availabilityLabel: string;
   priceLabel: string;
   soldOut: boolean;
+  imageUrl: string | null;
 }
 
 export interface OrganizerCourtItem {
@@ -129,6 +133,7 @@ export interface OrganizerProfileScreenProps {
   onToggleFavorite: () => void;
   onOpenEvent: (event: OrganizerEventItem) => void;
   onOpenStoreProduct: (product: OrganizerStoreProductItem) => void;
+  onOpenReservations: () => void;
   onReserveDayUseOffering: (offering: OrganizerDayUseOfferingItem) => void;
   onOpenContact: (contact: OrganizerContactItem) => void;
   isContactSheetOpen: boolean;

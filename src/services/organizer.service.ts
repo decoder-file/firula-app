@@ -32,6 +32,8 @@ export interface OrganizerProfile {
   followersCount: number;
   ratingsCount: number;
   averageRating: number;
+  availablePaymentMethods?: Array<"PIX" | "CARD">;
+  cardFlow?: "TRANSPARENT" | "REDIRECT" | null;
   following?: boolean;
   isFavorited?: boolean;
   store?: { slug: string } | null;
@@ -94,8 +96,13 @@ export interface DayUseOffering {
   endTime: string;
   capacity: number;
   priceInCents: number;
-  confirmedCount: number;
+  confirmedCount?: number;
+  _count?: { reservations?: number };
   allowMultiplePerCustomer: boolean;
+  courts?: Array<{ court: { id: string; name: string } }>;
+  imageUrl?: string | null;
+  coverImageUrl?: string | null;
+  images?: Array<string | { url?: string | null }> | null;
 }
 
 export interface CourtSummary {

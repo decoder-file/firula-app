@@ -9,7 +9,10 @@ import {
   BadgeCheck,
   CalendarClock,
   CalendarDays,
+  Check,
   ChevronLeft,
+  ChevronRight,
+  Clock3,
   Globe,
   Heart,
   MapPin,
@@ -21,6 +24,7 @@ import {
   Sun,
   UserCheck,
   UserX,
+  Users,
 } from "lucide-react-native";
 
 import { BottomSheet, Button, Chip, EmptyState, EventCard, IconButton, ListItem, PressScale, Skeleton, TabBar, Text, useTheme } from "@/design-system";
@@ -71,6 +75,8 @@ export function OrganizerProfileScreen({
   activeTab,
   onChangeTab,
   events,
+  hasDayUse,
+  hasBooking,
   contacts,
   storeProducts,
   isStoreLoading,
@@ -97,6 +103,7 @@ export function OrganizerProfileScreen({
   onToggleFavorite,
   onOpenEvent,
   onOpenStoreProduct,
+  onOpenReservations,
   onReserveDayUseOffering,
   onOpenContact,
   isContactSheetOpen,
@@ -321,6 +328,38 @@ export function OrganizerProfileScreen({
           <VotingBanner organizationSlug={organizationSlug} />
         </View>
 
+        {hasDayUse || hasBooking ? (
+          <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
+            <PressScale
+              onPress={onOpenReservations}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir Day Use e Reservas de quadras"
+              style={{
+                minHeight: 68,
+                borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                padding: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }}>
+                <CalendarClock size={21} color={colors.primaryText} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text token="subtitle" style={{ fontSize: 15 }}>Day Use e Reservas</Text>
+                <Text token="bodySm" color="muted" style={{ marginTop: 2 }}>
+                  Escolha entre Day Use e Reserva de quadra
+                </Text>
+              </View>
+              <ChevronRight size={19} color={colors.textMuted} />
+            </PressScale>
+          </View>
+        ) : null}
+
         <TabBar
           tabs={tabs.map((tab) => ({ key: tab.key, label: tab.label }))}
           activeKey={activeTab}
@@ -503,7 +542,7 @@ function StoreProductsGrid({
   );
 }
 
-function DayUseOfferingsList({
+export function DayUseOfferingsList({
   offerings,
   isLoading,
   onReserve,
@@ -535,24 +574,38 @@ function DayUseOfferingsList({
           key={offering.id}
           style={[styles.dayUseCard, { backgroundColor: colors.surface, borderRadius: radius.xl, borderColor: colors.border }]}
         >
-          <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-            <View style={{ flex: 1 }}>
-              <Text token="subtitle" style={{ fontSize: 14, fontWeight: "800" }}>
-                {offering.name}
-              </Text>
-              {offering.description ? (
-                <Text token="bodySm" color="muted" style={{ marginTop: 4 }}>
-                  {offering.description}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            {offering.imageUrl ? (
+              <Image source={{ uri: offering.imageUrl }} resizeMode="cover" style={styles.dayUseImage} accessibilityLabel={`Foto de ${offering.name}`} />
+            ) : (
+              <View style={[styles.dayUseImage, { backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }]}>
+                <Sun size={25} color={colors.primaryText} />
+              </View>
+            )}
+            <View style={{ flex: 1, minWidth: 0, paddingVertical: 2 }}>
+              <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 8 }}>
+                <Text token="subtitle" numberOfLines={2} style={{ flex: 1, fontSize: 15, lineHeight: 19, fontWeight: "800" }}>
+                  {offering.name}
                 </Text>
-              ) : null}
+                <Text token="subtitle" style={{ fontSize: 14, color: colors.primaryText, fontWeight: "800" }}>
+                  {offering.priceLabel}
+                </Text>
+              </View>
+              <View style={{ gap: 5, marginTop: 9 }}>
+                <DayUseFact icon={CalendarDays} text={offering.dateLabel} />
+                <DayUseFact icon={Clock3} text={offering.timeLabel} />
+                <DayUseFact icon={Users} text={offering.soldOut ? "Esgotado" : offering.availabilityLabel} warning={!offering.soldOut && offering.availabilityLabel.startsWith("1 ")} />
+              </View>
             </View>
-            <Text token="subtitle" style={{ fontSize: 15, fontWeight: "800" }}>
-              {offering.priceLabel}
-            </Text>
           </View>
-          <View style={{ marginTop: 13 }}>
+          {offering.description ? (
+            <Text token="bodySm" color="muted" numberOfLines={2} style={{ marginTop: 10, lineHeight: 18 }}>
+              {offering.description}
+            </Text>
+          ) : null}
+          <View style={{ marginTop: 12 }}>
             <Button
-              label={offering.soldOut ? "Esgotado" : "Reservar Day Use"}
+              label={offering.soldOut ? "Esgotado" : "Ver Day Use"}
               onPress={() => onReserve(offering)}
               disabled={offering.soldOut}
               fullWidth
@@ -564,7 +617,19 @@ function DayUseOfferingsList({
   );
 }
 
-function CourtBookingSection({
+function DayUseFact({ icon: Icon, text, warning = false }: { icon: typeof CalendarDays; text: string; warning?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <Icon size={13} color={warning ? colors.warning : colors.textMuted} strokeWidth={2} />
+      <Text token="caption" style={{ flex: 1, fontSize: 10, lineHeight: 13, textTransform: "none", letterSpacing: 0, color: warning ? colors.warning : colors.textMuted }}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+export function CourtBookingSection({
   courts,
   isCourtsLoading,
   selectedCourtId,
@@ -621,49 +686,91 @@ function CourtBookingSection({
   }
 
   const selectedDateLabel = dateOptions.find((option) => option.iso === selectedDate)?.label ?? "";
-  const selectedCourtImageUrl = courts.find((court) => court.id === selectedCourtId)?.imageUrl ?? null;
+  const selectedCourt = courts.find((court) => court.id === selectedCourtId) ?? courts[0];
 
   return (
-    <View>
-      <Text token="bodySm" style={{ fontWeight: "700" }} color="muted">
-        Escolha a quadra
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: 10, marginBottom: 18 }}>
-        {courts.map((court) => (
-          <Chip key={court.id} label={court.name} selected={court.id === selectedCourtId} onPress={() => onSelectCourt(court.id)} />
-        ))}
-      </ScrollView>
+    <View style={{ gap: 14 }}>
+      <View style={{ gap: 8 }}>
+        <CompactSectionTitle number="1" title="Quadra" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {courts.map((court) => {
+            const isSelected = court.id === selectedCourt?.id;
+            return (
+              <PressScale
+                key={court.id}
+                onPress={() => onSelectCourt(court.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={court.name}
+                style={[
+                  styles.courtOption,
+                  {
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primarySoft : colors.surface,
+                  },
+                ]}
+              >
+                {court.imageUrl ? (
+                  <Image source={{ uri: court.imageUrl }} resizeMode="cover" style={styles.courtOptionImage} />
+                ) : (
+                  <View style={[styles.courtOptionImage, { backgroundColor: colors.surfaceAlt, alignItems: "center", justifyContent: "center" }]}>
+                    <CalendarClock size={18} color={isSelected ? colors.primaryText : colors.textMuted} />
+                  </View>
+                )}
+                <Text token="caption" numberOfLines={1} style={{ flex: 1, fontWeight: "700", textTransform: "none", letterSpacing: 0, color: isSelected ? colors.primaryText : colors.text }}>
+                  {court.name}
+                </Text>
+                {isSelected ? <Check size={14} color={colors.primaryText} strokeWidth={3} /> : null}
+              </PressScale>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      {selectedCourtImageUrl ? (
-        <Image
-          source={{ uri: selectedCourtImageUrl }}
-          resizeMode="cover"
-          accessibilityLabel="Foto da quadra selecionada"
-          style={{ width: "100%", aspectRatio: 16 / 7, borderRadius: 16, marginBottom: 18, backgroundColor: colors.surfaceAlt }}
-        />
-      ) : null}
+      <View style={{ gap: 8 }}>
+        <CompactSectionTitle number="2" title="Dia" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }}>
+          {dateOptions.map((option) => {
+            const isSelected = option.iso === selectedDate;
+            const date = new Date(`${option.iso}T00:00:00`);
+            return (
+              <PressScale
+                key={option.iso}
+                onPress={() => onSelectDate(option.iso)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={option.label}
+                style={[
+                  styles.dateOption,
+                  {
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primary : colors.surface,
+                  },
+                ]}
+              >
+                <Text token="caption" color={isSelected ? "onPrimary" : "muted"} style={{ fontSize: 9, lineHeight: 11, textTransform: "none", letterSpacing: 0 }}>
+                  {option.label === "Hoje" || option.label === "Amanhã" ? option.label : option.label.split(" ")[0]}
+                </Text>
+                <Text token="subtitle" color={isSelected ? "onPrimary" : "default"} style={{ fontSize: 16, lineHeight: 20 }}>
+                  {date.getDate()}
+                </Text>
+              </PressScale>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      <Text token="bodySm" style={{ fontWeight: "700" }} color="muted">
-        Escolha o dia
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: 10, marginBottom: 18 }}>
-        {dateOptions.map((option) => (
-          <Chip key={option.iso} label={option.label} selected={option.iso === selectedDate} onPress={() => onSelectDate(option.iso)} />
-        ))}
-      </ScrollView>
-
-      <Text token="bodySm" style={{ fontWeight: "700" }} color="muted">
-        Horários {selectedDateLabel ? `— ${selectedDateLabel.toLowerCase()}` : ""}
-      </Text>
+      <View style={{ gap: 8 }}>
+        <CompactSectionTitle number="3" title={`Horários${selectedDateLabel ? ` · ${selectedDateLabel.toLowerCase()}` : ""}`} />
 
       {isSlotsLoading ? (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 10 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
           {[0, 1, 2, 3, 4, 5].map((item) => (
-            <Skeleton key={item} width="31%" height={46} radius={12} />
+            <Skeleton key={item} width="31%" height={50} radius={10} />
           ))}
         </View>
       ) : slots.length === 0 ? (
-        <View style={{ marginTop: 10 }}>
+        <View>
           <EmptyState
             icon={CalendarClock}
             variant="empty"
@@ -673,7 +780,7 @@ function CourtBookingSection({
         </View>
       ) : (
         <>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 10 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 7 }}>
             {slots.map((slot) => {
               const isSelected = selectedSlots.some((item) => item.startTime === slot.startTime);
               return (
@@ -694,13 +801,16 @@ function CourtBookingSection({
                   <Text token="label" style={{ fontSize: 13 }} color={isSelected ? "onPrimary" : "default"}>
                     {slot.startTime}
                   </Text>
+                  <Text token="caption" style={{ fontSize: 9, lineHeight: 11, textTransform: "none", letterSpacing: 0, opacity: 0.78 }} color={isSelected ? "onPrimary" : "muted"}>
+                    {slot.priceLabel}
+                  </Text>
                 </PressScale>
               );
             })}
           </View>
 
           {selectedSlots.length > 0 ? (
-            <View>
+            <View style={{ gap: 2 }}>
               <View style={[styles.selectionSummary, { backgroundColor: colors.primarySoft }]}>
                 <Text token="bodySm" style={{ fontWeight: "700" }}>
                   {selectedSlots[0].startTime} – {selectedSlots[selectedSlots.length - 1].endTime}
@@ -723,8 +833,9 @@ function CourtBookingSection({
           ) : null}
         </>
       )}
+      </View>
 
-      <View style={{ marginTop: 18 }}>
+      <View style={{ marginTop: 2 }}>
         <Button
           label={
             selectedSlots.length > 0
@@ -736,6 +847,22 @@ function CourtBookingSection({
           fullWidth
         />
       </View>
+    </View>
+  );
+}
+
+function CompactSectionTitle({ number, title }: { number: string; title: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
+      <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" }}>
+        <Text token="caption" style={{ color: colors.primaryText, fontSize: 10, fontWeight: "800", textTransform: "none", letterSpacing: 0 }}>
+          {number}
+        </Text>
+      </View>
+      <Text token="bodySm" style={{ fontWeight: "800" }}>
+        {title}
+      </Text>
     </View>
   );
 }
@@ -754,15 +881,19 @@ const styles = StyleSheet.create({
   storeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   storeCard: { width: "47%", overflow: "hidden" },
   storeCardImage: { width: "100%", height: 100 },
-  dayUseCard: { padding: 16, borderWidth: 1 },
-  slotChip: { width: "31%", height: 46, borderRadius: 12, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  dayUseCard: { padding: 10, borderWidth: 1 },
+  dayUseImage: { width: 92, height: 104, borderRadius: 13 },
+  courtOption: { width: 148, height: 52, borderRadius: 12, borderWidth: 1.5, padding: 5, paddingRight: 9, flexDirection: "row", alignItems: "center", gap: 7 },
+  courtOptionImage: { width: 40, height: 40, borderRadius: 9 },
+  dateOption: { width: 52, height: 54, borderRadius: 12, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  slotChip: { width: "31%", height: 50, borderRadius: 10, borderWidth: 1.5, alignItems: "center", justifyContent: "center", gap: 1 },
   selectionSummary: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginTop: 12,
+    paddingVertical: 10,
+    marginTop: 2,
   },
 });

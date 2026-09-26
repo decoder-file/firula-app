@@ -27,7 +27,7 @@ export default function VotingEditionScreen() {
   const subtitle = edition?.heroSubtitle?.trim() || (edition ? `Monte sua seleção e escolha os melhores jogadores — ${edition.competition.name} ${edition.name}.` : "");
 
   return (
-    <Screen>
+    <Screen edges={[]}>
       <StatusBar style="dark" />
       <TopBar title="Melhores do Ano" variant="detail" onBack={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))} />
       <ScrollView contentContainerStyle={{ padding: spacing.s4, gap: spacing.s4, paddingBottom: spacing.s10 }}>

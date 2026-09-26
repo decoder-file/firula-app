@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSnackbar } from "@/design-system";
 import { isApiError, isNotFoundError } from "@/api/errors";
 import { courtCouponsService } from "@/services/courtCoupons.service";
-import { buildCourtReservationWebPath, buildDayUseWebPath, type AppliedReservationCoupon } from "@/utils/reservationCoupon";
+import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import {
   useCourtAvailability,
@@ -119,12 +119,13 @@ function formatPriceRangeCents(minCents: number | null, maxCents: number | null)
   return `${formatPriceCents(minCents)} – ${formatPriceCents(maxCents)}`;
 }
 
-function formatDayUseDateLabel(offering: DayUseOffering): string {
-  const dateLabel = new Date(`${offering.date}T00:00:00`).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  });
-  return `${dateLabel} · ${offering.startTime}–${offering.endTime}`;
+function getDayUseImage(offering: DayUseOffering): string | null {
+  return (
+    offering.coverImageUrl ||
+    offering.imageUrl ||
+    offering.images?.map((image) => (typeof image === "string" ? image : image.url)).find(Boolean) ||
+    null
+  );
 }
 
 function toIsoDate(date: Date): string {
@@ -194,7 +195,7 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [selectedSlots, setSelectedSlots] = useState<OrganizerCourtSlotItem[]>([]);
   // Cupom da reserva: a prévia vale para a seleção atual (quadra + dia + horários), então
-  // qualquer troca limpa o cupom. O desconto de verdade é aplicado no checkout do site.
+  // qualquer troca limpa o cupom. O servidor reaplica a regra ao criar a reserva.
   const [bookingCoupon, setBookingCoupon] = useState<AppliedReservationCoupon | null>(null);
   const activeCourtId = selectedCourtId ?? courtsQuery.data?.[0]?.id ?? null;
   const availabilityQuery = useCourtAvailability(
@@ -218,10 +219,8 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
     () => [
       { key: "events" as const, label: "Eventos ativos" },
       ...(capabilities.store ? [{ key: "store" as const, label: "Loja" }] : []),
-      ...(capabilities.dayUse ? [{ key: "dayuse" as const, label: "Day Use" }] : []),
-      ...(capabilities.courts ? [{ key: "booking" as const, label: "Reservar quadra" }] : []),
     ],
-    [capabilities.courts, capabilities.dayUse, capabilities.store],
+    [capabilities.store],
   );
 
   const events: OrganizerEventItem[] = (organizer?.events ?? []).map((event) => ({
@@ -254,13 +253,20 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
 
   const dayUseOfferings: OrganizerDayUseOfferingItem[] = (dayUseOfferingsQuery.data ?? [])
     .filter((offering) => offering.date >= todayIso)
-    .map((offering) => ({
-      id: offering.id,
-      name: offering.name,
-      description: [offering.description?.trim(), formatDayUseDateLabel(offering)].filter(Boolean).join(" · "),
-      priceLabel: formatPriceCents(offering.priceInCents),
-      soldOut: offering.confirmedCount >= offering.capacity,
-    }));
+    .map((offering) => {
+      const remaining = Math.max(0, offering.capacity - (offering.confirmedCount ?? offering._count?.reservations ?? 0));
+      return {
+        id: offering.id,
+        name: offering.name,
+        description: offering.description?.trim() ?? "",
+        dateLabel: new Date(`${offering.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }),
+        timeLabel: `${offering.startTime} – ${offering.endTime}`,
+        availabilityLabel: remaining === 1 ? "1 vaga disponível" : `${remaining} vagas disponíveis`,
+        priceLabel: formatPriceCents(offering.priceInCents),
+        soldOut: remaining <= 0,
+        imageUrl: getDayUseImage(offering),
+      };
+    });
 
   const courts: OrganizerCourtItem[] = (courtsQuery.data ?? []).map((court) => ({
     id: court.id,
@@ -382,16 +388,17 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
     onRemoveBookingCoupon: () => setBookingCoupon(null),
     onConfirmBooking: () => {
       if (!activeCourtId || selectedSlots.length === 0) return;
-      openWebPath(
-        buildCourtReservationWebPath({
+      router.push({
+        pathname: "/court-booking/[orgSlug]/[courtId]",
+        params: {
           orgSlug: slug,
           courtId: activeCourtId,
           date: selectedDate,
           startTime: selectedSlots[0].startTime,
           endTime: selectedSlots[selectedSlots.length - 1].endTime,
-          couponCode: bookingCoupon?.code,
-        }),
-      );
+          ...(bookingCoupon?.code ? { coupon: bookingCoupon.code } : {}),
+        },
+      } as never);
     },
 
     onBack: () => router.back(),
@@ -429,8 +436,9 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
       if (!storeSlug) return;
       openWebPath(`/lojas/${storeSlug}/produtos/${product.slug}`);
     },
-    // A compra do Day Use acontece no checkout do site (PIX/cartão e cupom de desconto lá).
-    onReserveDayUseOffering: (offering) => openWebPath(buildDayUseWebPath({ orgSlug: slug, dayUseId: offering.id })),
+    onOpenReservations: () => router.push(`/reservations/${encodeURIComponent(slug)}` as never),
+    onReserveDayUseOffering: (offering) =>
+      router.push(`/day-use/${encodeURIComponent(slug)}/${encodeURIComponent(offering.id)}` as never),
     onOpenContact: (contact) => {
       void Linking.openURL(contact.href);
     },

@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { Alert } from "react-native";
-import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 
 import { useAddToWallet, useMyTickets } from "@/hooks/useTickets";
