@@ -78,7 +78,7 @@ export function BottomSheet({ visible, title, onClose, children }: BottomSheetPr
 }
 
 const styles = StyleSheet.create({
-  scrim: { ...StyleSheet.absoluteFillObject },
+  scrim: { ...StyleSheet.absoluteFill },
   anchor: { flex: 1, justifyContent: 'flex-end' },
   sheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 8 },
   handle: { width: 40, height: 5, borderRadius: 999, alignSelf: 'center', marginVertical: 8 },

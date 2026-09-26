@@ -3,28 +3,15 @@ import { Alert } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 
-import { useAddToWallet, useMyTickets } from "@/hooks/useTickets";
+import { WalletError, useAddToWallet, useMyTickets } from "@/hooks/useTickets";
 import { isApiError } from "@/api/errors";
 import type { CustomerTicket } from "@/services/tickets.service";
 import type { AppTicket, TicketStatus, TicketsScreenProps } from "@/features/tickets/types";
-
-// Para passaporte, o ingresso só vale nas datas específicas do lote — a última delas
-// é o marco real de "encerrado", não o startsAt/endsAt do evento (que cobre o período
-// inteiro, dias que esse passaporte específico pode nem contemplar). Para os demais
-// tipos, um evento de múltiplos dias só termina de fato no endsAt, não no startsAt.
-const getTicketReferenceEndDate = (ticket: CustomerTicket): Date => {
-  if (ticket.ticketLot.type === "PASSPORT" && ticket.ticketLot.passportValidDates?.length) {
-    const times = ticket.ticketLot.passportValidDates
-      .map((date) => new Date(date).getTime())
-      .filter((time) => Number.isFinite(time));
-    if (times.length > 0) return new Date(Math.max(...times));
-  }
-  return new Date(ticket.event.endsAt ?? ticket.event.startsAt);
-};
+import { isTicketExpired } from "@/utils/ticketExpiry";
 
 const toAppTicketStatus = (ticket: CustomerTicket): TicketStatus => {
   if (ticket.status !== "VALID") return "used";
-  return new Date() > getTicketReferenceEndDate(ticket) ? "expired" : "active";
+  return isTicketExpired(ticket) ? "expired" : "active";
 };
 
 const formatTicketDate = (isoDate: string) =>
@@ -63,11 +50,35 @@ export const useTicketsRouteProps = (): TicketsScreenProps => {
   const handleAddToWallet = (ticketId: string) => {
     addToWallet.mutate(ticketId, {
       onError: (error) => {
-        if (isApiError(error) && error.statusCode === 400) {
+        const walletError = error instanceof WalletError ? error : null;
+        const cause = walletError?.cause ?? error;
+        // Log completo para diagnóstico (Metro / Xcode / Sentry breadcrumbs).
+        console.warn(
+          "[Wallet] failed",
+          JSON.stringify({
+            ticketId,
+            step: walletError?.step ?? "unknown",
+            code: walletError?.code,
+            message: walletError?.message ?? (error as Error)?.message,
+            apiStatus: isApiError(cause) ? cause.statusCode : undefined,
+            apiMessage: isApiError(cause) ? cause.message : undefined,
+          }),
+        );
+
+        if (isApiError(cause) && cause.statusCode === 400) {
           Alert.alert("Indisponível", "Este ingresso não pode ser adicionado à carteira.");
-        } else {
-          Alert.alert("Erro", "Não foi possível abrir a carteira. Tente novamente.");
+          return;
         }
+        if (walletError?.step === "native-module") {
+          Alert.alert("Atualize o app", "Esta versão do app não consegue adicionar ingressos à Apple Wallet. Atualize pela App Store.");
+          return;
+        }
+        if (walletError?.step === "can-add-passes") {
+          Alert.alert("Carteira indisponível", "A Apple Wallet não está disponível neste aparelho.");
+          return;
+        }
+        const detail = walletError?.code ? ` (${walletError.code})` : walletError ? ` (${walletError.step})` : "";
+        Alert.alert("Erro", `Não foi possível abrir a carteira. Tente novamente.${detail}`);
       },
     });
   };

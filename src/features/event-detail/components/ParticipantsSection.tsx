@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   normalCaption: { textTransform: "none", letterSpacing: 0 },
   messageRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 },
   previewRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, marginTop: 16 },
-  scrim: { ...StyleSheet.absoluteFillObject },
+  scrim: { ...StyleSheet.absoluteFill },
   modalAnchor: { flex: 1, justifyContent: "flex-end" },
   modal: { height: "82%", borderTopLeftRadius: 28, borderTopRightRadius: 28, overflow: "hidden" },
   modalHeader: { minHeight: 66, alignItems: "center", justifyContent: "center", borderBottomWidth: StyleSheet.hairlineWidth },

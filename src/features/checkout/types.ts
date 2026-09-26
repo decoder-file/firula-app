@@ -40,9 +40,20 @@ export interface PurchaseQuote {
   card: { flow?: "TRANSPARENT" | "REDIRECT"; installments: PurchaseQuoteInstallment[] } | null;
 }
 
+/** Regras de canal do cupom (app x site). No app `availableOnThisChannel` é sempre true. */
+export interface CouponChannelInfo {
+  channel?: "app" | "web";
+  /** Só vale no app Firula. */
+  appOnly?: boolean;
+  appDiscountValue?: number | null;
+  availableOnThisChannel?: boolean;
+  betterInApp?: boolean;
+  appDiscountCents?: number;
+}
+
 export type ValidateCouponResult =
-  | { valid: false; error: string; message: string }
-  | { valid: true; discountType: string; discountValue: number; discountCents: number; finalAmountCents: number };
+  | ({ valid: false; error: string; message: string } & CouponChannelInfo)
+  | ({ valid: true; discountType: string; discountValue: number; discountCents: number; finalAmountCents: number } & CouponChannelInfo);
 
 export interface CustomFieldAnswerInput {
   key: string;

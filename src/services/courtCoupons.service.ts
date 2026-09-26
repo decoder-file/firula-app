@@ -14,6 +14,9 @@ export type ReservationCouponResult =
       grossAmountCents: number;
       discountCents: number;
       finalAmountCents: number;
+      /** Só vale no app (o app manda `X-Client-Platform: mobile`, então aqui é sempre aceito). */
+      appOnly?: boolean;
+      appDiscountValue?: number | null;
     }
   | { valid: false; error: string; message: string; grossAmountCents?: number };
 
