@@ -29,6 +29,7 @@ import {
 
 import { BottomSheet, Button, Chip, EmptyState, EventCard, IconButton, ListItem, PressScale, Skeleton, TabBar, Text, useTheme } from "@/design-system";
 import { ReviewsSheet } from "@/features/organizer-profile/components/ReviewsSheet";
+import { OrganizerLocation } from "@/features/organizer-profile/components/OrganizerLocation";
 import { ReservationCouponField } from "@/features/organizer-profile/components/ReservationCouponField";
 import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
 import { VotingBanner } from "@/features/voting/components/VotingBanner";
@@ -62,6 +63,7 @@ export function OrganizerProfileScreen({
   initials,
   logoUrl,
   location,
+  address,
   description,
   followersCount,
   eventsCount,
@@ -357,6 +359,12 @@ export function OrganizerProfileScreen({
               </View>
               <ChevronRight size={19} color={colors.textMuted} />
             </PressScale>
+          </View>
+        ) : null}
+
+        {address ? (
+          <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
+            <OrganizerLocation key={address} address={address} />
           </View>
         ) : null}
 

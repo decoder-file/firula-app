@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSnackbar } from "@/design-system";
 import { isApiError, isNotFoundError } from "@/api/errors";
 import { courtCouponsService } from "@/services/courtCoupons.service";
+import { formatOrganizerAddress } from "@/utils/organizerAddress";
 import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
 import { useIsAuthenticated } from "@/hooks/useAuth";
 import {
@@ -306,6 +307,7 @@ export function useOrganizerProfileRouteProps(): OrganizerProfileScreenProps {
     initials: getInitials(organizer?.tradeName ?? slug),
     logoUrl: organizer?.logoUrl ?? null,
     location: organizer ? [organizer.city, organizer.state].filter(Boolean).join(", ") || null : null,
+    address: organizer ? formatOrganizerAddress(organizer) : null,
     description: organizer?.description ?? null,
 
     followersCount: organizer?.followersCount ?? 0,

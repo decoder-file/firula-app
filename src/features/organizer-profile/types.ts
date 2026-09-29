@@ -82,6 +82,7 @@ export interface OrganizerProfileScreenProps {
   initials: string;
   logoUrl: string | null;
   location: string | null;
+  address: string | null;
   description: string | null;
 
   followersCount: number;

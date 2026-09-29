@@ -26,6 +26,11 @@ export interface OrganizerProfile {
   instagram: string | null;
   facebook: string | null;
   linkedin: string | null;
+  address?: string | null;
+  addressNumber?: string | null;
+  addressComplement?: string | null;
+  neighborhood?: string | null;
+  postalCode?: string | null;
   city: string;
   state: string;
   logoUrl: string | null;
