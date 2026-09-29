@@ -13,6 +13,17 @@ export interface DayUseReservation {
   createdAt: string;
 }
 
+export interface MyDayUseReservation extends DayUseReservation {
+  dayUse: {
+    id: string;
+    name: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    organization: { id: string; tradeName: string; slug: string };
+  };
+}
+
 export type DayUsePaymentResult =
   | { method: "PIX"; qrCodeText: string | null; expiresAt: string | null; amountCents: number }
   | {
@@ -51,6 +62,16 @@ export const dayUseService = {
     const { data } = await apiClient.get(
       `/public/courts/day-uses/reservations/${reservationId}/payment-status`,
     );
+    return data.data;
+  },
+
+  listMine: async (): Promise<MyDayUseReservation[]> => {
+    const { data } = await apiClient.get("/public/courts/day-uses/reservations/my");
+    return data.data ?? [];
+  },
+
+  cancel: async (reservationId: string): Promise<DayUseReservation> => {
+    const { data } = await apiClient.delete(`/public/courts/day-uses/reservations/${reservationId}`);
     return data.data;
   },
 };

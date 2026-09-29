@@ -2,16 +2,29 @@ import { apiClient } from "@/api/client";
 import { dayUseService } from "@/services/dayUse.service";
 
 jest.mock("@/api/client", () => ({
-  apiClient: { get: jest.fn(), post: jest.fn() },
+  apiClient: { delete: jest.fn(), get: jest.fn(), post: jest.fn() },
 }));
 
+const deleteRequest = apiClient.delete as jest.Mock;
 const get = apiClient.get as jest.Mock;
 const post = apiClient.post as jest.Mock;
 
 describe("dayUseService", () => {
   beforeEach(() => {
+    deleteRequest.mockReset();
     get.mockReset();
     post.mockReset();
+  });
+
+  it("lista e cancela as reservas de Day Use do cliente autenticado", async () => {
+    get.mockResolvedValue({ data: { data: [{ id: "reservation-1" }] } });
+    deleteRequest.mockResolvedValue({ data: { data: { id: "reservation-1", status: "CANCELED" } } });
+
+    await dayUseService.listMine();
+    await dayUseService.cancel("reservation-1");
+
+    expect(get).toHaveBeenCalledWith("/public/courts/day-uses/reservations/my");
+    expect(deleteRequest).toHaveBeenCalledWith("/public/courts/day-uses/reservations/reservation-1");
   });
 
   it("cria a reserva com idempotência e cupom", async () => {

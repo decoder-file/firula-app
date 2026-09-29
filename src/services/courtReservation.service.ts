@@ -22,6 +22,15 @@ export interface CourtReservation {
   notes?: string | null;
 }
 
+export interface MyCourtReservation extends CourtReservation {
+  createdAt: string;
+  court: {
+    id: string;
+    name: string;
+    organization: { id: string; tradeName: string; slug: string };
+  };
+}
+
 export interface CreateCourtReservationInput {
   courtId: string;
   date: string;
@@ -45,6 +54,16 @@ export const courtReservationService = {
 
   getPaymentStatus: async (reservationId: string): Promise<{ status: CourtReservationStatus }> => {
     const { data } = await apiClient.get(`/public/courts/reservations/${reservationId}/payment-status`);
+    return data.data;
+  },
+
+  listMine: async (): Promise<MyCourtReservation[]> => {
+    const { data } = await apiClient.get("/public/courts/reservations/my");
+    return data.data ?? [];
+  },
+
+  cancel: async (reservationId: string): Promise<CourtReservation> => {
+    const { data } = await apiClient.delete(`/public/courts/reservations/${reservationId}`);
     return data.data;
   },
 };

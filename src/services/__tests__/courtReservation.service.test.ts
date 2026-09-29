@@ -1,15 +1,28 @@
 import { apiClient } from "@/api/client";
 import { courtReservationService } from "@/services/courtReservation.service";
 
-jest.mock("@/api/client", () => ({ apiClient: { get: jest.fn(), post: jest.fn() } }));
+jest.mock("@/api/client", () => ({ apiClient: { delete: jest.fn(), get: jest.fn(), post: jest.fn() } }));
 
+const deleteRequest = apiClient.delete as jest.Mock;
 const get = apiClient.get as jest.Mock;
 const post = apiClient.post as jest.Mock;
 
 describe("courtReservationService", () => {
   beforeEach(() => {
+    deleteRequest.mockReset();
     get.mockReset();
     post.mockReset();
+  });
+
+  it("lista e cancela as reservas do cliente autenticado", async () => {
+    get.mockResolvedValue({ data: { data: [{ id: "reservation-1" }] } });
+    deleteRequest.mockResolvedValue({ data: { data: { id: "reservation-1", status: "CANCELED" } } });
+
+    await courtReservationService.listMine();
+    await courtReservationService.cancel("reservation-1");
+
+    expect(get).toHaveBeenCalledWith("/public/courts/reservations/my");
+    expect(deleteRequest).toHaveBeenCalledWith("/public/courts/reservations/reservation-1");
   });
 
   it("envia a seleção completa com idempotência e cupom", async () => {

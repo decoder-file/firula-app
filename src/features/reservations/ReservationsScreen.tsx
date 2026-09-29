@@ -1,15 +1,19 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ChevronRight, Sun, Trophy } from "lucide-react-native";
 
-import { EmptyState, Surface, Text, TopBar, useSnackbar, useTheme } from "@/design-system";
+import { Button, EmptyState, Surface, Text, TopBar, useSnackbar, useTheme } from "@/design-system";
 import { AnimatedPressable } from "@/components/AnimatedPressable";
 import { Screen } from "@/components/Screen";
 import { CourtBookingSection, DayUseOfferingsList } from "@/features/organizer-profile/OrganizerProfileScreen";
 import type { OrganizerCourtItem, OrganizerCourtSlotItem, OrganizerDayUseOfferingItem } from "@/features/organizer-profile/types";
 import { useCourtAvailability, useOrganizerCourts, useOrganizerDayUseOfferings, useOrganizerProfile } from "@/hooks/useOrganizer";
+import { useIsAuthenticated } from "@/hooks/useAuth";
 import { courtCouponsService } from "@/services/courtCoupons.service";
+import { courtReservationService, type MyCourtReservation } from "@/services/courtReservation.service";
+import { dayUseService, type MyDayUseReservation } from "@/services/dayUse.service";
 import type { DayUseOffering } from "@/services/organizer.service";
 import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
 
@@ -19,11 +23,23 @@ const toIsoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth(
 const addDays = (iso: string, amount: number) => { const date = new Date(`${iso}T00:00:00`); date.setDate(date.getDate() + amount); return toIsoDate(date); };
 const formatPrice = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dayUseImage = (item: DayUseOffering) => item.coverImageUrl || item.imageUrl || item.images?.map((image) => typeof image === "string" ? image : image.url).find(Boolean) || null;
+const reservationStatusLabel: Record<MyCourtReservation["status"] | MyDayUseReservation["status"], string> = {
+  CONFIRMED: "Confirmada",
+  PENDING_APPROVAL: "Aguardando aprovação",
+  PENDING_PAYMENT: "Aguardando pagamento",
+  PENDING_CANCELLATION: "Cancelamento pendente",
+  CANCELED: "Cancelada",
+  REJECTED: "Rejeitada",
+};
+const canCancel = (status: MyCourtReservation["status"] | MyDayUseReservation["status"]) =>
+  status === "CONFIRMED" || status === "PENDING_APPROVAL" || status === "PENDING_PAYMENT";
 
 export function ReservationsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { show } = useSnackbar();
+  const isAuthenticated = useIsAuthenticated();
   const { orgSlug = "" } = useLocalSearchParams<{ orgSlug: string }>();
   const profileQuery = useOrganizerProfile(orgSlug);
   const dayUseQuery = useOrganizerDayUseOfferings(orgSlug);
@@ -36,6 +52,20 @@ export function ReservationsScreen() {
   const [coupon, setCoupon] = useState<AppliedReservationCoupon | null>(null);
   const activeCourtId = selectedCourtId ?? courtsQuery.data?.[0]?.id ?? "";
   const availabilityQuery = useCourtAvailability(activeCourtId, selectedDate, activeTab === "courts" && Boolean(activeCourtId));
+  const myCourtsQuery = useQuery({ queryKey: ["my-court-reservations"], queryFn: courtReservationService.listMine, enabled: isAuthenticated, staleTime: 60_000 });
+  const myDayUsesQuery = useQuery({ queryKey: ["my-dayuse-reservations"], queryFn: dayUseService.listMine, enabled: isAuthenticated, staleTime: 60_000 });
+  const cancelMutation = useMutation({
+    mutationFn: async ({ type, id }: { type: "court" | "dayuse"; id: string }) => {
+      if (type === "court") await courtReservationService.cancel(id);
+      else await dayUseService.cancel(id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["my-court-reservations"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-dayuse-reservations"] });
+      show({ message: "Reserva cancelada com sucesso.", variant: "success" });
+    },
+    onError: () => show({ message: "Não foi possível cancelar a reserva.", variant: "error" }),
+  });
 
   const dayUses: OrganizerDayUseOfferingItem[] = (dayUseQuery.data ?? []).filter((item) => item.date >= today).map((item) => {
     const date = new Date(`${item.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
@@ -71,6 +101,8 @@ export function ReservationsScreen() {
 
   const hasDayUse = dayUses.length > 0;
   const hasCourts = courts.length > 0;
+  const myCourtReservations = (myCourtsQuery.data ?? []).filter((item) => item.court.organization.slug === orgSlug);
+  const myDayUseReservations = (myDayUsesQuery.data ?? []).filter((item) => item.dayUse.organization.slug === orgSlug);
   const isLoading = dayUseQuery.isPending || courtsQuery.isPending;
   const goBack = () => {
     if (activeTab) {
@@ -79,6 +111,14 @@ export function ReservationsScreen() {
     }
     router.back();
   };
+  const requestCancellation = (type: "court" | "dayuse", id: string) => Alert.alert(
+    "Cancelar reserva?",
+    "Esta ação segue as regras de cancelamento do produtor e não pode ser desfeita.",
+    [
+      { text: "Voltar", style: "cancel" },
+      { text: "Cancelar reserva", style: "destructive", onPress: () => cancelMutation.mutate({ type, id }) },
+    ],
+  );
 
   return (
     <Screen edges={[]}>
@@ -123,22 +163,18 @@ export function ReservationsScreen() {
           ) : null}
           {!activeTab && !isLoading ? (
             <View style={{ gap: 12 }}>
-              <ServiceChoice
-                icon={Sun}
-                title="Comprar Day Use"
-                description="Acesso ao espaço em uma data e período definidos"
-                action="Ver mais"
-                onPress={() => setActiveTab("dayuse")}
-              />
-              <ServiceChoice
-                icon={CalendarClock}
-                title="Reservar quadra"
-                description="Escolha a quadra, o dia e os horários disponíveis"
-                action="Ver mais"
-                onPress={() => setActiveTab("courts")}
-              />
+              {hasDayUse ? <ServiceChoice icon={Sun} title="Comprar Day Use" description="Acesso ao espaço em uma data e período definidos" action="Ver mais" onPress={() => setActiveTab("dayuse")} /> : null}
+              {hasCourts ? <ServiceChoice icon={CalendarClock} title="Reservar quadra" description="Escolha a quadra, o dia e os horários disponíveis" action="Ver mais" onPress={() => setActiveTab("courts")} /> : null}
             </View>
           ) : null}
+          {!activeTab && isAuthenticated ? <MyReservations
+            courts={myCourtReservations}
+            dayUses={myDayUseReservations}
+            isLoading={myCourtsQuery.isPending || myDayUsesQuery.isPending}
+            isError={myCourtsQuery.isError || myDayUsesQuery.isError}
+            cancelingId={cancelMutation.isPending ? cancelMutation.variables?.id : undefined}
+            onCancel={requestCancellation}
+          /> : null}
           {activeTab === "dayuse" ? <DayUseOfferingsList offerings={dayUses} isLoading={dayUseQuery.isPending} onReserve={(item) => router.push(`/day-use/${encodeURIComponent(orgSlug)}/${encodeURIComponent(item.id)}` as never)} /> : null}
           {activeTab === "courts" ? <CourtBookingSection courts={courts} isCourtsLoading={courtsQuery.isPending} selectedCourtId={activeCourtId || null} onSelectCourt={(id) => { setSelectedCourtId(id); setSelectedSlots([]); setCoupon(null); }} dateOptions={dateOptions} selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); setSelectedSlots([]); setCoupon(null); }} slots={slots} isSlotsLoading={availabilityQuery.isPending} selectedSlots={selectedSlots} onToggleSlot={toggleSlot} coupon={coupon} onApplyCoupon={applyCoupon} onRemoveCoupon={() => setCoupon(null)} onConfirm={() => { if (!activeCourtId || selectedSlots.length === 0) return; router.push({ pathname: "/court-booking/[orgSlug]/[courtId]", params: { orgSlug, courtId: activeCourtId, date: selectedDate, startTime: selectedSlots[0].startTime, endTime: selectedSlots[selectedSlots.length - 1].endTime, ...(coupon?.code ? { coupon: coupon.code } : {}) } } as never); }} /> : null}
           {!isLoading && !hasDayUse && !hasCourts ? <EmptyState icon={CalendarClock} variant="empty" title="Nenhuma opção disponível no momento" /> : null}
@@ -146,6 +182,28 @@ export function ReservationsScreen() {
       </ScrollView>
     </Screen>
   );
+}
+
+function MyReservations({ courts, dayUses, isLoading, isError, cancelingId, onCancel }: { courts: MyCourtReservation[]; dayUses: MyDayUseReservation[]; isLoading: boolean; isError: boolean; cancelingId?: string; onCancel: (type: "court" | "dayuse", id: string) => void }) {
+  const { spacing } = useTheme();
+  if (isLoading) return <View style={{ alignItems: "center", paddingVertical: 24 }}><ActivityIndicator /></View>;
+  if (isError) return <EmptyState icon={CalendarClock} variant="error" title="Não foi possível carregar suas reservas" />;
+  if (courts.length === 0 && dayUses.length === 0) return null;
+  return <View style={{ gap: 12, marginTop: spacing.s5 }}>
+    <View style={{ gap: 3 }}><Text token="subtitle">Suas reservas</Text><Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>Acompanhe ou cancele suas reservas neste produtor.</Text></View>
+    {courts.map((item) => <ReservationCard key={`court-${item.id}`} title={item.court.name} date={item.date} time={`${item.startTime} – ${item.endTime}`} status={item.status} isCanceling={cancelingId === item.id} onCancel={canCancel(item.status) ? () => onCancel("court", item.id) : undefined} />)}
+    {dayUses.map((item) => <ReservationCard key={`dayuse-${item.id}`} title={item.dayUse.name} date={item.dayUse.date} time={`${item.dayUse.startTime} – ${item.dayUse.endTime}`} status={item.status} isCanceling={cancelingId === item.id} onCancel={canCancel(item.status) ? () => onCancel("dayuse", item.id) : undefined} />)}
+  </View>;
+}
+
+function ReservationCard({ title, date, time, status, isCanceling, onCancel }: { title: string; date: string; time: string; status: keyof typeof reservationStatusLabel; isCanceling: boolean; onCancel?: () => void }) {
+  const { spacing } = useTheme();
+  const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+  return <Surface level={1} style={{ padding: spacing.s4, gap: 8 }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}><Text token="subtitle" style={{ flex: 1 }}>{title}</Text><Text token="caption" color="primary">{reservationStatusLabel[status]}</Text></View>
+    <Text token="bodySm" color="muted">{dateLabel} · {time}</Text>
+    {onCancel ? <Button label="Cancelar reserva" variant="ghost" size="sm" loading={isCanceling} onPress={onCancel} /> : null}
+  </Surface>;
 }
 
 function ServiceChoice({ icon: Icon, title, description, action, onPress }: { icon: typeof Sun; title: string; description: string; action: string; onPress: () => void }) {

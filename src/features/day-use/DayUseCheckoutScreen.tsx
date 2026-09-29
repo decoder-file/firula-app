@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "react-native-qrcode-svg";
 import {
+  AlertCircle,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -28,7 +29,7 @@ import { isApiError } from "@/api/errors";
 import { Button, EmptyState, PressScale, Text, TextField, TopBar, useTheme } from "@/design-system";
 import { useAuthUser, useAuthUserProfile, useIsAuthenticated } from "@/hooks/useAuth";
 import { courtCouponsService } from "@/services/courtCoupons.service";
-import { dayUseService, type DayUsePaymentMethod, type DayUsePaymentResult, type DayUseReservation } from "@/services/dayUse.service";
+import { dayUseService, type DayUsePaymentMethod, type DayUsePaymentResult, type DayUseReservation, type DayUseReservationStatus } from "@/services/dayUse.service";
 import { organizerService, type DayUseOffering } from "@/services/organizer.service";
 import { formatCardExpiry, formatCardNumber, formatCep, onlyDigits } from "@/utils/mask";
 import { formatCurrencyFromCents, formatDateLong } from "@/utils/format";
@@ -37,6 +38,8 @@ type Step = "details" | "method" | "payment" | "success";
 type AppliedCoupon = { code: string; discountCents: number; finalAmountCents: number };
 
 const generateKey = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+const isTerminalPaymentStatus = (status?: DayUseReservationStatus) =>
+  status === "CONFIRMED" || status === "CANCELED";
 
 function imageUrl(dayUse: DayUseOffering): string | null {
   return dayUse.coverImageUrl || dayUse.imageUrl ||
@@ -105,7 +108,7 @@ export function DayUseCheckoutScreen() {
     queryKey: ["day-use-payment-status", reservation?.id],
     queryFn: () => dayUseService.getPaymentStatus(reservation!.id),
     enabled: step === "payment" && Boolean(reservation?.id),
-    refetchInterval: (query) => query.state.data?.status === "CONFIRMED" ? false : 3000,
+    refetchInterval: (query) => isTerminalPaymentStatus(query.state.data?.status) ? false : 3000,
   });
 
   useEffect(() => {
@@ -253,10 +256,13 @@ export function DayUseCheckoutScreen() {
           />
         ) : null}
         {step === "method" ? <MethodSelection amountCents={reservation?.priceInCents ?? displayTotal} methods={methods} onSelect={(value) => { setMethod(value); setStep("payment"); }} /> : null}
-        {step === "payment" && method === "PIX" ? (
+        {step === "payment" && paymentStatusQuery.data?.status === "CANCELED" ? (
+          <EmptyState icon={AlertCircle} variant="error" title="Reserva cancelada" description="Este pagamento não pode mais ser concluído. Escolha outro Day Use para fazer uma nova reserva." actionLabel="Escolher outro Day Use" onAction={goBack} />
+        ) : null}
+        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && method === "PIX" ? (
           <PixPayment payment={payment?.method === "PIX" ? payment : null} isLoading={payMutation.isPending} error={paymentError} copied={copied} onCopy={async () => { if (payment?.method !== "PIX" || !payment.qrCodeText) return; await Clipboard.setStringAsync(payment.qrCodeText); setCopied(true); setTimeout(() => setCopied(false), 2000); }} onRetry={() => { setPayment(null); setPaymentError(null); void createPix(); }} />
         ) : null}
-        {step === "payment" && method === "CARD" ? (
+        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && method === "CARD" ? (
           <CardPayment reservation={reservation!} cardFlow={cardFlow} customer={{ name: authUser?.name ?? "", email: authUser?.email ?? "", cpf: authProfile?.cpf ?? "", phone: authProfile?.phone ?? "" }} mutation={payMutation} onPayment={setPayment} onSuccess={() => setStep("success")} />
         ) : null}
       </ScrollView>
