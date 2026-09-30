@@ -23,8 +23,7 @@ export function OrganizerLocation({ address }: { address: string }) {
 
   const copyAddress = async () => {
     try {
-      const copied = await Clipboard.setStringAsync(address);
-      if (!copied) throw new Error("Clipboard unavailable");
+      await Clipboard.setStringAsync(address);
       show({ message: "Endereço copiado.", variant: "success" });
     } catch {
       show({ message: "Não foi possível copiar o endereço. Tente novamente.", variant: "error" });

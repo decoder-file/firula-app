@@ -79,7 +79,14 @@ export function ReservationsScreen() {
   const toggleSlot = (slot: OrganizerCourtSlotItem) => {
     setCoupon(null);
     setSelectedSlots((current) => {
-      if (current.some((item) => item.startTime === slot.startTime)) return current.filter((item) => item.startTime !== slot.startTime);
+      if (current.some((item) => item.startTime === slot.startTime)) {
+        const next = current.filter((item) => item.startTime !== slot.startTime);
+        if (next.some((item, index) => index < next.length - 1 && item.endTime !== next[index + 1].startTime)) {
+          show({ message: "Selecione apenas horários consecutivos.", variant: "error" });
+          return current;
+        }
+        return next;
+      }
       const next = [...current, slot].sort((a, b) => a.startTime.localeCompare(b.startTime));
       if (next.some((item, index) => index < next.length - 1 && item.endTime !== next[index + 1].startTime)) {
         show({ message: "Selecione apenas horários consecutivos.", variant: "error" });
@@ -161,12 +168,20 @@ export function ReservationsScreen() {
               <Text token="body" color="muted">Carregando opções…</Text>
             </View>
           ) : null}
-          {!activeTab && !isLoading ? (
+          {!activeTab && !isLoading && !dayUseQuery.isError && !courtsQuery.isError ? (
             <View style={{ gap: 12 }}>
               {hasDayUse ? <ServiceChoice icon={Sun} title="Comprar Day Use" description="Acesso ao espaço em uma data e período definidos" action="Ver mais" onPress={() => setActiveTab("dayuse")} /> : null}
               {hasCourts ? <ServiceChoice icon={CalendarClock} title="Reservar quadra" description="Escolha a quadra, o dia e os horários disponíveis" action="Ver mais" onPress={() => setActiveTab("courts")} /> : null}
             </View>
           ) : null}
+          {!isLoading && (dayUseQuery.isError || courtsQuery.isError) ? <EmptyState
+            icon={CalendarClock}
+            variant="error"
+            title="Não foi possível carregar as opções"
+            description="Tente novamente em alguns instantes."
+            actionLabel="Tentar novamente"
+            onAction={() => { void dayUseQuery.refetch(); void courtsQuery.refetch(); }}
+          /> : null}
           {!activeTab && isAuthenticated ? <MyReservations
             courts={myCourtReservations}
             dayUses={myDayUseReservations}
@@ -175,9 +190,9 @@ export function ReservationsScreen() {
             cancelingId={cancelMutation.isPending ? cancelMutation.variables?.id : undefined}
             onCancel={requestCancellation}
           /> : null}
-          {activeTab === "dayuse" ? <DayUseOfferingsList offerings={dayUses} isLoading={dayUseQuery.isPending} onReserve={(item) => router.push(`/day-use/${encodeURIComponent(orgSlug)}/${encodeURIComponent(item.id)}` as never)} /> : null}
-          {activeTab === "courts" ? <CourtBookingSection courts={courts} isCourtsLoading={courtsQuery.isPending} selectedCourtId={activeCourtId || null} onSelectCourt={(id) => { setSelectedCourtId(id); setSelectedSlots([]); setCoupon(null); }} dateOptions={dateOptions} selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); setSelectedSlots([]); setCoupon(null); }} slots={slots} isSlotsLoading={availabilityQuery.isPending} selectedSlots={selectedSlots} onToggleSlot={toggleSlot} coupon={coupon} onApplyCoupon={applyCoupon} onRemoveCoupon={() => setCoupon(null)} onConfirm={() => { if (!activeCourtId || selectedSlots.length === 0) return; router.push({ pathname: "/court-booking/[orgSlug]/[courtId]", params: { orgSlug, courtId: activeCourtId, date: selectedDate, startTime: selectedSlots[0].startTime, endTime: selectedSlots[selectedSlots.length - 1].endTime, ...(coupon?.code ? { coupon: coupon.code } : {}) } } as never); }} /> : null}
-          {!isLoading && !hasDayUse && !hasCourts ? <EmptyState icon={CalendarClock} variant="empty" title="Nenhuma opção disponível no momento" /> : null}
+          {activeTab === "dayuse" && !dayUseQuery.isError ? <DayUseOfferingsList offerings={dayUses} isLoading={dayUseQuery.isPending} onReserve={(item) => router.push(`/day-use/${encodeURIComponent(orgSlug)}/${encodeURIComponent(item.id)}` as never)} /> : null}
+          {activeTab === "courts" && !courtsQuery.isError ? <CourtBookingSection courts={courts} isCourtsLoading={courtsQuery.isPending} selectedCourtId={activeCourtId || null} onSelectCourt={(id) => { setSelectedCourtId(id); setSelectedSlots([]); setCoupon(null); }} dateOptions={dateOptions} selectedDate={selectedDate} onSelectDate={(date) => { setSelectedDate(date); setSelectedSlots([]); setCoupon(null); }} slots={slots} isSlotsLoading={availabilityQuery.isPending} selectedSlots={selectedSlots} onToggleSlot={toggleSlot} coupon={coupon} onApplyCoupon={applyCoupon} onRemoveCoupon={() => setCoupon(null)} onConfirm={() => { if (!activeCourtId || selectedSlots.length === 0) return; router.push({ pathname: "/court-booking/[orgSlug]/[courtId]", params: { orgSlug, courtId: activeCourtId, date: selectedDate, startTime: selectedSlots[0].startTime, endTime: selectedSlots[selectedSlots.length - 1].endTime, ...(coupon?.code ? { coupon: coupon.code } : {}) } } as never); }} /> : null}
+          {!isLoading && !dayUseQuery.isError && !courtsQuery.isError && !hasDayUse && !hasCourts ? <EmptyState icon={CalendarClock} variant="empty" title="Nenhuma opção disponível no momento" /> : null}
         </View>
       </ScrollView>
     </Screen>

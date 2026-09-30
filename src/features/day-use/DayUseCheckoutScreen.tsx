@@ -92,6 +92,7 @@ export function DayUseCheckoutScreen() {
   const occupied = dayUse ? dayUse.confirmedCount ?? dayUse._count?.reservations ?? 0 : 0;
   const available = dayUse ? Math.max(0, dayUse.capacity - occupied) : 0;
   const displayTotal = coupon?.finalAmountCents ?? dayUse?.priceInCents ?? 0;
+  const paymentUnavailable = methods.length === 0 && displayTotal > 0;
 
   const reserveMutation = useMutation({
     mutationFn: () => dayUseService.reserve(dayUseId, {
@@ -112,14 +113,14 @@ export function DayUseCheckoutScreen() {
   });
 
   useEffect(() => {
-    if (paymentStatusQuery.data?.status === "CONFIRMED" && reservation) {
+    if (paymentStatusQuery.data?.status === "CONFIRMED" && reservation && reservation.status !== "CONFIRMED") {
       setReservation({ ...reservation, status: "CONFIRMED" });
       setStep("success");
     }
   }, [paymentStatusQuery.data?.status, reservation]);
 
   const confirmReservation = useCallback(async () => {
-    if (!dayUse || reserveMutation.isPending) return;
+    if (!dayUse || paymentUnavailable || reserveMutation.isPending) return;
     if (!isAuthenticated) {
       const redirectTo = `/day-use/${encodeURIComponent(orgSlug)}/${encodeURIComponent(dayUseId)}?resume=1`;
       router.push({ pathname: "/login-modal", params: { redirectTo } });
@@ -134,7 +135,7 @@ export function DayUseCheckoutScreen() {
       } else if (methods.length > 1) {
         setStep("method");
       } else {
-        setMethod(methods[0] ?? "PIX");
+        setMethod(methods[0] ?? null);
         setStep("payment");
       }
     } catch (error) {
@@ -150,7 +151,7 @@ export function DayUseCheckoutScreen() {
       if (isApiError(error) && error.code?.startsWith("COURT_COUPON_")) setCoupon(null);
       Alert.alert("Não foi possível reservar", errorMessage(error, "Tente novamente em instantes."));
     }
-  }, [dayUse, dayUseId, isAuthenticated, methods, orgSlug, queryClient, reserveMutation, router, coupon]);
+  }, [dayUse, dayUseId, isAuthenticated, methods, orgSlug, queryClient, reserveMutation, router, coupon, paymentUnavailable]);
 
   useEffect(() => {
     if (params.resume !== "1" || !isAuthenticated || !dayUse || organizerQuery.isPending || resumedRef.current) return;
@@ -255,21 +256,25 @@ export function DayUseCheckoutScreen() {
             onRemoveCoupon={() => { setCoupon(null); setCouponError(null); }}
           />
         ) : null}
+        {step === "details" && paymentUnavailable ? <Text token="bodySm" color="error">Este produtor não oferece formas de pagamento para este Day Use.</Text> : null}
         {step === "method" ? <MethodSelection amountCents={reservation?.priceInCents ?? displayTotal} methods={methods} onSelect={(value) => { setMethod(value); setStep("payment"); }} /> : null}
         {step === "payment" && paymentStatusQuery.data?.status === "CANCELED" ? (
           <EmptyState icon={AlertCircle} variant="error" title="Reserva cancelada" description="Este pagamento não pode mais ser concluído. Escolha outro Day Use para fazer uma nova reserva." actionLabel="Escolher outro Day Use" onAction={goBack} />
         ) : null}
-        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && method === "PIX" ? (
+        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && methods.length === 0 ? (
+          <EmptyState icon={AlertCircle} variant="error" title="Pagamento indisponível" description="Este produtor não oferece formas de pagamento. Escolha outro Day Use." actionLabel="Escolher outro Day Use" onAction={goBack} />
+        ) : null}
+        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && methods.length > 0 && method === "PIX" ? (
           <PixPayment payment={payment?.method === "PIX" ? payment : null} isLoading={payMutation.isPending} error={paymentError} copied={copied} onCopy={async () => { if (payment?.method !== "PIX" || !payment.qrCodeText) return; await Clipboard.setStringAsync(payment.qrCodeText); setCopied(true); setTimeout(() => setCopied(false), 2000); }} onRetry={() => { setPayment(null); setPaymentError(null); void createPix(); }} />
         ) : null}
-        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && method === "CARD" ? (
+        {step === "payment" && paymentStatusQuery.data?.status !== "CANCELED" && methods.length > 0 && method === "CARD" ? (
           <CardPayment reservation={reservation!} cardFlow={cardFlow} customer={{ name: authUser?.name ?? "", email: authUser?.email ?? "", cpf: authProfile?.cpf ?? "", phone: authProfile?.phone ?? "" }} mutation={payMutation} onPayment={setPayment} onSuccess={() => setStep("success")} />
         ) : null}
       </ScrollView>
       {step === "details" ? (
         <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 14, paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, flexDirection: "row", alignItems: "center", gap: 16 }}>
           <View style={{ flex: 1 }}><Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>Total</Text><Text token="subtitle">{displayTotal === 0 ? "Grátis" : formatCurrencyFromCents(displayTotal)}</Text></View>
-          <Button label={available <= 0 ? "Esgotado" : isAuthenticated ? "Continuar" : "Entrar e continuar"} onPress={() => void confirmReservation()} disabled={available <= 0} loading={reserveMutation.isPending} />
+          <Button label={paymentUnavailable ? "Pagamento indisponível" : available <= 0 ? "Esgotado" : isAuthenticated ? "Continuar" : "Entrar e continuar"} onPress={() => void confirmReservation()} disabled={available <= 0 || paymentUnavailable} loading={reserveMutation.isPending} />
         </View>
       ) : null}
     </View>
