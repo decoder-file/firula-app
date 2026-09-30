@@ -26,12 +26,19 @@ export interface OrganizerProfile {
   instagram: string | null;
   facebook: string | null;
   linkedin: string | null;
+  address?: string | null;
+  addressNumber?: string | null;
+  addressComplement?: string | null;
+  neighborhood?: string | null;
+  postalCode?: string | null;
   city: string;
   state: string;
   logoUrl: string | null;
   followersCount: number;
   ratingsCount: number;
   averageRating: number;
+  availablePaymentMethods?: Array<"PIX" | "CARD">;
+  cardFlow?: "TRANSPARENT" | "REDIRECT" | null;
   following?: boolean;
   isFavorited?: boolean;
   store?: { slug: string } | null;
@@ -94,8 +101,13 @@ export interface DayUseOffering {
   endTime: string;
   capacity: number;
   priceInCents: number;
-  confirmedCount: number;
+  confirmedCount?: number;
+  _count?: { reservations?: number };
   allowMultiplePerCustomer: boolean;
+  courts?: Array<{ court: { id: string; name: string } }>;
+  imageUrl?: string | null;
+  coverImageUrl?: string | null;
+  images?: Array<string | { url?: string | null }> | null;
 }
 
 export interface CourtSummary {

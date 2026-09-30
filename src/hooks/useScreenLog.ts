@@ -1,5 +1,5 @@
-import { useFocusEffect, usePathname } from "expo-router";
 import { useCallback } from "react";
+import { useFocusEffect, usePathname } from "expo-router";
 
 /**
  * Hook que faz log do nome da tela no console quando ela entra em foco.
