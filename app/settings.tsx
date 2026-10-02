@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bell,
   ChevronRight,
@@ -16,13 +16,15 @@ import {
   Trash2,
 } from "lucide-react-native";
 
-import { Text, TopBar, useTheme } from "@/design-system";
+import { Switch, Text, TopBar, useTheme } from "@/design-system";
 import type { ThemeMode } from "@/design-system";
 import { isApiError } from "@/api/errors";
 import { tokenStorage } from "@/api/tokenStorage";
 import { profileService } from "@/services/profile.service";
 import { useAuthStore } from "@/stores/authStore";
 import { useNotificationPermission } from "@/hooks/useNotificationPermission";
+import { useIsCustomerScoped } from "@/hooks/useAuth";
+import { whatsappPreferencesService } from "@/services/whatsappPreferences.service";
 
 const APP_VERSION = "1.0.6";
 
@@ -147,6 +149,7 @@ export default function SettingsScreen() {
         {/* ── Notificações ────────────────────────── */}
         <Section label="Notificações">
           <NotificationPermissionRow />
+          <WhatsappNotificationsRow />
         </Section>
 
         {/* ── Sobre ───────────────────────────────── */}
@@ -293,6 +296,46 @@ function LinkRow({
       </Text>
       <ChevronRight size={18} color={colors.border} strokeWidth={1.75} />
     </Pressable>
+  );
+}
+
+/**
+ * Consentimento para avisos por WhatsApp (reserva aprovada, compra confirmada). Só aparece
+ * para cliente logado e com o canal ligado na plataforma.
+ */
+function WhatsappNotificationsRow() {
+  const isCustomer = useIsCustomerScoped();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ["whatsapp-preferences"],
+    queryFn: whatsappPreferencesService.get,
+    enabled: isCustomer,
+  });
+  const mutation = useMutation({
+    mutationFn: whatsappPreferencesService.set,
+    onSuccess: (data) => queryClient.setQueryData(["whatsapp-preferences"], data),
+    onError: (error) => {
+      Alert.alert("WhatsApp", isApiError(error) ? error.message : "Não foi possível salvar a preferência.");
+    },
+  });
+
+  const prefs = query.data;
+  if (!isCustomer || !prefs?.available) return null;
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      <Switch
+        value={prefs.enabled}
+        disabled={mutation.isPending || (!prefs.enabled && !prefs.hasValidPhone)}
+        onValueChange={(value) => mutation.mutate(value)}
+        label="Avisos por WhatsApp"
+        description={
+          prefs.hasValidPhone
+            ? `Reserva aprovada e compra confirmada, no celular ${prefs.phoneMasked}. Sem propaganda.`
+            : "Cadastre um celular com DDD no seu perfil para ativar."
+        }
+      />
+    </View>
   );
 }
 
