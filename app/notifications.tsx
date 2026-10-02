@@ -6,6 +6,7 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Bell,
+  CalendarCheck,
   CheckCheck,
   CheckCircle2,
   Info,
@@ -58,6 +59,8 @@ function getNotificationAppearance(type: AppNotification["type"], colors: Palett
       return { icon: Info, color: colors.warning, backgroundColor: colors.warningSoft };
     case "NEW_FOLLOWER":
       return { icon: UserPlus, color: colors.primaryText, backgroundColor: colors.primarySoft };
+    case "COURT_RESERVATION_APPROVED":
+      return { icon: CalendarCheck, color: colors.success, backgroundColor: colors.successSoft };
     default:
       return { icon: Bell, color: colors.textMuted, backgroundColor: colors.surfaceAlt };
   }
@@ -100,6 +103,11 @@ function getNotificationAction(notification: AppNotification) {
     case "NEW_FOLLOWER":
       return notification.metadata?.screen
         ? { label: "Ver perfil", route: notification.metadata.screen as never }
+        : null;
+    case "COURT_RESERVATION_APPROVED":
+      // Abre as reservas do cliente naquele produtor (onde aparece o botão de pagar).
+      return notification.metadata?.screen
+        ? { label: "Ver reserva", route: notification.metadata.screen as never }
         : null;
     default:
       return null;

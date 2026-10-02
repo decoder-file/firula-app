@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarClock, ChevronRight, Sun, Trophy } from "lucide-react-native";
@@ -199,6 +199,19 @@ export function ReservationsScreen() {
   );
 }
 
+/**
+ * O pagamento de uma reserva já criada (ex.: aprovada pelo produtor depois) é feito em
+ * "Meus pedidos" no site. `client=app` mantém os benefícios do app (cupons) nessa sessão.
+ */
+function openReservationPaymentOnSite() {
+  const websiteUrl = process.env.EXPO_PUBLIC_WEBSITE_URL?.replace(/\/$/, "");
+  if (!websiteUrl) {
+    Alert.alert("Indisponível", "O endereço do site não está configurado.");
+    return;
+  }
+  void Linking.openURL(`${websiteUrl}/cliente/pedidos?client=app`);
+}
+
 function MyReservations({ courts, dayUses, isLoading, isError, cancelingId, onCancel }: { courts: MyCourtReservation[]; dayUses: MyDayUseReservation[]; isLoading: boolean; isError: boolean; cancelingId?: string; onCancel: (type: "court" | "dayuse", id: string) => void }) {
   const { spacing } = useTheme();
   if (isLoading) return <View style={{ alignItems: "center", paddingVertical: 24 }}><ActivityIndicator /></View>;
@@ -206,17 +219,18 @@ function MyReservations({ courts, dayUses, isLoading, isError, cancelingId, onCa
   if (courts.length === 0 && dayUses.length === 0) return null;
   return <View style={{ gap: 12, marginTop: spacing.s5 }}>
     <View style={{ gap: 3 }}><Text token="subtitle">Suas reservas</Text><Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0 }}>Acompanhe ou cancele suas reservas neste produtor.</Text></View>
-    {courts.map((item) => <ReservationCard key={`court-${item.id}`} title={item.court.name} date={item.date} time={`${item.startTime} – ${item.endTime}`} status={item.status} isCanceling={cancelingId === item.id} onCancel={canCancel(item.status) ? () => onCancel("court", item.id) : undefined} />)}
+    {courts.map((item) => <ReservationCard key={`court-${item.id}`} title={item.court.name} date={item.date} time={`${item.startTime} – ${item.endTime}`} status={item.status} isCanceling={cancelingId === item.id} onCancel={canCancel(item.status) ? () => onCancel("court", item.id) : undefined} onPay={item.status === "PENDING_PAYMENT" ? openReservationPaymentOnSite : undefined} />)}
     {dayUses.map((item) => <ReservationCard key={`dayuse-${item.id}`} title={item.dayUse.name} date={item.dayUse.date} time={`${item.dayUse.startTime} – ${item.dayUse.endTime}`} status={item.status} isCanceling={cancelingId === item.id} onCancel={canCancel(item.status) ? () => onCancel("dayuse", item.id) : undefined} />)}
   </View>;
 }
 
-function ReservationCard({ title, date, time, status, isCanceling, onCancel }: { title: string; date: string; time: string; status: keyof typeof reservationStatusLabel; isCanceling: boolean; onCancel?: () => void }) {
+function ReservationCard({ title, date, time, status, isCanceling, onCancel, onPay }: { title: string; date: string; time: string; status: keyof typeof reservationStatusLabel; isCanceling: boolean; onCancel?: () => void; onPay?: () => void }) {
   const { spacing } = useTheme();
   const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
   return <Surface level={1} style={{ padding: spacing.s4, gap: 8 }}>
     <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}><Text token="subtitle" style={{ flex: 1 }}>{title}</Text><Text token="caption" color="primary">{reservationStatusLabel[status]}</Text></View>
     <Text token="bodySm" color="muted">{dateLabel} · {time}</Text>
+    {onPay ? <Button label="Pagar no site" size="sm" onPress={onPay} /> : null}
     {onCancel ? <Button label="Cancelar reserva" variant="ghost" size="sm" loading={isCanceling} onPress={onCancel} /> : null}
   </Surface>;
 }
