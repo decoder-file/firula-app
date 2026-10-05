@@ -300,8 +300,8 @@ function LinkRow({
 }
 
 /**
- * Consentimento para avisos por WhatsApp (reserva aprovada, compra confirmada). Só aparece
- * para cliente logado e com o canal ligado na plataforma.
+ * Avisos por WhatsApp (reserva aprovada, compra confirmada). Vêm ligados por padrão; aqui o
+ * cliente desativa ou reativa. Só aparece para cliente logado e com o canal ligado.
  */
 function WhatsappNotificationsRow() {
   const isCustomer = useIsCustomerScoped();
@@ -326,13 +326,15 @@ function WhatsappNotificationsRow() {
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       <Switch
         value={prefs.enabled}
-        disabled={mutation.isPending || (!prefs.enabled && !prefs.hasValidPhone)}
+        disabled={mutation.isPending}
         onValueChange={(value) => mutation.mutate(value)}
         label="Avisos por WhatsApp"
         description={
-          prefs.hasValidPhone
-            ? `Reserva aprovada e compra confirmada, no celular ${prefs.phoneMasked}. Sem propaganda.`
-            : "Cadastre um celular com DDD no seu perfil para ativar."
+          !prefs.enabled
+            ? "Desativados. Você não recebe avisos de reservas e compras por WhatsApp."
+            : prefs.hasValidPhone
+              ? `Reserva aprovada e compra confirmada, no celular ${prefs.phoneMasked}. Sem propaganda.`
+              : "Sem celular com DDD no seu perfil, nenhum aviso é enviado."
         }
       />
     </View>
