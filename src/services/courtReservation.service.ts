@@ -1,3 +1,4 @@
+import type { VenueAddress } from "@/services/organizer.service";
 import { apiClient } from "@/api/client";
 import type { DayUsePaymentResult, PayDayUseInput } from "@/services/dayUse.service";
 
@@ -27,6 +28,7 @@ export interface MyCourtReservation extends CourtReservation {
   court: {
     id: string;
     name: string;
+    address?: VenueAddress | null;
     organization: { id: string; tradeName: string; slug: string };
   };
 }

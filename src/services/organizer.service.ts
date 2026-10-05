@@ -92,6 +92,22 @@ export interface StoreProductSummary {
   inStock: boolean;
 }
 
+
+/** Endereço do local, já formatado pelo backend. */
+export interface VenueAddress {
+  zipCode: string | null;
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  /** Uma linha pronta: "Rua A, 10 - Centro, São Paulo - SP". */
+  formatted: string;
+  /** Link para abrir no mapa. */
+  mapsUrl: string;
+}
+
 export interface DayUseOffering {
   id: string;
   name: string;
@@ -108,6 +124,8 @@ export interface DayUseOffering {
   imageUrl?: string | null;
   coverImageUrl?: string | null;
   images?: Array<string | { url?: string | null }> | null;
+  /** Endereço do Day Use ou da quadra vinculada (pode não existir). */
+  address?: VenueAddress | null;
 }
 
 export interface CourtSummary {
@@ -119,6 +137,8 @@ export interface CourtSummary {
   capacity: number | null;
   granularityMin: number;
   requiresApproval: boolean;
+  /** Endereço cadastrado pelo organizador (pode não existir). */
+  address?: VenueAddress | null;
 }
 
 export interface CourtTimeSlot {

@@ -24,6 +24,7 @@ import {
   Sun,
   Users,
 } from "lucide-react-native";
+import { VenueAddressRow } from "@/components/VenueAddressRow";
 
 import { isApiError } from "@/api/errors";
 import { Button, EmptyState, PressScale, Text, TextField, TopBar, useTheme } from "@/design-system";
@@ -294,6 +295,7 @@ function Details({ dayUse, organizerName, available, couponInput, setCouponInput
     <View style={{ gap: 7 }}><Text token="caption" color="muted">{organizerName}</Text><Text token="title">{dayUse.name}</Text>{dayUse.description ? <Text token="body" color="muted">{dayUse.description}</Text> : null}</View>
     <View style={{ backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.xl, overflow: "hidden" }}>
       <Fact icon={CalendarDays} text={formatDateLong(dayUse.date)} /><Fact icon={Clock3} text={`${dayUse.startTime} – ${dayUse.endTime}`} border /><Fact icon={Users} text={`${available} ${available === 1 ? "vaga disponível" : "vagas disponíveis"}`} border />
+      <VenueAddressRow address={dayUse.address} border />
     </View>
     <View style={{ gap: 12 }}><Text token="subtitle">Seu acesso</Text><View style={{ padding: 16, borderWidth: 2, borderColor: colors.primary, backgroundColor: colors.primarySoft, borderRadius: radius.xl, flexDirection: "row", alignItems: "center" }}><View style={{ flex: 1, gap: 3 }}><Text token="body" style={{ fontWeight: "800" }}>1x Day Use</Text><Text token="bodySm" color="muted">Um acesso para esta data</Text><Text token="subtitle" style={{ marginTop: 4 }}>{formatCurrencyFromCents(dayUse.priceInCents)}</Text></View><CheckCircle2 size={26} color={colors.primaryText} /></View></View>
     {dayUse.priceInCents > 0 ? <View style={{ gap: 10 }}><Text token="subtitle">Cupom de desconto</Text>{coupon ? <View style={{ padding: 14, borderRadius: radius.lg, backgroundColor: colors.successSoft, flexDirection: "row", alignItems: "center", gap: 8 }}><Check size={18} color={colors.success} /><Text token="bodySm" style={{ flex: 1, fontWeight: "700", color: colors.success }}>{coupon.code} · -{formatCurrencyFromCents(coupon.discountCents)}</Text><Button label="Remover" size="sm" variant="ghost" onPress={onRemoveCoupon} /></View> : <View style={{ gap: 8 }}><TextField label="Código do cupom" value={couponInput} onChangeText={(value) => setCouponInput(value.toUpperCase())} autoCapitalize="characters" error={couponError ?? undefined} /><Button label="Aplicar cupom" variant="secondary" loading={isValidatingCoupon} disabled={!couponInput.trim()} onPress={onApplyCoupon} fullWidth /></View>}</View> : null}

@@ -1,3 +1,4 @@
+import type { VenueAddress } from "@/services/organizer.service";
 import { apiClient } from "@/api/client";
 import type { CreditCardHolderInfo, RawCreditCardInput } from "@/features/checkout/types";
 
@@ -20,6 +21,7 @@ export interface MyDayUseReservation extends DayUseReservation {
     date: string;
     startTime: string;
     endTime: string;
+    address?: VenueAddress | null;
     organization: { id: string; tradeName: string; slug: string };
   };
 }
