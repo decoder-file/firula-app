@@ -8,6 +8,7 @@ import { Screen } from "@/components/Screen";
 import { Skeleton } from "@/components/Skeleton";
 import { useEventBySlug } from "@/hooks/useEvents";
 import { useCheckout } from "@/features/checkout/useCheckout";
+import { normalizeLinkCoupon } from "@/utils/linkCoupon";
 import { useCountdown } from "@/features/checkout/useCountdown";
 import { CheckoutHeader } from "@/features/checkout/components/CheckoutHeader";
 import { CheckoutCta } from "@/features/checkout/components/CheckoutCta";
@@ -32,11 +33,11 @@ function parseSelection(tickets?: string): Record<string, number> {
 
 function CheckoutContent() {
   const router = useRouter();
-  const { slug, tickets } = useLocalSearchParams<{ slug: string; tickets?: string }>();
+  const { slug, tickets, cupom } = useLocalSearchParams<{ slug: string; tickets?: string; cupom?: string }>();
 
   const selection = useMemo(() => parseSelection(tickets), [tickets]);
   const { data: event, isLoading } = useEventBySlug(slug ?? "");
-  const checkout = useCheckout(event, selection);
+  const checkout = useCheckout(event, selection, { initialCouponCode: normalizeLinkCoupon(cupom) });
 
   // Timer único pra sessão inteira (checkout + pix) — não reinicia ao trocar de tela.
   const expiresAtRef = useRef(new Date(Date.now() + SESSION_MINUTES * 60 * 1000).toISOString());

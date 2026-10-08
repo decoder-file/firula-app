@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { normalizeLinkCoupon } from '@/utils/linkCoupon';
 import { useMemo } from 'react';
 import { Alert, Linking, Platform, Share } from 'react-native';
 
@@ -250,8 +251,10 @@ const buildCalendarUrls = (event: AdminEventDetail): string[] => {
 
 export const useEventDetailRouteProps = (): EventDetailScreenProps => {
   const router = useRouter();
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, cupom } = useLocalSearchParams<{ slug: string; cupom?: string }>();
   const eventSlug = slug ?? '';
+  // Cupom do link do evento: segue até o checkout, que aplica sozinho.
+  const linkCoupon = normalizeLinkCoupon(cupom);
 
   const isAuthenticated = useIsAuthenticated();
   const { data: event, isLoading, isError } = useEventBySlug(eventSlug);
@@ -290,14 +293,14 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
         // O tickets param tem ":" e "," (ex.: "lotId:2,lotId:1"), que confundem o
         // parser de rota do expo-router se forem embutidos crus numa string de path —
         // precisa codificar antes de virar querystring do redirectTo.
-        const checkoutPath = `/checkout/${event.slug}?tickets=${encodeURIComponent(ticketsParam)}`;
+        const checkoutPath = `/checkout/${event.slug}?tickets=${encodeURIComponent(ticketsParam)}${linkCoupon ? `&cupom=${encodeURIComponent(linkCoupon)}` : ''}`;
         router.push(`/login-modal?redirectTo=${encodeURIComponent(checkoutPath)}`);
         return;
       }
 
       router.push({
         pathname: "/checkout/[slug]",
-        params: { slug: event.slug, tickets: ticketsParam },
+        params: { slug: event.slug, tickets: ticketsParam, ...(linkCoupon ? { cupom: linkCoupon } : {}) },
       } as never);
     },
     onShare: async () => {

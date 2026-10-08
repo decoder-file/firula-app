@@ -53,7 +53,11 @@ export interface SuccessTicket {
   lotName: string;
 }
 
-export function useCheckout(event: AdminEventDetail | undefined, selection: Record<string, number>) {
+export function useCheckout(
+  event: AdminEventDetail | undefined,
+  selection: Record<string, number>,
+  options: { initialCouponCode?: string } = {},
+) {
   const authUser = useAuthUser();
   const authProfile = useAuthUserProfile();
 
@@ -114,6 +118,25 @@ export function useCheckout(event: AdminEventDetail | undefined, selection: Reco
     setCouponInput("");
     setCouponError(null);
   }, []);
+
+  // Cupom do link do evento (?cupom=): aplica uma vez, assim que o resumo carrega. Se não
+  // valer, deixa o código no campo com o motivo, para o cliente ver o que aconteceu.
+  const initialCouponTried = useRef(false);
+  useEffect(() => {
+    const code = options.initialCouponCode;
+    if (!code || initialCouponTried.current || !event || !quote || couponCode) return;
+    initialCouponTried.current = true;
+    setCouponInput(code);
+    setIsValidatingCoupon(true);
+    checkoutService
+      .validateCoupon(event.id, code, quote.grossAmountCents)
+      .then((result) => {
+        if (result.valid) setCouponCode(code);
+        else setCouponError(result.message || "Cupom inválido.");
+      })
+      .catch((err) => setCouponError(isApiError(err) ? err.message : "Não foi possível validar o cupom."))
+      .finally(() => setIsValidatingCoupon(false));
+  }, [options.initialCouponCode, event, quote, couponCode]);
 
   // ── Termos ───────────────────────────────────────────────────────────────
   const requiresTermsAcceptance = useMemo(
