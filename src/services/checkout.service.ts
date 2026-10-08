@@ -26,11 +26,14 @@ export const checkoutService = {
     code: string,
     grossAmountCents: number,
     ticketLotId?: string,
+    /** Quantos ingressos do lote do cupom estão no carrinho (desconto = preço × quantidade). */
+    ticketLotQuantity?: number,
   ): Promise<ValidateCouponResult> => {
     const { data } = await apiClient.post(`/public/events/${eventId}/purchase/coupon/validate`, {
       code,
       grossAmountCents,
       ...(ticketLotId ? { ticketLotId } : {}),
+      ...(ticketLotId && ticketLotQuantity ? { ticketLotQuantity } : {}),
     });
     return data.data;
   },

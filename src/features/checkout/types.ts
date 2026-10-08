@@ -49,6 +49,9 @@ export interface CouponChannelInfo {
   availableOnThisChannel?: boolean;
   betterInApp?: boolean;
   appDiscountCents?: number;
+  /** Cupom de um ingresso específico (null = vale para todos). */
+  ticketLotId?: string | null;
+  ticketLotName?: string | null;
 }
 
 export type ValidateCouponResult =

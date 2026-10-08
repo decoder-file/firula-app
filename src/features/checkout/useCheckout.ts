@@ -17,6 +17,7 @@ import type {
   PaymentMethod,
   PurchaseQuote,
   TicketLotSelectionInput,
+  ValidateCouponResult,
 } from "@/features/checkout/types";
 
 export type CheckoutStep = "checkout" | "pix" | "success";
@@ -91,16 +92,29 @@ export function useCheckout(
     enabled: !!event?.id && ticketLotsPayload.length > 0,
   });
 
+  /**
+   * Valida o cupom para os ingressos escolhidos. Cupom de um ingresso só: refaz informando
+   * o ingresso e a quantidade dele no carrinho (o backend exige o lote para esse tipo).
+   */
+  const validateForSelection = useCallback(
+    async (code: string, grossAmountCents: number): Promise<ValidateCouponResult> => {
+      if (!event) throw new Error("Evento não carregado");
+      const first = await checkoutService.validateCoupon(event.id, code, grossAmountCents);
+      const lotId = first.ticketLotId;
+      if (!first.valid && first.error === "COUPON_NOT_APPLICABLE_TO_TICKET_LOT" && lotId && (selection[lotId] ?? 0) > 0) {
+        return checkoutService.validateCoupon(event.id, code, grossAmountCents, lotId, selection[lotId]);
+      }
+      return first;
+    },
+    [event, selection],
+  );
+
   const applyCoupon = useCallback(async () => {
     if (!event || !couponInput.trim() || !quote) return;
     setIsValidatingCoupon(true);
     setCouponError(null);
     try {
-      const result = await checkoutService.validateCoupon(
-        event.id,
-        couponInput.trim(),
-        quote.grossAmountCents,
-      );
+      const result = await validateForSelection(couponInput.trim(), quote.grossAmountCents);
       if (!result.valid) {
         setCouponError(result.message || "Cupom inválido.");
         return;
@@ -111,7 +125,7 @@ export function useCheckout(
     } finally {
       setIsValidatingCoupon(false);
     }
-  }, [event, couponInput, quote]);
+  }, [event, couponInput, quote, validateForSelection]);
 
   const removeCoupon = useCallback(() => {
     setCouponCode(undefined);
@@ -128,15 +142,14 @@ export function useCheckout(
     initialCouponTried.current = true;
     setCouponInput(code);
     setIsValidatingCoupon(true);
-    checkoutService
-      .validateCoupon(event.id, code, quote.grossAmountCents)
+    validateForSelection(code, quote.grossAmountCents)
       .then((result) => {
         if (result.valid) setCouponCode(code);
         else setCouponError(result.message || "Cupom inválido.");
       })
       .catch((err) => setCouponError(isApiError(err) ? err.message : "Não foi possível validar o cupom."))
       .finally(() => setIsValidatingCoupon(false));
-  }, [options.initialCouponCode, event, quote, couponCode]);
+  }, [options.initialCouponCode, event, quote, couponCode, validateForSelection]);
 
   // ── Termos ───────────────────────────────────────────────────────────────
   const requiresTermsAcceptance = useMemo(
