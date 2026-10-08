@@ -11,7 +11,8 @@ export interface AppNotification {
     | "TICKET_TRANSFERRED_OUT"
     | "EVENT_UPDATE"
     | "NEW_FOLLOWER"
-    | "COURT_RESERVATION_APPROVED";
+    | "COURT_RESERVATION_APPROVED"
+    | "TICKET_LOT_CHANGED";
   title: string;
   body: string;
   read: boolean;

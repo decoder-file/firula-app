@@ -61,6 +61,8 @@ function getNotificationAppearance(type: AppNotification["type"], colors: Palett
       return { icon: UserPlus, color: colors.primaryText, backgroundColor: colors.primarySoft };
     case "COURT_RESERVATION_APPROVED":
       return { icon: CalendarCheck, color: colors.success, backgroundColor: colors.successSoft };
+    case "TICKET_LOT_CHANGED":
+      return { icon: Info, color: colors.info, backgroundColor: colors.infoSoft };
     default:
       return { icon: Bell, color: colors.textMuted, backgroundColor: colors.surfaceAlt };
   }
@@ -95,6 +97,7 @@ function getNotificationAction(notification: AppNotification) {
     case "REFUND_FAILED":
     case "TICKET_TRANSFERRED_IN":
     case "TICKET_TRANSFERRED_OUT":
+    case "TICKET_LOT_CHANGED":
       return { label: "Ver meus ingressos", route: "/(tabs)/tickets" as const };
     case "EVENT_UPDATE":
       return notification.metadata?.eventId
