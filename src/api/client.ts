@@ -88,7 +88,7 @@ export const apiClient: AxiosInstance = axios.create({
 });
 
 // ---------------------------------------------------------------------------
-// Request interceptor — attach access token from storage + X-API-Key header
+// Request interceptor — attach access token from storage
 // ---------------------------------------------------------------------------
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -96,9 +96,6 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Inject X-API-Key header for authentication
-    config.headers["X-API-Key"] = "supersecretadminkey1";
 
     // Lets the backend know it's safe to include the refreshToken in the
     // JSON body (mobile has no persistent cookie jar across app restarts).
