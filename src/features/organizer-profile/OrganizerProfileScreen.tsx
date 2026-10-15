@@ -32,6 +32,7 @@ import { ReviewsSheet } from "@/features/organizer-profile/components/ReviewsShe
 import { OrganizerLocation } from "@/features/organizer-profile/components/OrganizerLocation";
 import { ReservationCouponField } from "@/features/organizer-profile/components/ReservationCouponField";
 import type { AppliedReservationCoupon } from "@/utils/reservationCoupon";
+import { ChampionshipsBanner } from "@/features/championship/components/ChampionshipsBanner";
 import { VotingBanner } from "@/features/voting/components/VotingBanner";
 import type {
   OrganizerContactItem,
@@ -325,9 +326,10 @@ export function OrganizerProfileScreen({
           </View>
         </View>
 
-        {/* Gancho da votação (Melhores do Ano): visível em qualquer aba, some quando não há edição ativa. */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+        {/* Ganchos de votação (Melhores do Ano) e de campeonatos (tabela ao vivo): visíveis em qualquer aba, somem quando não há nada ativo. */}
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 12 }}>
           <VotingBanner organizationSlug={organizationSlug} />
+          <ChampionshipsBanner organizationSlug={organizationSlug} />
         </View>
 
         {hasDayUse || hasBooking ? (

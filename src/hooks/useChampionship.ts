@@ -7,6 +7,16 @@ import { queryKeys } from "./queryKeys";
 
 const VERSION_POLL_MS = 8_000;
 
+/** Campeonatos publicados de uma organização (gancho na página do organizador). */
+export const useOrganizationChampionships = (organizationSlug: string | null | undefined) =>
+  useQuery({
+    queryKey: queryKeys.championships.organization(organizationSlug ?? ""),
+    queryFn: () => championshipService.getOrganizationChampionships(organizationSlug!),
+    enabled: Boolean(organizationSlug),
+    staleTime: 60_000,
+    retry: false,
+  });
+
 /**
  * Tabela ao vivo sem WebSocket: a cada 8 s consulta só a versão (uma linha
  * no backend) e, quando ela muda, refaz o payload completo. O react-query

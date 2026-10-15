@@ -155,12 +155,32 @@ export interface ChampionshipVersion {
   updatedAt: string;
 }
 
+export interface ChampionshipSummary {
+  id: string;
+  slug: string;
+  name: string;
+  coverUrl: string | null;
+  status: ChampionshipStatus;
+  startsAt: string | null;
+  endsAt: string | null;
+  location: string | null;
+  sport: { id: string; name: string } | null;
+  categories: Array<{ id: string; name: string; format: ChampionshipFormat; participantType: ParticipantType }>;
+  _count: { entries: number };
+}
+
 const BASE = "/public/championships";
 
 export const championshipService = {
   getBySlug: async (slug: string): Promise<PublicChampionship> => {
     const { data } = await apiClient.get(`${BASE}/${encodeURIComponent(slug)}`);
     return data.data ?? data;
+  },
+  /** Campeonatos publicados de um organizador (gancho na página dele). */
+  getOrganizationChampionships: async (organizationSlug: string): Promise<ChampionshipSummary[]> => {
+    const { data } = await apiClient.get(`${BASE}/organizations/${encodeURIComponent(organizationSlug)}`);
+    const list = data.data ?? data;
+    return Array.isArray(list) ? list : [];
   },
   getVersion: async (slug: string): Promise<ChampionshipVersion> => {
     const { data } = await apiClient.get(`${BASE}/${encodeURIComponent(slug)}/version`);
