@@ -6,6 +6,11 @@
  * events-related query).
  */
 export const queryKeys = {
+  championships: {
+    all: ["championships"] as const,
+    detail: (slug: string) => [...queryKeys.championships.all, "detail", slug] as const,
+    version: (slug: string) => [...queryKeys.championships.all, "version", slug] as const,
+  },
   voting: {
     all: ["voting"] as const,
     organizationEditions: (organizationSlug: string) => [...queryKeys.voting.all, "organization", organizationSlug] as const,
