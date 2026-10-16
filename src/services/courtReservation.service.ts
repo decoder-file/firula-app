@@ -41,6 +41,8 @@ export interface CreateCourtReservationInput {
   notes?: string;
   idempotencyKey: string;
   couponCode?: string;
+  /** Telefone com DDD (só dígitos). Obrigatório quando o cadastro não tem; é salvo no cadastro. */
+  phone?: string;
 }
 
 export const courtReservationService = {
