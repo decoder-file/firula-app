@@ -35,7 +35,7 @@ export function RoundView({ matches, entries }: { matches: Match[]; entries: Map
           />
         ))}
       </ScrollView>
-      {active.bracket && <RNText style={styles.bracketLabel}>{BRACKET_LABEL[active.bracket]} · {active.label}</RNText>}
+      {active.bracket && <RNText style={styles.bracketLabel}>{active.bracket === "FINAL" && active.label !== "Grande final" ? "Fase final" : BRACKET_LABEL[active.bracket]} · {active.label}</RNText>}
       <View style={{ paddingHorizontal: 20, gap: 10 }}>
         {visible.length === 0 ? (
           <View style={styles.empty}><RNText style={{ fontFamily: F.regular, fontSize: 13, color: C.text4 }}>Sem jogos nesta rodada</RNText></View>

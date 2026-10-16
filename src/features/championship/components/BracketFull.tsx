@@ -1,6 +1,7 @@
 import { ScrollView, StyleSheet, Text as RNText, View } from "react-native";
 
 import { BRACKET_LABEL, type BracketKind, type Entry, type Match } from "@/services/championship.service";
+import { isCrossoverFinal } from "../helpers";
 
 import { C, F, scoreText, sideLabel } from "../helpers";
 import { Avatar, LiveBadge, PlaceholderAvatar } from "./atoms";
@@ -19,7 +20,7 @@ export function Brackets({ matches, entries }: { matches: Match[]; entries: Map<
         if (subset.length === 0) return null;
         return (
           <View key={kind} style={{ gap: 8 }}>
-            <RNText style={{ fontFamily: F.extrabold, fontSize: 13, color: C.ink, paddingHorizontal: 20 }}>{BRACKET_LABEL[kind]}</RNText>
+            <RNText style={{ fontFamily: F.extrabold, fontSize: 13, color: C.ink, paddingHorizontal: 20 }}>{kind === "FINAL" && isCrossoverFinal(subset) ? "Fase final" : BRACKET_LABEL[kind]}</RNText>
             <BracketColumns matches={subset} entries={entries} />
           </View>
         );

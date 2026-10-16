@@ -136,13 +136,23 @@ export function groupRounds(matches: Match[]): RoundKey[] {
     if (match.status === "IN_PROGRESS") group.live = true;
   }
   for (const group of groups.values()) group.done = group.pending === 0 && group.matches.some((m) => m.status === "FINISHED");
+  // Ordem de jogo: o backend numera na sequência em que os jogos podem acontecer (repescagem intercalada).
+  const firstNumber = (group: RoundKey) => Math.min(...group.matches.map((m) => m.number));
   return [...groups.values()].sort((a, b) => {
+    const na = firstNumber(a);
+    const nb = firstNumber(b);
+    if (na !== nb) return na - nb;
     const ab = order.indexOf(a.bracket);
     const bb = order.indexOf(b.bracket);
     if (ab !== bb) return ab - bb;
     if (a.round !== b.round) return a.round - b.round;
     return a.matches[0].isThirdPlace ? 1 : -1;
   });
+}
+
+/** Bracket FINAL com 2 rodadas = semifinais cruzadas (semis + final/3º lugar). */
+export function isCrossoverFinal(matches: Array<{ bracket: BracketKind | null; round: number }>): boolean {
+  return matches.some((m) => m.bracket === "FINAL" && m.round >= 2);
 }
 
 /** Primeira rodada com jogo pendente e lados definidos; senão a última. */
@@ -153,11 +163,12 @@ export function defaultRoundId(rounds: RoundKey[]): string | undefined {
 
 export function shortRoundLabel(match: Match): string {
   if (match.isThirdPlace) return "3º lugar";
-  if (match.bracket === "FINAL") return "Grande final";
+  if (match.bracket === "FINAL") return match.roundLabel || "Grande final";
   const base = match.roundLabel.replace(/^(Chave principal|Repescagem) · /, "");
   const prefix = match.bracket === "WINNERS" ? "P " : match.bracket === "LOSERS" ? "R " : "";
   if (base === "Final da chave principal") return "Final P";
   if (base === "Final da repescagem") return "Final R";
+  if (base === "rodada decisiva") return `${prefix}Decisiva`;
   if (base === "Quartas de final") return `${prefix}Quartas`;
   if (base === "Oitavas de final") return `${prefix}Oitavas`;
   if (base === "16 avos de final") return `${prefix}16 avos`;
