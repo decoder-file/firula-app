@@ -18,6 +18,15 @@ describe("resolveAnalyticsConfig", () => {
     ).toBe("https://eu.i.posthog.com");
   });
 
+  it("chave pessoal (phx_) ou qualquer coisa que não seja token de projeto: desligado e descartada", () => {
+    expect(resolveAnalyticsConfig({ EXPO_PUBLIC_POSTHOG_KEY: "phx_segredo" }, false)).toEqual({
+      enabled: false,
+      projectToken: "",
+      host: DEFAULT_POSTHOG_HOST,
+    });
+    expect(resolveAnalyticsConfig({ EXPO_PUBLIC_POSTHOG_KEY: "qualquer" }, false).enabled).toBe(false);
+  });
+
   it("em desenvolvimento: desligado, a não ser que peça explicitamente", () => {
     expect(resolveAnalyticsConfig({ EXPO_PUBLIC_POSTHOG_KEY: "phc_123" }, true).enabled).toBe(false);
     expect(

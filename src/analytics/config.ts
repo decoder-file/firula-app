@@ -10,6 +10,7 @@ export interface AnalyticsConfig {
 }
 
 export const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
+export const PROJECT_TOKEN_PREFIX = "phc_";
 
 export function resolveAnalyticsConfig(
   env: Record<string, string | undefined>,
@@ -18,5 +19,8 @@ export function resolveAnalyticsConfig(
   const projectToken = env.EXPO_PUBLIC_POSTHOG_KEY?.trim() ?? "";
   const host = env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || DEFAULT_POSTHOG_HOST;
   const allowedInThisBuild = !isDev || env.EXPO_PUBLIC_POSTHOG_ENABLE_IN_DEV === "true";
-  return { enabled: Boolean(projectToken) && allowedInThisBuild, projectToken, host };
+  // Só o token público do projeto (phc_) serve para enviar eventos. Uma chave pessoal (phx_)
+  // dá acesso à conta e nunca deve ir no app — se aparecer, o analytics fica desligado.
+  const isProjectToken = projectToken.startsWith(PROJECT_TOKEN_PREFIX);
+  return { enabled: isProjectToken && allowedInThisBuild, projectToken: isProjectToken ? projectToken : "", host };
 }

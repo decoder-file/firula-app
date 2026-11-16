@@ -11,7 +11,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "posthog:dashboard": "python3 scripts/posthog-dashboard.py"
+    "posthog:dashboard": "python3 scripts/posthog-dashboard.py",
+    "release:check": "node scripts/check-release-env.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
