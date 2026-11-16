@@ -3,6 +3,7 @@ import { Alert } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
 
+import { track } from "@/analytics";
 import { WalletError, useAddToWallet, useMyTickets } from "@/hooks/useTickets";
 import { isApiError } from "@/api/errors";
 import type { CustomerTicket } from "@/services/tickets.service";
@@ -50,6 +51,7 @@ export const useTicketsRouteProps = (): TicketsScreenProps => {
   const tickets = useMemo(() => (data ?? []).map(mapCustomerTicket), [data]);
 
   const handleAddToWallet = (ticketId: string) => {
+    track("ticket_wallet_add_clicked", { ticket_id: ticketId });
     addToWallet.mutate(ticketId, {
       onError: (error) => {
         const walletError = error instanceof WalletError ? error : null;

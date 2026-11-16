@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { Ticket } from "lucide-react-native";
 
+import { track } from "@/analytics";
 import { Button, Skeleton, Text, TopBar, useTheme } from "@/design-system";
 import { QrModal } from "@/features/tickets/components/QrModal";
 import { TicketBilhete } from "@/features/tickets/components/TicketBilhete";
@@ -104,7 +105,10 @@ export function TicketsScreen({
               <TicketBilhete
                 key={t.id}
                 ticket={t}
-                onOpenQr={() => setQrTicket(t)}
+                onOpenQr={() => {
+                  track("ticket_qr_opened", { ticket_id: t.id });
+                  setQrTicket(t);
+                }}
                 onAddToWallet={onAddToWallet ? () => onAddToWallet(t.id) : undefined}
                 isAddingToWallet={isAddingToWallet}
               />

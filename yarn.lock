@@ -1599,6 +1599,18 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.3.6.tgz#3569708bd4be4d8870ba32bf1c456dac81600d97"
   integrity sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA==
 
+"@posthog/core@^1.61.2":
+  version "1.68.0"
+  resolved "https://registry.yarnpkg.com/@posthog/core/-/core-1.68.0.tgz#591ec071d3108db7bda42b0a7614831ce9c89041"
+  integrity sha512-5kjPcLquzj47qBGn52+7RRXrJJvrTHaRKgxV9izYPFzoVFEftFqSXYZF/ug+yialxDU73dR9apyi+mSaAeaXPw==
+  dependencies:
+    "@posthog/types" "^1.425.1"
+
+"@posthog/types@^1.418.0", "@posthog/types@^1.425.1":
+  version "1.425.1"
+  resolved "https://registry.yarnpkg.com/@posthog/types/-/types-1.425.1.tgz#f65f12e4713b058e4211378e1884f622022efb26"
+  integrity sha512-mh7jyQ5lN+XCeOnMdYkBEFtO/G0TxeLOKTWNH6E6OZjxS4nVM0Tb2xQt+FG5DCFM9qzL2HmuX6A793TwlJVDvw==
+
 "@radix-ui/primitive@1.1.5":
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/@radix-ui/primitive/-/primitive-1.1.5.tgz#cfeb31acbf332c72eb0b13831963c21ad6ca3e32"
@@ -6280,6 +6292,14 @@ postcss@^8.5.14:
     nanoid "^3.3.18"
     picocolors "^1.1.1"
     source-map-js "^1.2.1"
+
+posthog-react-native@4.85.0:
+  version "4.85.0"
+  resolved "https://registry.yarnpkg.com/posthog-react-native/-/posthog-react-native-4.85.0.tgz#0568e9be2f7202f939c3ce4cbef26bf18e46ffb3"
+  integrity sha512-EQK3iUENuusqnI7mVOK49DDREGfZvqDoF3cgo8CJXrXn4fCZsdO2d7wKnMMl9W4gbkqlqv7/1q71u/FGKNXNvQ==
+  dependencies:
+    "@posthog/core" "^1.61.2"
+    "@posthog/types" "^1.418.0"
 
 pretty-format@30.4.1, pretty-format@^30.0.5:
   version "30.4.1"

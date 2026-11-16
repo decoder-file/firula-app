@@ -13,6 +13,7 @@ module.exports = {
         "<rootDir>/src/api/__tests__/**/*.test.ts",
         "<rootDir>/src/stores/__tests__/**/*.test.ts",
         "<rootDir>/src/utils/__tests__/**/*.test.ts",
+        "<rootDir>/src/analytics/__tests__/**/*.test.ts",
       ],
       transform: {
         "^.+\\.(js|ts|tsx)$": [

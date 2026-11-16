@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Linking } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 
+import { track } from "@/analytics";
+import type { CheckoutPaymentKind } from "@/analytics/events";
 import { isApiError } from "@/api/errors";
 import { queryKeys } from "@/hooks/queryKeys";
 import { useAuthUser, useAuthUserProfile } from "@/hooks/useAuth";
@@ -747,6 +749,40 @@ export function useCheckout(
       else createCardPayment();
     }
   }, [quote, paymentMethod, createFreeOrder, createPixPayment, createCardRedirectPayment, createCardPayment]);
+
+  // ── Analytics (funil da compra) ──────────────────────────────────────────
+  const paymentKind: CheckoutPaymentKind | null = quote?.isFree ? "FREE" : paymentMethod;
+  const analyticsRef = useRef({ eventId: event?.id ?? "", paymentKind, totalQuantity, hasCoupon: Boolean(couponCode) });
+  analyticsRef.current = { eventId: event?.id ?? "", paymentKind, totalQuantity, hasCoupon: Boolean(couponCode) };
+
+  useEffect(() => {
+    if (event?.id && totalQuantity > 0) track("checkout_started", { event_id: event.id, ticket_quantity: totalQuantity });
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- uma vez por checkout aberto
+
+  useEffect(() => {
+    if (!pixSession) return;
+    track("pix_generated", { event_id: analyticsRef.current.eventId, order_id: pixSession.orderId, total_cents: quote?.pix?.totalCents ?? quote?.finalAmountCents ?? 0 });
+  }, [pixSession?.orderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (step !== "success" || !successOrderId) return;
+    const { eventId, paymentKind: kind, hasCoupon } = analyticsRef.current;
+    track("purchase_completed", {
+      event_id: eventId,
+      order_id: successOrderId,
+      payment_method: kind ?? "FREE",
+      total_cents: successTotalCents,
+      revenue: successTotalCents / 100,
+      ticket_quantity: successTickets.length || analyticsRef.current.totalQuantity,
+      has_coupon: hasCoupon,
+    });
+  }, [step, successOrderId]); // eslint-disable-line react-hooks/exhaustive-deps -- uma vez por pedido concluído
+
+  useEffect(() => {
+    if (!paymentError) return;
+    const { eventId, paymentKind: kind } = analyticsRef.current;
+    track("purchase_failed", { event_id: eventId, payment_method: kind, error_message: paymentError.slice(0, 200) });
+  }, [paymentError]);
 
   return {
     event,

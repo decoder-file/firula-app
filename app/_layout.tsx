@@ -4,8 +4,9 @@ import "../global.css";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
-import { ThemeProvider, SnackbarProvider } from '@/design-system';
+import { ThemeProvider, SnackbarProvider } from "@/design-system";
 
+import { AnalyticsProvider } from "@/analytics";
 import { AppProviders } from "@/components/AppProviders";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { RateAppModal } from "@/features/app-rating/RateAppModal";
@@ -14,17 +15,27 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AppProviders>
-        <SnackbarProvider>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#f7f7f7" } }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="login-modal" options={{ presentation: "modal" }} />
-            <Stack.Screen name="search" />
-            <Stack.Screen name="register" />
-          </Stack>
-          <OfflineBanner />
-          <RateAppModal />
-        </SnackbarProvider>
+        <AnalyticsProvider>
+          <SnackbarProvider>
+            <StatusBar style="dark" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: "#f7f7f7" },
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="login-modal"
+                options={{ presentation: "modal" }}
+              />
+              <Stack.Screen name="search" />
+              <Stack.Screen name="register" />
+            </Stack>
+            <OfflineBanner />
+            <RateAppModal />
+          </SnackbarProvider>
+        </AnalyticsProvider>
       </AppProviders>
     </ThemeProvider>
   );

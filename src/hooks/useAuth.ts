@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { track } from "@/analytics";
+import type { LoginMethod } from "@/analytics/events";
 
 import { authService, type AuthCustomer } from "@/services/auth.service";
 import { socialAuthService } from "@/services/socialAuth.service";
@@ -50,6 +52,7 @@ const useCompleteAuthSession = () => {
         email?: string;
       },
       fallbackEmail: string,
+      method: LoginMethod,
     ) => {
       const customer: AuthCustomer = {
         identityId: data.identityId,
@@ -61,6 +64,7 @@ const useCompleteAuthSession = () => {
       };
 
       setUser(customer, data.customerProfile ?? null);
+      track("login_completed", { method });
       queryClient.invalidateQueries();
       queryClient.refetchQueries({ type: "active" });
     },
@@ -78,7 +82,7 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (data, variables) => {
-      completeSession(data, variables.email);
+      completeSession(data, variables.email, "password");
     },
   });
 };
@@ -89,7 +93,7 @@ export const useVerifyLoginCode = () => {
   return useMutation({
     mutationFn: (payload: VerifyLoginCodePayload) => authService.verifyLoginCode(payload),
     onSuccess: (data, variables) => {
-      completeSession(data, variables.email);
+      completeSession(data, variables.email, "email_code");
     },
   });
 };
@@ -97,6 +101,7 @@ export const useVerifyLoginCode = () => {
 export const useRegister = () => {
   return useMutation({
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
+    onSuccess: () => track("signup_completed", {}),
   });
 };
 
@@ -117,7 +122,7 @@ export const useConfirmPasswordReset = () => {
     mutationFn: ({ resetToken, password }: { resetToken: string; password: string; email: string }) =>
       authService.confirmPasswordReset(resetToken, password),
     onSuccess: (data, variables) => {
-      completeSession(data, variables.email);
+      completeSession(data, variables.email, "password_reset");
     },
   });
 };
@@ -127,7 +132,7 @@ export const useGoogleSignIn = () => {
   return useMutation({
     mutationFn: socialAuthService.googleSignIn,
     onSuccess: ({ sessionData, email }) => {
-      completeSession(sessionData, email);
+      completeSession(sessionData, email, "google");
     },
   });
 };
@@ -137,7 +142,7 @@ export const useAppleSignIn = () => {
   return useMutation({
     mutationFn: socialAuthService.appleSignIn,
     onSuccess: ({ sessionData, email }) => {
-      completeSession(sessionData, email);
+      completeSession(sessionData, email, "apple");
     },
   });
 };
@@ -149,6 +154,8 @@ export const useLogout = () => {
   return useMutation({
     mutationFn: authService.logout,
     onSettled: () => {
+      // Antes do clearUser: depois dele o PostHog zera a identidade.
+      track("logout_completed", {});
       clearUser();
       queryClient.clear();
     },

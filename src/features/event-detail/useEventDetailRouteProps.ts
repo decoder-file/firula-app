@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { normalizeLinkCoupon } from '@/utils/linkCoupon';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Alert, Linking, Platform, Share } from 'react-native';
 
+import { track } from '@/analytics';
 import { useIsAuthenticated } from '@/hooks/useAuth';
 import { useEventBySlug } from '@/hooks/useEvents';
 import { useCheckFavorite, useToggleFavorite } from '@/hooks/useFavorites';
@@ -258,6 +259,10 @@ export const useEventDetailRouteProps = (): EventDetailScreenProps => {
 
   const isAuthenticated = useIsAuthenticated();
   const { data: event, isLoading, isError } = useEventBySlug(eventSlug);
+
+  useEffect(() => {
+    if (event?.id) track("event_viewed", { event_id: event.id, event_slug: event.slug ?? eventSlug });
+  }, [event?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- uma vez por evento aberto
   const { data: favoriteStatus } = useCheckFavorite(event?.id ?? '');
   const { mutate: toggleFavorite, isPending: isFavoritePending } = useToggleFavorite();
 
