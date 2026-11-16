@@ -10,6 +10,8 @@ export interface AppTicket {
   city: string;
   code: string;
   status: TicketStatus;
+  /** Nome de quem é dono do ingresso (o participante). */
+  holderName?: string;
   facial?: boolean;
   image?: ImageSourcePropType;
   /** Datas/horários válidos, presente quando este ingresso é um passaporte. */

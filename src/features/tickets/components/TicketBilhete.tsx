@@ -1,6 +1,6 @@
 import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
-import { CalendarDays, MapPin, QrCode, ScanFace, Wallet } from "lucide-react-native";
+import { CalendarDays, MapPin, QrCode, ScanFace, User, Wallet } from "lucide-react-native";
 
 import { Button, Text, useTheme } from "@/design-system";
 import { STATUS_LABEL } from "@/features/tickets/constants";
@@ -36,7 +36,7 @@ export function TicketBilhete({
         borderWidth: 1,
         borderColor: colors.border,
       }}
-      accessibilityLabel={`Ingresso ${ticket.tier} para ${ticket.event}, ${ticket.dateLabel}, ${STATUS_LABEL[ticket.status]}`}
+      accessibilityLabel={`Ingresso ${ticket.tier} para ${ticket.event}${ticket.holderName ? `, de ${ticket.holderName}` : ""}, ${ticket.dateLabel}, ${STATUS_LABEL[ticket.status]}`}
     >
       <View style={{ height: 3, backgroundColor: accent }} />
       <View
@@ -143,6 +143,20 @@ export function TicketBilhete({
           padding: 14,
         }}
       >
+        {ticket.holderName ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <User size={15} color={colors.textMuted} strokeWidth={2} />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, fontSize: 11 }}>
+                Participante
+              </Text>
+              <Text token="body" style={{ fontWeight: "700" }} numberOfLines={1}>
+                {ticket.holderName}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
         {passportDates.length > 0 ? (
           <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 12, padding: 10, marginBottom: 12 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 4 }}>

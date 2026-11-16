@@ -131,6 +131,20 @@ export function QrModal({
                 >
                   {ticket.code}
                 </Text>
+                {ticket.holderName ? (
+                  <View style={{ alignItems: "center", marginTop: 12 }}>
+                    <Text token="caption" color="muted" style={{ textTransform: "none", letterSpacing: 0, fontSize: 11 }}>
+                      Participante
+                    </Text>
+                    <Text
+                      token="subtitle"
+                      style={{ fontWeight: "800", textAlign: "center", marginTop: 2 }}
+                      numberOfLines={2}
+                    >
+                      {ticket.holderName}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               <View
                 style={{

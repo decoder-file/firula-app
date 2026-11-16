@@ -8,6 +8,7 @@ import { isApiError } from "@/api/errors";
 import type { CustomerTicket } from "@/services/tickets.service";
 import type { AppTicket, TicketStatus, TicketsScreenProps } from "@/features/tickets/types";
 import { isTicketExpired } from "@/utils/ticketExpiry";
+import { getTicketHolderName } from "@/utils/ticketHolder";
 
 const toAppTicketStatus = (ticket: CustomerTicket): TicketStatus => {
   if (ticket.status !== "VALID") return "used";
@@ -29,6 +30,7 @@ export const mapCustomerTicket = (ticket: CustomerTicket): AppTicket => ({
   city: `${ticket.event.location.city}/${ticket.event.location.state}`,
   code: `FIRULA-${ticket.id.slice(0, 8).toUpperCase()}`,
   status: toAppTicketStatus(ticket),
+  holderName: getTicketHolderName(ticket.attendee),
   facial: false,
   image: ticket.event.coverUrl ? { uri: ticket.event.coverUrl } : undefined,
   passportValidDates: ticket.ticketLot.type === "PASSPORT" ? ticket.ticketLot.passportValidDates : undefined,
